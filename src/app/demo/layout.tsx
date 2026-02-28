@@ -1,3 +1,5 @@
+"use client"
+
 /**
  * Demo layout — wraps all /demo/* pages with:
  * - DemoProvider (all shared state + computed data)

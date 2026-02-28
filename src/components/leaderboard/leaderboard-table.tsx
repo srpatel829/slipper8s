@@ -16,9 +16,9 @@ function getSeedTier(seed: number): "elite" | "strong" | "mid" | "longshot" {
 }
 
 const TIER_CLASSES = {
-  elite:    { card: "border-primary/30",    badge: "bg-primary/20 text-primary/90",    quad: "bg-primary/70" },
-  strong:   { card: "border-blue-400/30",   badge: "bg-blue-400/20 text-blue-400/90",   quad: "bg-blue-400/70" },
-  mid:      { card: "border-emerald-400/30", badge: "bg-emerald-400/20 text-emerald-400/90", quad: "bg-emerald-400/70" },
+  elite: { card: "border-primary/30", badge: "bg-primary/20 text-primary/90", quad: "bg-primary/70" },
+  strong: { card: "border-blue-400/30", badge: "bg-blue-400/20 text-blue-400/90", quad: "bg-blue-400/70" },
+  mid: { card: "border-emerald-400/30", badge: "bg-emerald-400/20 text-emerald-400/90", quad: "bg-emerald-400/70" },
   longshot: { card: "border-purple-400/30", badge: "bg-purple-400/20 text-purple-400/90", quad: "bg-purple-400/70" },
 }
 
@@ -52,11 +52,10 @@ function PicksLogoStrip({ picks }: { picks: ResolvedPickSummary[] }) {
           title={`${pick.shortName} (#${pick.seed})${pick.eliminated ? " — eliminated" : ""}`}
         >
           <div
-            className={`w-6 h-6 rounded-full border overflow-hidden flex items-center justify-center text-[8px] font-bold ${
-              pick.eliminated
+            className={`w-6 h-6 rounded-full border overflow-hidden flex items-center justify-center text-[8px] font-bold ${pick.eliminated
                 ? "grayscale opacity-40 border-border/30"
                 : "border-border/50"
-            }`}
+              }`}
           >
             {pick.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -83,11 +82,10 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
 
   return (
     <div
-      className={`rounded-lg border p-2.5 text-xs transition-all ${
-        pick.eliminated
+      className={`rounded-lg border p-2.5 text-xs transition-all ${pick.eliminated
           ? `${tierCls.card} bg-muted/10 opacity-60`
           : `${tierCls.card} bg-card`
-      }`}
+        }`}
     >
       {/* Top row: logo + name + region quadrant */}
       <div className="flex items-center gap-1.5 mb-1.5">
@@ -99,9 +97,8 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
           </div>
         )}
         <span
-          className={`font-semibold truncate flex-1 text-[11px] ${
-            pick.eliminated ? "line-through text-muted-foreground" : ""
-          }`}
+          className={`font-semibold truncate flex-1 text-[11px] ${pick.eliminated ? "line-through text-muted-foreground" : ""
+            }`}
         >
           {pick.shortName}
         </span>
@@ -184,8 +181,8 @@ type SortDir = "asc" | "desc"
 export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8 }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
-  const [sortKey, setSortKey] = useState<SortKey>("rank")
-  const [sortDir, setSortDir] = useState<SortDir>("asc")
+  const [sortKey, setSortKey] = useState<SortKey>("currentScore")
+  const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -300,11 +297,10 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
           return (
             <div
               key={entry.userId}
-              className={`rounded-xl border overflow-hidden transition-all duration-200 ${
-                isMe
+              className={`rounded-xl border overflow-hidden transition-all duration-200 ${isMe
                   ? "border-primary/40 bg-primary/5 shadow-sm shadow-primary/10"
                   : "border-border bg-card hover:border-border/80"
-              }`}
+                }`}
             >
               {/* Main row */}
               <button
@@ -342,13 +338,12 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                   {/* Teams remaining */}
                   <div className="text-right">
                     <span
-                      className={`text-sm font-mono font-medium ${
-                        entry.teamsRemaining === 0
+                      className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0
                           ? "text-muted-foreground"
                           : entry.teamsRemaining >= 4
-                          ? "text-green-400"
-                          : "text-amber-400"
-                      }`}
+                            ? "text-green-400"
+                            : "text-amber-400"
+                        }`}
                     >
                       {entry.teamsRemaining}
                       <span className="text-muted-foreground text-xs">/8</span>

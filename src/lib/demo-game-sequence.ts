@@ -343,9 +343,9 @@ export function computeLeaderboardAtGame(
     }
   })
 
-  // Sort: TPS desc → currentScore desc → name asc
+  // Sort: currentScore desc → TPS desc → name asc
   entries.sort(
-    (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
+    (a, b) => b.currentScore - a.currentScore || b.tps - a.tps || a.name.localeCompare(b.name)
   )
 
   return entries.map((e, i) => ({
