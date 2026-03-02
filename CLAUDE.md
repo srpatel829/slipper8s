@@ -1,460 +1,631 @@
-# Super 8s — Claude Code Context
+# Slipper8s — CLAUDE.md
+## Working Instructions for Claude Code Sessions
 
-## What This Is
-
-Super 8s is a March Madness bracket contest app. Users pay an entry fee, pick **8 teams** from the NCAA tournament, and score points based on `seed × wins`. Includes a live leaderboard, score tracker, scenario simulator, admin panel, and a full interactive `/demo` mode — mirrors the entire app game-by-game with no sign-in required.
-
-**Stack**: Next.js 16 App Router · React 19 · TypeScript · Prisma 7 · Neon PostgreSQL · NextAuth v5 (magic links via Resend) · Tailwind v4 · shadcn/ui · Vercel
+**Full product specification: Slipper8s_Spec_v9.docx — read it before making architectural decisions.**
+**This file is the daily brief. The spec is the source of truth.**
 
 ---
 
-## Dev Server
+## What We Are Building
 
-**Always start via Claude's preview tool or the JS wrapper — never `npm run dev` alone from a shell that lacks the NVM path.**
+Slipper8s (slipper8s.com) is a free college basketball tournament prediction game. Players pick 8 teams. Scoring = seed x wins. Highest total wins. 10-year history (265 players in 2025). Moving from Google Forms/Sheets to a proper web app for 2026.
 
-```bash
-# Preferred: Claude Code preview tool (uses .claude/launch.json)
-# preview_start "Next.js Dev"  ← runs start-dev.js on port 3000
+We are building on top of an existing Next.js codebase (originally called "Super 8s") built by Sumeet's brother. Do not start from scratch. Read the existing code before proposing changes.
 
-# Manual fallback (sets NVM PATH then loads Next.js in the same process):
-/Users/rrpatel/.nvm/versions/node/v24.11.1/bin/node start-dev.js
+---
+
+## First Thing Every Session
+
+1. Read this file completely
+2. Read the specific files relevant to today's task (listed below in File Map)
+3. Tell the user your plan before writing any code
+4. Do not assume — verify existing code structure before proposing changes
+5. Be honest and critical — do not be a cheerleader. If something is wrong or risky, say so.
+
+---
+
+## Key Deadlines
+
+- **March 14, 2026** — Site goes live after bracket announced on Selection Sunday
+- **March 19, 2026 at 12:15pm ET** — Entry deadline (server-side UTC, millisecond precision)
+- **April 7, 2026** — Tournament ends
+
+---
+
+## Tech Stack (Actual — Do Not Deviate)
+
+- **Framework:** Next.js 16 App Router (monorepo — FE + BE together)
+- **Language:** TypeScript
+- **Frontend:** React 19, Tailwind v4, shadcn/ui
+- **ORM:** Prisma 7 with @prisma/adapter-neon
+- **Database:** Neon PostgreSQL (serverless, free tier, auto-pauses off-season)
+- **Auth:** NextAuth v5 — magic link via Resend (primary), Google OAuth (to add)
+- **Email (auth):** Resend — magic links only
+- **Email (notifications):** TBD — Resend free tier is 100 emails/day, may need upgrade for tournament notifications
+- **Hosting:** Vercel (Hobby free tier off-season, Pro $20/month during tournament)
+- **Cron:** Vercel cron (`*/5 * * * *`) — requires Vercel Pro plan
+- **Error tracking:** Sentry (to add)
+- **File storage:** Cloudinary or AWS S3 (to add — not yet implemented)
+- **Cache:** Upstash Redis / Vercel KV (to add — critical for leaderboard)
+- **Prisma client path:** `src/generated/prisma` — always import from `@/generated/prisma`, never `@prisma/client`
+
+---
+
+## Terminology — Critical
+
+His codebase uses different terms than our spec. Always use our spec terms in new code, UI, and documentation. When reading his existing code:
+
+| His term | Our term | Meaning |
+|---|---|---|
+| TPS (Total Projected Score) | Max Score | Score + PPR |
+| PPR (Potential Points Remaining) | PPR | Same — keep this term |
+| Points / currentScore | Score | Actual points earned |
+
+**Never introduce TPS into new code or UI. Use Score, PPR, Max Score exclusively.**
+
+---
+
+## Scoring Definitions — Three-Term System (Use Everywhere)
+
+- **Score** — actual points earned to date. `seed × wins` for each of the player's 8 teams. Based entirely on real game results. Immutable once a game is final.
+- **PPR (Potential Points Remaining)** — maximum additional points a player could still earn. Forward-looking only. Uses bracket-path collision analysis. Never uses naive `seed × remaining games`.
+- **Max Score** — `Score + PPR`. The ceiling a player could reach if everything goes their way.
+
+Do not use "Maximum Possible Score," "Max Potential Score," "TPS," or any other variants anywhere in new code, UI, or documentation.
+
+---
+
+## Non-Negotiable Architectural Rules
+
+### 0. Three-Layer Separation
+Maintain logical separation even within the Next.js monorepo:
+- **Frontend (React Client Components):** UI only. No business logic. No direct DB calls.
+- **Backend (API Routes + Server Components):** All calculations, ESPN polling, score recalculation.
+- **Data Layer (Prisma + Neon):** Storage only. No business logic.
+
+Server Components calling Prisma directly is acceptable (idiomatic Next.js App Router). Client Components must never import Prisma or call DB directly — API routes only.
+
+### 1. Leaderboard Caching — #1 Priority Fix
+**This is the most critical architectural gap in the current codebase.**
+The current leaderboard uses `cache: "no-store"` and queries the database on every user page load. This will not scale.
+
+Fix: Write computed leaderboard JSON to Upstash Redis/Vercel KV on every cron tick. Serve from cache only. Invalidate only when a game result changes scores. 50,000 users refreshing = zero database queries between game results.
+
+### 2. Single Internal Poller, No User-Triggered External API Calls
+One background service polls ESPN on schedule via Vercel cron. User requests never trigger an ESPN API call.
+```
+No games today:               every 2-3 hours
+Games scheduled, not started: every 5 minutes
+Game in progress:             every 60 seconds
+All today's games complete:   every 2-3 hours
+Tournament complete:          stop
+```
+Current cron is fixed at every 5 minutes — update to dynamic frequency.
+
+### 3. Completed Games Are Immutable
+Once `status = FINAL`, never re-fetch. Historical data (2015-2025) hardcoded — never queries any external API.
+
+### 4. Score Recalculation Is Sequential, Never Parallel
+Queue all recalculations in order:
+1. Save game result (status = FINAL)
+2. Update team wins
+3. Recalculate all entry scores
+4. Recalculate PPR / Max Score
+5. Recalculate Optimal 8
+6. Recalculate efficiency %
+7. Update rankings AND percentiles
+8. Save score snapshots (BEFORE invalidating cache)
+9. Invalidate leaderboard cache
+10. Notify affected players
+
+If any step fails, roll back to last good snapshot state.
+
+### 5. Validate All External API Responses
+Alert admin if ESPN response structure changes. Never silently ingest malformed data.
+
+### 6. Draft Picks Saved Server-Side
+Bracket picker state saves to database as player makes picks. Not just on final submit.
+
+### 7. Deadline Is Server-Side UTC Only
+Stored and enforced in UTC. **Deadline: March 19, 2026 at 12:15pm ET.**
+Server timestamp is authoritative. In-flight submissions after deadline rejected.
+
+### 8. Season-Specific Data Structures
+Never hardcode the bracket. Year references are variables, not hardcoded values.
+
+### 9. Manual Game Result Override
+Admin panel must allow manual entry of game results for any game. Overrides ESPN or fills in if ESPN fails. Same recalculation queue fires either way.
+
+### 10. Pre-Deadline Information Fairness
+No player should gain an informational advantage based on when they submit.
+
+**Before deadline — show only:**
+- Universal information identical for every player
+- Objective external data (team stats, probabilities, historical results)
+- Information about the player's own picks only
+
+**After deadline — unlock:**
+- % of field who picked each team
+- Most/least popular picks
+- Seed distribution across all entries
+- Archetype distribution across all players
+- Stats page
+- Popularity view on team browser
+
+A player's own archetype may be shown on their confirmation screen before deadline. Never show how many others share that archetype until after deadline.
+
+Apply this rule proactively — flag anything that could give timing-based information advantage.
+
+---
+
+## Admin Export — The Failsafe (Build First)
+
+This is the most critical feature. Build it first. Test it most thoroughly. Must work even if everything else is broken. This is the safety net that allows the game to be run manually via Google Sheets if the app has issues.
+
+**Export contains:** player name, email, submission timestamp, last-edited timestamp, 8 picks (team names + seeds)
+
+**Schedule:**
+- Manual: anytime, one click from admin panel
+- Automated: twice daily until deadline
+- Final: automatic at 12:15pm ET March 19th
+
+**Format:** mirrors Google Forms/Sheets export — drop-in replacement for existing manual process
+
+**Most recent valid submission per player** — reflects final edited state with last-edited timestamp
+
+---
+
+## What's Already Built (Do Not Rebuild)
+
+Review these before doing any work in their area:
+
+- **Bracket-aware PPR algorithm** (`src/lib/bracket-ppr.ts`) — correct, well-tested, keep as-is
+- **Scoring logic** (`src/lib/scoring.ts`) — clean pure functions, extend don't rewrite
+- **ESPN integration** (`src/lib/espn.ts`) — working poller, cron, manual sync
+- **Demo mode** (`/demo`, `src/lib/demo-context.tsx`, `src/lib/demo-game-sequence.ts`) — full app mirror with 2025 real data, game-by-game timeline, bar chart race foundation. This is a major asset — do not break it.
+- **Auth** (`src/lib/auth.ts`, `src/lib/auth.config.ts`) — magic link working
+- **Admin panel basics** — users, settings, sync, CMS
+- **Picks form** with bracket view, conflict detection, view modes
+- **Simulator** with cascade bracket logic
+
+---
+
+## What Needs to Be Built or Fixed
+
+Priority order:
+
+1. **Leaderboard caching** (Redis/Vercel KV) — architectural fix, do first
+2. **Admin Excel export** (the failsafe)
+3. **Manual game result input** (ESPN failsafe)
+4. **Rebranding** (Super 8s → Slipper8s, remove "March Madness" usage)
+5. **Terminology update** (TPS → Max Score throughout)
+6. **Google OAuth** (add alongside existing magic link)
+7. **Season-aware schema** (Program, TeamSeason, Season, ScoreSnapshot models)
+8. **Player profiles**
+9. **Private leagues**
+10. **Share cards / Open Graph**
+11. **Email notifications** (beyond magic links)
+12. **Tier names + competition ranking**
+13. **Percentile rankings**
+14. **Pre-tournament Expected Score** (KenPom + Silver Bulletin)
+15. **Team name normalization dictionary**
+16. **Historical data migration** (2017-2025 CSV files)
+
+---
+
+## Feature Tiers & Build Priority
+
+### TIER 1 — Live by March 14th
+- Player registration (magic link + Google OAuth)
+- Entry form + pick submission
+- Draft picks saved server-side as player makes selections
+- Team display with logos, full names, seed colors
+- Team hover/tap cards (full spec below)
+- Pre-tournament Expected Score per team (stored once at bracket announcement)
+- Player archetypes (own confirmation screen only)
+- Multiple pick display views + filters
+- How to Play explanation + worked example
+- 2025 highlights (champion, Optimal 8, bar chart race preview)
+- Private leagues (invite codes, basic league leaderboard)
+- Share cards / Open Graph (pre-deadline version)
+- Email notifications — signup confirmation, pre-deadline reminders (24hr, 1hr)
+- Bug reporting button (prominent, admin alert on submission)
+- Admin Excel export (manual + twice daily + final at deadline)
+- Manual game result input (ESPN failsafe)
+- Admin panel (deadline, export, manual sync, user management)
+- Mobile responsiveness (mobile <768px, tablet 768-1199px, desktop 1200px+)
+- SSL, DNS, domain redirects (sleeper8s.com → slipper8s.com)
+- Legal pages (ToS, Privacy Policy)
+- Demo environment (separate deployment, 2025 data — already built)
+- Admin sandbox toggle
+
+### TIER 2 — Target March 14th, acceptable by March 19th
+- ESPN poller dynamic frequency
+- Score, PPR, Max Score calculations (rename from TPS)
+- Leaderboard with caching
+- Live scores / game schedule page
+- Tier names + competition ranking (T4, T4, 6 format)
+- Percentile rankings
+- Stats page (post-deadline only)
+- Popularity view (post-deadline only)
+- Share card — living card with rank
+- Hall of Champions (2025 focus)
+- Email notifications — field is set, game starts
+- Bar chart race (leverage existing demo code)
+- Player profiles with history
+
+### TIER 3 — During tournament (March 19 → April 7)
+- Multi-dimensional rankings (gender, state, school, conference)
+- Live Expected Score (adjusts as results come in)
+- Email notifications — team wins/losses, leaderboard moves
+- KenPom integration (deeper)
+- Post-deadline share cards
+- What If bracket (planned V2)
+
+### TIER 4 — 2027
+- Native mobile app
+- NCAAW bracket
+
+---
+
+## Pick UX — Multiple Display Views
+
+**Display Views (toggle):**
+- **Bracket view** — traditional matchups by region (default) — already built
+- **Seed grid view** — teams by seed tier (1-4, 5-8, 9-12, 13-16) vs regions
+- **Conference view** — teams grouped by conference
+- **My Picks view** — shows only the player's 8 selected teams
+- **Expected Score view** — teams ranked by expected score
+- **Popularity view** — POST-DEADLINE ONLY
+
+**Filters (stackable):**
+- By seed range
+- By region
+- By conference
+- Unpicked only
+- By win/loss record threshold
+- Sleeper filter (high expected score relative to seed)
+
+---
+
+## Team Hover/Tap Card — Full Spec
+
+- Logo + full name
+- Seed number + seed color
+- Region
+- S-Curve ranking
+- Conference
+- Season record (W-L)
+- KenPom ranking
+- ESPN BPI rating + ranking
+- Pre-tournament Expected Score
+- Cinderella signal (wins as underdog this season)
+- Upset risk (losses as favorite this season)
+- Whether already picked (highlighted)
+- % of field who picked this team — POST-DEADLINE ONLY
+
+---
+
+## Color Palette
+
+| Role | Name | Hex |
+|---|---|---|
+| Primary | NCAA Light Blue | #009FDA |
+| Secondary | Dark Blue | #0D3F65 |
+| Tertiary | Orange | #DC6B1F |
+| Text/Dark | Near Black | #0A0A14 |
+| Background | Off White | #F8FAFB |
+
+**Note:** Current codebase uses a dark theme (deep slate background, orange primary). We are switching to the light theme above. Update `globals.css` CSS variables.
+
+### Seed Colors
+```
+Seeds 1-4:   Red    #C0392B
+Seeds 5-8:   Orange #E67E22
+Seeds 9-12:  Gold   #D4AC0D
+Seeds 13-16: Green  #27AE60
+```
+**Note:** Current codebase uses primary/blue/emerald/purple for seed tiers. Replace with above.
+
+---
+
+## Tier Names & Percentile Rankings
+
+### Tier Names (Exact)
+```
+Champion      = 1st
+Runner Up     = 2nd
+Final 4       = 3rd-4th
+Elite 8       = 5th-8th
+Sweet 16      = 9th-16th
+Worthy 32     = 17th-32nd
+Dancing 64    = 33rd-64th
+Play In 68    = 65th-68th
+Below 68th    = no tier name — show percentile only
 ```
 
-> **Why the wrapper?** Turbopack spawns child processes for PostCSS that inherit the system PATH (`/usr/bin:/bin`), which lacks the NVM-managed `node` binary. `start-dev.js` prepends the NVM bin dir to `process.env.PATH` before loading Next.js, so all child processes find `node`.
->
-> `.claude/launch.json` points directly at `start-dev.js` — this is what `preview_start` uses.
->
-> **If you update Node via NVM**, update the `runtimeExecutable` path in `.claude/launch.json` to match the new version. `start-dev.js` itself is portable (it derives the bin path from `process.execPath` at runtime).
+### Percentile Rankings
+Show for ALL players in all 6 ranking dimensions. Format: "Top 0.1%", "Top 18%", "Top 45%"
+Store both absolute rank and percentile per year in player history.
 
-### Dev Server: Healthy State & Expected Warnings
+---
 
-**The server is ready when `preview_logs` shows:**
+## Data Architecture
+
+### Team Name Normalization — Build First
+Canonical dictionary before any other data work. ~360 programs, canonical name + all known variants. Every pipeline normalizes through this.
+
+### Program vs TeamSeason
+- **Program:** Permanent. Florida Gators. Never changes.
+- **TeamSeason:** Seasonal. Florida 2025 = 1-seed, 6 wins, champion. Historical records IMMUTABLE.
+
+### Schema Extensions Needed
+Current schema has a single flat `Team` table. We need to add:
 ```
-✓ Ready on http://localhost:3000
-```
-That's the success signal. Stop checking logs once you see it.
-
-**Do NOT attempt to fix these — they are expected and harmless:**
-- `⚠ Compiled with warnings` — typically from Next.js 16 / React 19 experimental features
-- `warn - Fast Refresh had to perform a full reload` — normal during cold starts
-- `ExperimentalWarning: ...` from Node — expected with Turbopack
-- Any `next-auth` / `@auth` deprecation notices — v5 is still beta
-- TypeScript `as any` suppressions in `auth.ts` — intentional (see Gotchas)
-- Prisma startup messages about query engine / WASM — normal with Neon adapter
-- `[webpack.cache.PackFileCacheStrategy]` serialization warnings
-
-**Do attempt to fix these:**
-- Build errors that prevent compilation (`Error:`, `Module not found`, `SyntaxError`)
-- Runtime errors thrown during page load (visible in `preview_console_logs` as red errors)
-- 500 responses in `preview_network`
-
-```bash
-# Database
-npm run db:migrate    # run migrations (dev)
-npm run db:push       # push schema without migration file
-npm run db:studio     # open Prisma Studio
-npm run db:seed       # seed via prisma/seed.ts
-
-# Other
-npm run build         # production build
-npm run lint          # ESLint
+Season:           year, entry_deadline_utc, status, sponsor_details
+Program:          canonical_name, aliases[], current_conference, logo_url
+TeamSeason:       program_id, season_id, seed, region, s_curve_rank,
+                  kenpom_rank, bpi_rating, bpi_rank, games_won, eliminated,
+                  is_playin_slot, resolved_team_id, record, champion_flags,
+                  win_probabilities_by_round[], last_updated
+ScoreSnapshot:    entry_id, game_result_id, score, rank, percentile, saved_at
+LeaderboardCache: league_id, season_id, snapshot_json, last_updated
+WinProbability:   teamseason_id, round, probability, source, fetched_at
+UpsetHistory:     teamseason_id, game_date, opponent, result, was_underdog, score
+ConferenceMapping: program_id, conference, season_id
 ```
 
----
-
-## Environment Variables
-
-See `.env.example` for all required vars.
-
-| Variable | Purpose |
-|---|---|
-| `DATABASE_URL` | Neon **pooler** URL (used at runtime) |
-| `DIRECT_URL` | Neon **direct** URL (used by Prisma migrations) |
-| `AUTH_SECRET` | NextAuth secret — generate with `openssl rand -base64 32` |
-| `AUTH_URL` | Base URL for auth redirects (e.g. `http://localhost:3000`) |
-| `AUTH_RESEND_KEY` | Resend API key for magic link emails |
-| `RESEND_FROM_EMAIL` | From address (e.g. `Super 8s <noreply@yourdomain.com>`) |
-| `CRON_SECRET` | Bearer token for Vercel cron endpoint security |
-
----
-
-## Project Structure
-
+Also update Entry model:
 ```
-src/
-  app/
-    (auth)/           # login, verify-request, error pages (no layout)
-    (protected)/      # authenticated user pages — layout redirects to /login
-      picks/          # pick submission/editing form
-      leaderboard/    # live standings
-      scores/         # live game scores from ESPN
-      simulator/      # hypothetical scoring tool
-    admin/            # ADMIN or SUPERADMIN only — layout guards + sidebar
-      users/          # manage users, mark isPaid, change roles
-      settings/       # picks deadline, payout structure, charities
-      sync/           # manual ESPN data sync trigger
-      content/        # markdown CMS for content pages
-    demo/             # PUBLIC — no auth. Full app mirror with game-by-game timeline
-      leaderboard/    # demo leaderboard + score history chart
-      picks/          # demo picks form with auto-pick strategies
-      scores/         # demo scores grid
-      simulator/      # demo scenario simulator with docked leaderboard
-      bracket/        # full 64-team tournament bracket visualization
-      admin/          # demo admin panel (users, settings, sync)
-        users/
-        settings/
-        sync/
-    [slug]/           # public content pages rendered from DB
-    api/
-      auth/           # NextAuth handlers
-      picks/          # GET/POST/PUT user picks
-      scores/         # live ESPN game data (60s cache)
-      leaderboard/    # leaderboard computation (no-store)
-      admin/          # admin API routes (role-gated)
-      cron/sync/      # Vercel cron: syncs ESPN every 5 minutes
-  components/
-    ui/               # shadcn/ui primitives (don't edit — use `npx shadcn add`)
-    admin/            # user-table, sync-button, settings-form, content-editor
-    demo/             # demo-control-panel, demo-navbar
-    picks/            # picks-form, team-card, play-in-slot, quick-pick-generator, bracket-view, picks-tracker
-    leaderboard/      # leaderboard-table, leaderboard-history-chart
-    scores/           # scores-grid
-    simulator/        # simulator-panel (with docked leaderboard sidebar)
-    bracket/          # advancing-bracket (dual picks+simulator mode), tournament-bracket (read-only)
-    layout/           # navbar
-  lib/
-    auth.ts           # NextAuth full config (Prisma adapter + Resend + events)
-    auth.config.ts    # Edge-safe auth config (no Prisma — used by middleware)
-    espn.ts           # ESPN API fetch, transform, and full sync logic
-    scoring.ts        # ALL scoring logic lives here (includes Optimal 8)
-    prisma.ts         # Prisma client singleton with Neon adapter
-    demo-data.ts      # Real 2025 NCAA team data (winsAtRound/elimAtRound) + 12 demo users with actual picks
-    demo-game-sequence.ts  # Game-by-game engine: derives ~63 games, computes state
-    demo-context.tsx  # DemoProvider React context — all demo state + computed data
-    bracket-ppr.ts    # Bracket-aware PPR algorithm (resolves bracket conflicts)
-    tournament-data.ts     # Tournament year registry (add future years here)
-    demo-users-2025.ts     # Real 2025 participant picks (REAL_2025_USERS export)
-    utils.ts          # cn() clsx/tailwind-merge utility
-  types/index.ts      # shared TypeScript types + NextAuth module augmentation
-  generated/prisma/   # Prisma-generated client (do not edit — run prisma generate)
-  middleware.ts       # Route protection (imports auth.config only — Edge-safe)
-prisma/
-  schema.prisma       # source of truth for DB schema
-  seed.ts             # bootstraps AppSettings singleton
+Entry: add ppr, max_score fields (replacing/supplementing current PPR implementation)
 ```
 
----
-
-## Database & Prisma
-
-- **Provider**: Neon (serverless PostgreSQL). Uses `@prisma/adapter-neon` for edge-compatible connections.
-- **Generated client**: `src/generated/prisma` — **non-default path**. Always import from `@/generated/prisma`, never `@prisma/client`.
-- **Path alias**: `@/` → `src/` (tsconfig.json).
-- After editing `schema.prisma`: run `npm run db:migrate` (dev) or `npm run db:push` (quick). `prisma generate` runs automatically post-migration.
-- **AppSettings singleton**: always `id: "main"`. Use `prisma.appSettings.findUnique({ where: { id: "main" } })`.
+### Historical Data
+Files live locally in `/data/historical/` — never pushed to GitHub (contains personal data).
+Years available: 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025 (no 2020 — Covid).
+One idempotent migration script per year. Running twice must not create duplicates.
 
 ---
 
-## Authentication
+## Data Sources
 
-- **Provider**: Magic link via [Resend](https://resend.com). No passwords.
-- **Strategy**: Database sessions (`Session` table).
-- **Roles**: `USER | ADMIN | SUPERADMIN`. First registered user is auto-promoted to `SUPERADMIN` via the `createUser` event in `auth.ts`.
-- **Config split**: `auth.config.ts` is Edge-safe (no Prisma imports) and used by `middleware.ts`. `auth.ts` has the full config with the Prisma adapter.
-- **Route protection**: `(protected)/layout.tsx` → redirects to `/login`. `admin/layout.tsx` → redirects non-admins to `/leaderboard`. `/demo` is **public** (no auth).
-- **Prisma adapter cast**: `PrismaAdapter(prisma as any) as any` in `auth.ts` — the adapter types lag Prisma 7. This is expected and intentional.
+### KenPom — Verify First
+Make authenticated test API call first session. Document every endpoint before building.
 
----
-
-## Core Domain: Scoring
-
-All scoring logic is in `src/lib/scoring.ts`.
-
+### Silver Bulletin
+Authenticated Substack scraper. Validate column structure on every import.
+Silver Bulletin columns are CUMULATIVE — derive marginals:
 ```
-Score per team:   seed × wins
-PPR (Potential):  seed × max(0, 6 − wins)  — 0 if eliminated
-TPS (Projected):  currentScore + PPR
-Optimal 8:        best possible score achievable by any 8-team combination at the current
-                  game state (greedy: pick teams with highest remaining seed × possible wins,
-                  tie-break by TPS desc)
+P(win R64)   = rd2_win
+P(win R32)   = rd3_win - rd2_win
+P(win S16)   = rd4_win - rd3_win
+P(win E8)    = rd5_win - rd4_win
+P(win F4)    = rd6_win - rd5_win
+P(win Champ) = rd7_win - rd6_win
 ```
 
-- **6 wins** = full run from Round of 64 to Championship.
-- **Round 0 (play-in) wins don't count** toward score — only rounds 1–6.
-- **Bracket-aware PPR** (demo mode): `bracket-ppr.ts` resolves bracket conflicts — two picked teams that share a bracket path can't both win all remaining games. The algorithm caps each team's max reachable round at the earliest conflict point. Used in demo leaderboard, chart projections, and picks tracker.
-- **Optimal 8**: theoretical ceiling — the highest score any 8-team entry could have at any point in the timeline. Shown as a dashed reference line on the leaderboard history chart. Never decreases as the tournament progresses.
-- **Play-in picks**: resolve to the team that wins the play-in game. Until resolved, the slot shows both team names and contributes 0 to scoring.
-- **Leaderboard sort**: Points desc → TPS desc → name asc.
-- **Top 4** on the leaderboard display their charity preference.
-- **Simulator**: applies hypothetical win/elimination overrides client-side — no DB writes.
+### ESPN Unofficial JSON API
+Single poller only. Validate structure on every call. Manual override in admin for every game.
+Round detection: parse `competition.notes[0].headline` (e.g. "Elite Eight - East Regional").
 
 ---
 
-## Picks Rules
+## Key Display Rules
 
-- Each user submits exactly **8 picks** (teams or play-in slots).
-- Deadline controlled by admins in `AppSettings.picksDeadline`. POST/PUT to `/api/picks` returns 400 after deadline.
-- `isPaid = true` must be set by an admin. Paid status is shown on the leaderboard and used for payout logic.
-- `charityPreference` lives on the `Pick` model but is logically per-user. The API sets it on all of a user's picks at once.
+### Multiple Entry Naming
+- Single entry: Ankur Patel
+- Multi with nickname: Arjun (Ankur Patel 2)
+- Multi without nickname: Ankur Patel 2
+- NEVER just "Ankur Patel" for multi-entry
+
+### Copy Rules
+- Never use "March Madness" — currently used in codebase, must be removed
+- Never use "midnight" — deadline is 12:15pm ET
+- Deadline stored UTC, displayed in user's local time with ET shown
+
+### isPaid and Charity
+- Global game is free — no payment at global level
+- isPaid and charity are private league features only
+- Charity: Champion 50%, Runner Up 25%, 3rd 12.5%, 4th 12.5%
 
 ---
 
-## Demo Mode (`/demo`)
+## Bug Reporting
 
-The demo is a **full app mirror** — every page (`/demo/leaderboard`, `/demo/picks`, `/demo/scores`, `/demo/simulator`, `/demo/admin/*`) reuses the exact same real components, driven by a `DemoProvider` context instead of the database/API. No auth required.
+- Prominent button on every page
+- Form: description + auto-captures page URL, timestamp, user info if logged in
+- Triggers immediate email to admin (Sumeet)
+- Admin panel shows all reports with status tracking
+- Mentioned in About page with direct link
 
-### Architecture
+---
+
+## Environments
+
+**Demo Environment:** Already built at `/demo`. Uses 2025 real data, zero auth, zero DB. Keep working. Use for testing new features before they touch live data.
+
+**Admin Sandbox Toggle:** Within live site, admin-only. Simulate results, preview leaderboard. Invisible to players.
+
+---
+
+## Security
+
+- All secrets in environment variables. Never in Git.
+- `.env.example` lists all required variables (no values)
+- Rate limit: max 100 requests/minute per IP
+- Server-side pick validation: max 8, no duplicates, valid teams, before deadline
+- Admin panel: admin flag + re-authentication
+- Super-admins: Sumeet Patel (primary) + brother (secondary)
+- Phone numbers encrypted at rest
+- Profile photos: 5MB limit, resize 400x400px, store on Cloudinary/S3
+- Soft delete: anonymize personal data, retain game history anonymized
+
+---
+
+## Environment Variables Required
 
 ```
-DemoProvider (src/lib/demo-context.tsx)
-  ├── State: selectedYear, gameIndex, isPlaying, currentPersona, demoUserPicks, demoSettings
-  ├── Computed: leaderboardData, scoresData, teamsData, aliveTeams, leaderboardHistory
-  └── Passed as props to real components via demoMode={true}
+DATABASE_URL          # Neon pooler URL
+DIRECT_URL            # Neon direct URL (for migrations)
+AUTH_SECRET           # NextAuth secret (openssl rand -base64 32)
+AUTH_URL              # Base URL (https://slipper8s.com in prod)
+AUTH_RESEND_KEY       # Resend API key
+RESEND_FROM_EMAIL     # e.g. Slipper8s <noreply@slipper8s.com>
+CRON_SECRET           # Bearer token for cron endpoint
+GOOGLE_CLIENT_ID      # Google OAuth (to add)
+GOOGLE_CLIENT_SECRET  # Google OAuth (to add)
+KENPOM_USERNAME       # KenPom credentials (to add)
+KENPOM_PASSWORD       # KenPom credentials (to add)
+SENTRY_DSN            # Sentry error tracking (to add)
+UPSTASH_REDIS_URL     # Leaderboard cache (to add)
+UPSTASH_REDIS_TOKEN   # Leaderboard cache (to add)
+CLOUDINARY_URL        # File storage (to add)
 ```
 
-**`demoMode` prop pattern**: Every shared component accepts `demoMode?: boolean`. When set:
-- Skips API fetches and auto-refresh intervals
-- Syncs data from `initialData`/`initialGames` props via `useEffect` when those props change (i.e., when the timeline advances)
-- Disables submit/save actions that would hit the API (routes them to context callbacks instead)
+---
 
-### Key Files
+## Vercel Setup
 
-| File | Role |
-|---|---|
-| `src/lib/demo-data.ts` | Real 2025 NCAA team data (`winsAtRound[]`, `elimAtRound[]`) + 12 demo users with actual picks |
-| `src/lib/demo-users-2025.ts` | `REAL_2025_USERS` export — actual participant picks for the 2025 tournament |
-| `src/lib/demo-game-sequence.ts` | Derives ~63 individual games from round-level data; computes state at any game index |
-| `src/lib/demo-context.tsx` | `DemoProvider` — all timeline state, computed shapes, fake session, Optimal 8 series |
-| `src/lib/tournament-data.ts` | Year registry; add future years here as new `demo-data-YYYY.ts` modules |
-| `src/app/demo/layout.tsx` | Wraps all demo pages in `DemoProvider` + `DemoControlPanel` + `DemoNavbar` |
-| `src/app/demo/bracket/page.tsx` | Full 64-team bracket page using `TournamentBracket` component |
-| `src/components/demo/demo-control-panel.tsx` | Fixed bottom bar: year selector, persona picker, scrubber, play/pause, speed |
-| `src/components/demo/demo-navbar.tsx` | Pulls fake session from context → renders real `Navbar` with `demoMode` + `linkPrefix="/demo"` |
-| `src/lib/bracket-ppr.ts` | Bracket-aware PPR algorithm — resolves bracket conflicts for accurate TPS |
-| `src/components/picks/quick-pick-generator.tsx` | Auto-pick dialog: Chalk / Balanced / Cinderella / Random strategies |
-| `src/components/picks/bracket-view.tsx` | Interactive NCAA bracket visualization with zoom + conflict warnings |
-| `src/components/picks/picks-tracker.tsx` | 2x2 region grid tracker with seed-tier dots + bracket-aware TPS |
-| `src/components/bracket/advancing-bracket.tsx` | Dual-mode bracket: `picks` (team selection) + `simulator` (cascade game picks) |
-| `src/components/bracket/tournament-bracket.tsx` | Read-only 64-team bracket visualization used on `/demo/bracket` |
-| `src/components/leaderboard/leaderboard-history-chart.tsx` | Recharts line chart: solid score lines + dashed TPS projections + Optimal 8 reference line |
-| `src/components/simulator/simulator-panel.tsx` | Bracket-driven scenario picker with docked leaderboard sidebar |
-
-### Game-by-Game Engine (`demo-game-sequence.ts`)
-
-- `generateDemoGameSequence(teams)` — walks round transitions 1→6, pairs winners/losers using R64 seed matchups and bracket position logic. Produces `DemoGameEvent[]` (~63 entries).
-- `computeStateAtGame(games, idx)` — replays games 0..idx, returns `Map<teamId, {wins, eliminated}>`.
-- `computeLeaderboardAtGame(...)` — produces `LeaderboardEntry[]` (exact type `LeaderboardTable` expects).
-- `computeGamesAsLiveData(...)` — produces `LiveGameData[]` (exact type `ScoresGrid` expects).
-- `computeTeamsForPicks(...)` — produces Prisma `Team`-shaped objects for `PicksForm`.
-- `getRoundBoundaries(games)` — returns round start indices for chart reference lines and jump buttons.
-- `getR64Matchups(teams)` — returns `Map<teamId, { opponentId, opponentName, opponentShortName, opponentSeed }>`. Used by demo picks page to show "vs #X Opponent" on team cards. Accepts a structural type (works with both `DemoTeam[]` and `computeTeamsForPicks` output).
-
-### Leaderboard History Chart (`leaderboard-history-chart.tsx`)
-
-- Recharts `LineChart` with one series per demo user (12 users × 2 = 24 line paths).
-- **Unified view** — no Score/TPS toggle. Solid lines = actual scores, dashed lines = projected TPS on the same graph.
-- **Auto-shows data** up to current `gameIndex`. Solid lines always render from 0 → `gameIndex` automatically as timeline advances.
-- **Dashed TPS projections** from `gameIndex` → end. Seamlessly connect to solid lines at the current position (start from current score at `gameIndex`).
-- **Optimal 8 line**: distinct dashed gray reference line showing the theoretical best possible score. Computed in `DemoProvider` and passed via `leaderboardHistory`. Labeled in the chart legend.
-- **Timeline position marker**: solid orange `ReferenceLine` at `x={gameIndex}` with ▼ indicator.
-- **Draggable cursor**: mouse drag sets `chartCursor` for tooltip exploration only — does NOT mask solid line data.
-- **Bracket-aware TPS**: projection lines use bracket-aware PPR values (from `bracket-ppr.ts`), accounting for bracket conflicts.
-- Round boundaries shown as subtle vertical dashed reference lines.
-- Current persona's line highlighted (2.5px, full opacity vs 1px, 55% for others).
-- Legend with user color swatches + "Projected TPS" dashed indicator + "Optimal 8" dashed gray swatch.
-
-### Quick-Pick Strategies (`quick-pick-generator.tsx`)
-
-Four strategies, each picking 2 teams per region (8 total):
-
-| Strategy | Logic |
-|---|---|
-| **Chalk** | Seeds 1 & 2 from each region |
-| **Balanced Mix** | One team per seed tier (1-4, 5-8, 9-12, 13-16) × 2 regions |
-| **Cinderella** | Seeds 8-12 (upset bait) + one 4-7 seed per region |
-| **Random** | 2 random alive teams per region (time-seeded) |
-
-### Pre-Tournament Picks Experience
-
-The demo picks page (`/demo/picks`) provides full context for team selection when `gameIndex = -1` (pre-tournament):
-
-- **Deadline enforcement tied to timeline**: `deadlinePassed = gameIndex >= 0`. When tournament has started, picks are locked with a "deadline passed" banner. When pre-tournament, form is open.
-- **Scoring explainer**: collapsible card explaining `seed × wins` formula with examples, strategy tips, and max potential (`seed × 6`).
-- **Interactive bracket view**: within the scoring explainer, a full NCAA bracket visualization (`BracketView`) replaces the text matchup list. Teams can be toggled directly from the bracket. Shows conflict warnings when two picked teams share a bracket path.
-- **First-round matchup info on team cards**: each team card shows "vs #X Opponent · Max Xpts" via the optional `matchupInfo` prop on `TeamCard`. Populated via `getR64Matchups()` and passed through `PicksForm`'s optional `matchupInfoMap?: Map<string, string>` prop.
-- **Clear picks button**: next to Auto-pick button. Empties all selections and remounts the form.
-- **Persona-switch fix**: `PicksForm` key includes `currentPersona.userId` to ensure the form remounts when switching personas.
-- **Picks hint in control panel**: when `gameIndex >= 0` and on `/demo/picks`, the control panel shows a hint to scrub left to test picking.
-
-### Bracket View (`bracket-view.tsx`)
-
-Interactive NCAA bracket visualization per region:
-- **Layout**: 4 columns (R64 → R32 → S16 → E8) per region, with CSS flexbox and increasing vertical gaps.
-- **Region tabs**: East / West / South / Midwest with pick count badges per region.
-- **Team cells**: clickable for pick selection, highlighted with `bg-primary/15` when selected.
-- **Conflict detection**: `sharesBracketPath()` checks if two picked teams in the same region would meet. `getMeetingRound()` determines which round they collide. Conflict warnings shown above bracket (e.g., "#1 vs #5 meet in S16").
-- **Zoom controls**: ZoomIn / ZoomOut / Reset buttons controlling `transform: scale(zoomLevel)`.
-- **Imports `seedToSlot()`** from `bracket-ppr.ts` for bracket positioning.
-
-### Enhanced Picks Tracker (`picks-tracker.tsx`)
-
-Replaces the simple 8-dot row in the PicksForm sticky bar when `enableViewModes` is true:
-- **2x2 region grid**: East/West on top row, South/Midwest on bottom, matching NCAA bracket orientation.
-- **Seed-tier colored dots**: primary (seeds 1-4), blue (5-8), emerald (9-12), purple (13-16).
-- **Region counters**: "E:2 W:1 S:3 MW:2" labels in each quadrant.
-- **Bracket-aware starting TPS**: shows `Max TPS: X` computed via `computeBracketAwarePPR` with all selected teams at 0 wins. Displays "(conflict)" warning when bracket conflicts reduce TPS below naive calculation.
-- **Exports `SEED_TIERS`** constant used by picks-form's "By Seed" view mode.
-
-### View Modes (`picks-form.tsx`)
-
-When `enableViewModes` prop is true (demo mode only):
-- **By Region** (default): existing 4-tab layout with region pick counts.
-- **All Teams**: single grid showing all 64 teams sorted by seed.
-- **By Seed**: grouped into 4 tiers — Elite (1-4), Strong (5-8), Mid (9-12), Longshot (13-16). Each tier has a colored header with count badge.
-
-### Seed-Tier Color Scheme
-
-Consistent color scheme used across bracket-view, picks-tracker, team-card, and picks-form:
-
-| Tier | Seeds | Dot Color | Badge Color |
-|------|-------|-----------|-------------|
-| Elite | 1-4 | `bg-primary` | `bg-primary/15 text-primary/80` |
-| Strong | 5-8 | `bg-blue-400` | `bg-blue-400/15 text-blue-400/80` |
-| Mid | 9-12 | `bg-emerald-400` | `bg-emerald-400/15 text-emerald-400/80` |
-| Longshot | 13-16 | `bg-purple-400` | `bg-purple-400/15 text-purple-400/80` |
-
-Team cards (`team-card.tsx`) use tier colors on the seed badge when not selected.
-
-### Tournament Bracket Page (`/demo/bracket`)
-
-- Uses `TournamentBracket` component to render all 64 teams across 4 regions and 6 rounds.
-- Updates automatically as the demo timeline advances — teams are colored/faded based on current `teamState` (eliminated vs alive).
-- Winners of each game shown connected by SVG connector lines.
-- Accessible from the Demo Navbar under the "Bracket" link.
-
-### Simulator with Docked Leaderboard (`simulator-panel.tsx`)
-
-- The simulator now uses `AdvancingBracket` in `mode="simulator"` for game selection.
-- **Cascade logic**: picking a winner in an earlier game automatically cascades that team into subsequent rounds as the expected participant (shown as TBD if no pick yet).
-- **Docked leaderboard sidebar**: the right side of the page shows a live-updating leaderboard sorted by simulated score (Points desc, TPS desc). Updates on every game pick change.
-
-### Advancing Bracket — Dual Mode (`advancing-bracket.tsx`)
-
-Single component serving two contexts:
-
-| Mode | Props Used | Behavior |
-|------|-----------|----------|
-| `picks` | `selectedTeamIds`, `onToggleTeam`, `disabled` | Pre-tournament team selection; highlights picked teams |
-| `simulator` | `gamePicks`, `onPickGame`, `gameIndex` | Click matchups to pick winners; cascades forward through bracket |
-
-**Cascade algorithm** (simulator mode):
-1. For each game, derive participants from prior game results in the same bracket subtree.
-2. If a prior game is locked (past `gameIndex`), the actual winner feeds forward.
-3. If a prior game is unlocked and the user picked a winner, that pick feeds forward as the expected participant.
-4. If no pick exists, the next round slot shows "TBD".
-5. This cascades from R64 all the way to the Championship.
-
-### Bracket-Aware PPR (`bracket-ppr.ts`)
-
-The naive PPR formula (`seed × (6 - wins)`) ignores bracket conflicts — two picked teams in the same region can't both win all remaining games. The bracket-aware algorithm resolves this:
-
-**Algorithm** (greedy bottom-up):
-1. Map each alive picked team to its bracket slot via `seedToSlot(seed)` (8 slots per region from R64 seed matchups).
-2. Group by region. Walk merge levels R32 → S16 → E8:
-   - At each merge, if both halves contain picked alive teams, the team with higher `seed × remaining_rounds` advances; the other's max reachable round is capped.
-3. Cross-region: apply same collision logic for F4 (East vs West, South vs Midwest) and Championship.
-4. Per-team PPR = `seed × max(0, maxReachableRound - currentWins)`.
-
-**Exports**:
-- `computeBracketAwarePPR(pickedTeamIds, teamInfoMap)` → `{ totalPPR, perTeam: Map<string, number> }`
-- `seedToSlot(seed)` → bracket position 0-7
-- `TeamBracketInfo` type
-
-**Integration**: `computeLeaderboardAtGame()` in `demo-game-sequence.ts` uses bracket-aware PPR instead of naive per-team calculation. This flows into all TPS values, leaderboard sorting, chart projections, and the picks tracker.
-
-### Control Panel
-
-- **Visual identity**: distinctly darker background (`oklch(0.07 0.012 264)`), prominent orange top border (`border-t-2 border-primary/50`), stronger glow. Clearly separated from app content.
-- **DEMO MODE badge**: larger, orange-tinted toggle tab with `glow-orange-sm` utility. Always visible.
-- **DEMO watermark**: subtle `DEMO` badge fixed at `top-[68px] right-4` in demo layout — always visible even when panel is collapsed.
-- **Year selector**: triggers `setSelectedYear()` — resets game index, picks, and persona.
-- **Persona selector**: switches between 12 participant personas + Demo Admin + Super Admin. Switching to admin reveals the Admin nav link.
-- **Timeline scrubber**: drag or click. Round-jump buttons (`⏮ ⏭`) snap to round boundaries.
-- **Play/pause**: auto-advances at 0.5×/1×/2×/4× speed.
-- **Picks hint**: when on `/demo/picks` with `gameIndex >= 0`, shows "Set timeline to Pre-Tournament to test picks".
-
-### Demo Data: Real 2025 Participants
-
-`src/lib/demo-users-2025.ts` contains `REAL_2025_USERS` — the actual picks submitted by the 2025 Super 8s participants. `demo-data.ts` imports this and uses it as the `users` array. This makes the demo accurately reflect real player strategies and results.
-
-- To swap in new participant data, update `demo-users-2025.ts` and ensure all pick team IDs match the team IDs in `demo-data.ts`.
-- The demo users array in `demo-data.ts` must stay in sync with the picks (all `picks[]` values must be valid team IDs).
-
-### Updating for Future Tournaments
-
-1. Create `src/lib/demo-data-YYYY.ts` with `DemoTeam[]` and `DemoUser[]` for the new year.
-2. Create `src/lib/demo-users-YYYY.ts` with `REAL_YYYY_USERS` for real participant picks.
-3. Register it in `src/lib/tournament-data.ts` (`AVAILABLE_YEARS` array + `getTournamentData` switch).
-4. The rest of the engine picks it up automatically.
-
-### Admin Dashboard (`/demo/admin`)
-
-The demo admin dashboard mirrors `src/app/admin/page.tsx`:
-- **Stat grid**: Entries (users with picks), Paid, Total Users, Teams — all computed from `DemoContext`.
-- **Info cards**: Picks Deadline (from `demoSettings`) and Tournament Data (shows game progress from timeline).
-- **Quick nav cards**: links to Users, Settings, Sync.
-
-### Role Editing in Demo Admin
-
-Admin users page supports role editing:
-- `DemoUser` type has optional `role?: "USER" | "ADMIN" | "SUPERADMIN"` field.
-- `updateDemoUser(userId, { role })` in context spreads the role onto the user state.
-- When current persona is SUPERADMIN, `UserTable` shows a role selector (USER ↔ ADMIN) for non-superadmin users.
-
-### shadcn `tooltip` Component
-
-The `@/components/ui/tooltip` component is **not** auto-generated by shadcn — it was hand-created at `src/components/ui/tooltip.tsx` (uses `@radix-ui/react-tooltip` which is already installed). Do not delete it.
+- **Hobby (free):** off-season, 2 crons/day max
+- **Pro ($20/month):** required for `*/5 * * * *` cron during tournament
+- **Upgrade by:** March 16, 2026
+- **Downgrade after:** April 7, 2026
+- Vercel auto-deploys on push to `main` branch
+- Cron config already in `vercel.json` — no changes needed
 
 ---
 
-## ESPN Integration
+## Performance
 
-`src/lib/espn.ts` handles all ESPN communication:
-
-- **`fetchESPNScoreboard()`** — Next.js `revalidate: 60` cache. Used by `/api/scores`.
-- **`syncTournamentData()`** — no-cache fetch, upserts Teams + TournamentGames, updates wins/eliminated, resolves PlayInSlots.
-- **Round detection**: parses `competition.notes[0].headline` (e.g. `"Elite Eight"`).
-- **Cron**: Vercel runs `/api/cron/sync` every 5 minutes (`vercel.json`). Requires `Authorization: Bearer <CRON_SECRET>`.
-- **Manual sync**: admins trigger from `/admin/sync`.
+Client-side polling every 60 seconds (no WebSockets). Leaderboard pagination: 50 per page, own row pinned. Load test: 1,000 simultaneous users before launch.
 
 ---
 
-## UI Conventions
+## Working Effectively in Claude Code
 
-- **Design system**: Dark-first. Background is deep slate (`oklch(0.10 0.008 264)`), primary accent is orange (`oklch(0.72 0.18 42)`). Defined as CSS variables in `globals.css`.
-- **Always use design tokens** — never hardcode Tailwind color classes like `orange-500` or `orange-50`. Use `text-primary`, `bg-primary/10`, `border-primary/40`, etc.
-- **Custom utilities** in `globals.css`:
-  - `.glow-orange` / `.glow-orange-sm` — box shadow glow for CTAs
-  - `.text-gradient-orange` — orange gradient text for hero headings
-  - `.bg-court` — subtle court-texture background pattern
-  - `.rank-badge-gold` / `.rank-badge-silver` / `.rank-badge-bronze` — rank indicator dots
-- **shadcn/ui**: Add new components with `npx shadcn add <component>`. Never hand-edit files in `src/components/ui/`.
-- **Tailwind v4**: No `tailwind.config.js`. Config lives in `postcss.config.mjs`; theme in `globals.css` CSS variables.
-- **`cn()` utility** (`src/lib/utils.ts`): always use for conditional class merging.
-- **Server Components by default**. Add `"use client"` only for event handlers, hooks, or browser APIs.
-- **Toast notifications**: `import { toast } from "sonner"`.
+### Session Structure
+Always start a session with:
+1. "Read CLAUDE.md"
+2. "We are working on [specific feature]"
+3. "The relevant files are [list exact paths]"
+4. "Do not touch anything outside these files unless you tell me first"
+5. "Explain your plan before writing any code"
+
+### File Pointers — Always Be Specific
+Never say "fix the leaderboard." Say "fix the caching in `src/app/api/leaderboard/route.ts`."
+Point to exact file paths to avoid wasting tokens searching the codebase.
+
+### Key File Map (Read Before Touching That Area)
+```
+Scoring logic:        src/lib/scoring.ts
+PPR algorithm:        src/lib/bracket-ppr.ts
+ESPN sync:            src/lib/espn.ts
+Auth:                 src/lib/auth.ts + src/lib/auth.config.ts
+Picks API:            src/app/api/picks/route.ts
+Leaderboard API:      src/app/api/leaderboard/route.ts
+Scores API:           src/app/api/scores/route.ts
+Cron:                 src/app/api/cron/sync/route.ts
+Database schema:      prisma/schema.prisma
+Demo data:            src/lib/demo-data.ts + src/lib/demo-users-2025.ts
+Demo engine:          src/lib/demo-game-sequence.ts
+Demo context:         src/lib/demo-context.tsx
+Picks form:           src/components/picks/picks-form.tsx
+Leaderboard table:    src/components/leaderboard/leaderboard-table.tsx
+Bracket component:    src/components/bracket/advancing-bracket.tsx
+Admin panel:          src/app/admin/
+Global styles:        src/app/globals.css
+Types:                src/types/index.ts
+```
+
+### When to Start a New Thread
+- Switching to a completely different feature area
+- Claude seems to be losing context or repeating itself
+- Something went wrong and you want a clean start
+- A session has gotten very long
+
+### When to Continue the Same Thread
+- Iterating on the same feature
+- Fixing bugs in code just written
+- Small follow-up changes
+
+### If Things Go Wrong
+- Stop Claude immediately — don't let it keep going
+- Start a new thread rather than correcting mid-stream
+- Always ask Claude to explain its plan BEFORE it writes code
+- If the plan sounds wrong, correct it before a single line is written
+
+### Model Choice
+- **Sonnet:** Planning, discussing, spec writing, simple changes, boilerplate
+- **Opus:** Complex algorithmic work, schema design, leaderboard caching, scoring engine
+
+### Be Critical
+Claude Code has a tendency to be agreeable. Push back with:
+- "Is this the right approach or just the easiest one?"
+- "What could go wrong with this?"
+- "Are there any edge cases you haven't handled?"
+- "Is this going to scale to 10,000 users?"
 
 ---
 
-## Key Gotchas
+## Build Strategy — 2025 Data First
 
-- **Prisma client path**: import from `@/generated/prisma`, not `@prisma/client`. The client is generated at a non-default path.
-- **Auth config split**: never import `prisma` in `auth.config.ts` — it runs in the Edge runtime via middleware.
-- **Play-in slots**: identified by `(seed, region)` composite unique key. Seeds 11–16 in each region can have play-in games.
-- **`AppSettings` singleton**: `id` is always the string `"main"`. Use upsert in seeds/settings routes to guarantee it exists.
-- **Content pages at `/[slug]`** are publicly accessible (no auth). This catch-all is at the root app level — be careful adding top-level routes that could conflict.
-- **Leaderboard API** uses `cache: "no-store"` — scores change frequently.
-- **Scores API** uses `revalidate: 60` — ESPN data is cached 60 seconds.
-- **Turbopack module cache**: if a new `src/components/ui/*.tsx` file is added and Turbopack still throws `Module not found`, stop the server, delete `.next/`, and restart. The cache doesn't always pick up newly created files mid-session.
-- **Demo `ScoresGrid`**: must pass `roundNames={ROUND_NAMES}` — it's a required prop. Use the constant defined locally in the demo scores page (or import `ROUND_NAMES` from `src/lib/espn.ts`).
-- **Demo `leaderboardHistory` is precomputed** for all 63 game steps on every render — this is intentional for smooth chart dragging. If adding many more demo users, consider memoizing more aggressively.
+Build and validate ALL features using 2025 historical data BEFORE touching live 2026 data.
+
+**2025 validation checklist:**
+- [ ] All 265 entries display correctly
+- [ ] Optimal 8 = exactly 99 pts: Arkansas(20)+BYU(12)+Ole Miss(12)+Colo.St(12)+McNeese(12)+Drake(11)+Michigan(10)+New Mexico(10)
+- [ ] Champion Jig Samani = 79 pts, efficiency 80% (79/99)
+- [ ] 10-way tie at 62nd-70th handled as T62-T70
+- [ ] Bar chart race animates correctly through all 2025 rounds
+- [ ] Max Score collision detection correct with same-region pick combinations
+- [ ] Expected score correct using Silver Bulletin March 16 2025 file
+- [ ] S-Curve tiebreaker resolves Optimal 8 correctly
+- [ ] Percentile calculations correct across all 6 ranking dimensions
+- [ ] Hall of Champions values match hardcoded data
+- [ ] Team normalization matches teams correctly across all data sources
+
+---
+
+## Pre-Launch Checklist (All Must Pass Before March 14)
+- [ ] SSL on both domains, HTTP redirects to HTTPS
+- [ ] sleeper8s.com redirects to slipper8s.com
+- [ ] DNS propagated
+- [ ] All env vars set in production
+- [ ] Database backup configured and tested
+- [ ] All 2025 validation items pass
+- [ ] Email sending tested (magic link + notifications)
+- [ ] ESPN poller detecting bracket correctly
+- [ ] Manual game result override tested
+- [ ] Admin Excel export tested (manual + automated + final)
+- [ ] Admin panel (Sumeet + brother only)
+- [ ] Terms of Service + Privacy Policy live
+- [ ] Load test passed (1,000 simultaneous users)
+- [ ] robots.txt + sitemap.xml
+- [ ] Open Graph tags verified via WhatsApp link preview test
+- [ ] Sentry receiving test errors
+- [ ] Maintenance mode page working
+- [ ] Percentile calculations verified
+- [ ] Bug reporting button live and admin alert tested
+- [ ] Demo environment live with 2025 data
+- [ ] "March Madness" removed from all copy
+- [ ] Rebranding complete (Super 8s → Slipper8s)
+- [ ] Leaderboard caching verified under load
+- [ ] Vercel Pro plan active
+
+---
+
+## Not in V1
+In-app payments, native apps, "March Madness" usage, SMS notifications, WebSockets, NCAAW bracket, What If bracket (planned V2)
+
+---
+
+## Open Questions
+1. KenPom API scope: verify first session before building
+2. Silver Bulletin scraping: verify authenticated download works before building
+3. Historical player deduplication: some players used different emails across years — need admin merge tool
+4. Notification email volume: Resend free tier is 100/day — may need paid plan during tournament
+5. Google Workspace: set up Sumeet@slipper8s.com and help@slipper8s.com before launch
+
+---
+
+*Slipper8s — Where sleeper picks become glass slippers | slipper8s.com*
