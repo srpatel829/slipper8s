@@ -431,6 +431,183 @@ Players can scan the leaderboard and instantly see what teams people ahead/behin
 
 ---
 
+## Picks View (My Picks Tab)
+
+- **Views:** By Region and By Seed only — All Teams view removed as redundant
+- **Seed group names (exact):**
+  - Seeds 1-4: **Chalk**
+  - Seeds 5-8: **Dark Horses**
+  - Seeds 9-12: **Sleepers**
+  - Seeds 13-16: **Bracket Busters**
+
+---
+
+## Team Display Rules
+
+### Logo Box
+- Team logo displayed prominently
+- **Seed number** shown inside/on the pill
+- **Region badge** in top-left corner of logo box:
+  - S = South, W = West, E = East, MW = Midwest
+  - 4 distinct colors, one per region (colors chosen during design phase)
+- **Eliminated teams:** logo grays out when team is eliminated
+
+---
+
+## Teams Tab
+
+Sortable data table. Default sort: % Selected (high to low). Clicking any column header sorts by that column, click again to reverse.
+
+**Columns (in order):**
+Logo/Seed/Region | Team | Picked (count) | Picked (%) | Status | Wins | Games Left | Score | Max Score | Expected | Next Game | Win Prob
+
+**% Selected calculation:** picks for that team ÷ total entries × 100. Each team's % is independent — all teams combined will exceed 100% since each player picks 8 teams. No footnote needed.
+
+**Status:** Alive or Eliminated. Eliminated teams' logos grayed out.
+
+---
+
+## Score History Chart
+
+### Default Lines (5 lines when tournament complete, 4 during)
+
+**During tournament:**
+1. **Optimal 8 (Rolling)** — best possible picks using only results known so far. Dashed or visually distinct. Labeled "Optimal 8 (Rolling)"
+2. **[Name] (Leader)** — current best human player by name
+3. **[Your name]** — logged in player
+4. **[Name] (Median)** — player sitting at exact middle of leaderboard by name
+
+**After tournament completes — adds 5th line:**
+5. **Optimal 8 (Hindsight)** — true best 8 picks knowing all final results
+
+Footnote on historical years: "Rolling Optimal 8 shows the best possible score using only results known at each point. Hindsight Optimal 8 shows the true best picks given all final results."
+
+If logged-in player IS the leader or median, show 3 or 4 lines — never duplicate.
+
+### X-Axis — 10 Fixed Checkpoints
+```
+Round of 64 Day 1
+Round of 64 Day 2
+Round of 32 Day 1
+Round of 32 Day 2
+Sweet 16 Day 1
+Sweet 16 Day 2
+Elite 8 Day 1
+Elite 8 Day 2
+Final Four
+National Championship
+```
+Each checkpoint only appears when ALL games in that session are final.
+
+### Player Filter
+Add any additional players on top of the 4-5 defaults.
+
+### Dimension Super-Filter
+Global | By State | By Country | By Conference | By Gender | Private League
+Leader and Median recalculate relative to selected dimension.
+
+### Leader/Median Toggle (two modes)
+- **Option 2 (default):** "Current" — shows how today's leader/median scored throughout the tournament
+- **Option 1:** "Historical" — shows who was actually leading/at median after each round
+Brief explanation shown when toggling. Option 2 is default.
+
+### Optimal 8 Technical Note — FLAG FOR CLAUDE CODE
+Rolling Optimal 8 recalculates after every game goes final. Must be stored as a snapshot at each checkpoint — not recalculated retroactively. Both Rolling and Hindsight Optimal 8 snapshots must be persisted in DB at each checkpoint. These are different calculations — build and validate separately.
+
+---
+
+## "No Response" Handling for Optional Profile Fields
+
+Players who don't fill in optional fields (country, state, gender, favorite team/conference) are NOT excluded from the app. Each dimension has a "No Response" bucket:
+
+- Country dropdown includes "No Response" as a selectable option
+- State dropdown includes "No Response"
+- Conference filter includes "No Response"
+- Gender filter includes "No Response"
+- Each "No Response" is dimension-specific and independent
+
+**Stats page headline numbers** (e.g. "47 countries participating") exclude No Response — only count actual responses.
+
+**Leaderboard and chart:** Players with No Response appear in Global view always. They appear in dimension-specific views only if they provided that data, OR if viewing the "No Response" filter for that dimension.
+
+---
+
+## Simulator
+
+### Default View
+- Actual results shown for completed games (locked, cannot change)
+- Future games: blank for manual exploration
+
+### For Players Who Submitted a Pre-Tournament Bracket
+- Actual results for completed games (locked)
+- Their bracket picks pre-loaded for future games where their pick is still alive
+- Where their pick was eliminated: actual winner fills that slot as default
+- **Rule:** Follow the TEAM not the path — if player picked Texas A&M to advance through a slot where their earlier pick was eliminated, Texas A&M still loads until they are actually eliminated
+- Result: No blanks ever for players who submitted a bracket — always a complete picture
+- Players can change any future slot to explore "what if" scenarios
+
+### Pre-Tournament Bracket
+- Optional submission before tournament starts only
+- Cannot submit or modify once tournament begins
+- Players who didn't submit see actual results + blanks for future games
+
+### Right Side Panel
+Shows leaderboard panel with dimension selector (Global, Private League, State, etc.) — updates in real time as simulator scenarios change.
+
+### Views Available
+By Region and By Seed (same as My Picks). No "All Teams" view.
+
+---
+
+## Global Timeline Footer
+
+### What It Is
+A global time controller shown as a persistent footer on EVERY page of the app. Controls what time period all data on screen reflects simultaneously — leaderboard, picks, teams, scores, bracket, simulator all sync to selected time position.
+
+### Controls (two only — nothing else)
+1. **Scrubber** — move through time across all game checkpoints
+2. **LIVE button** — snap instantly back to current state
+
+### LIVE Button Behavior
+- At current state: grayed out or shows "LIVE ●" with pulsing red dot
+- When scrubbed back: turns bright/active, one tap returns to current
+- When new results arrive while user is scrubbed back: do NOT auto-advance. User stays where they are until they deliberately tap LIVE.
+
+### Checkpoint Rules — FLAG FOR CLAUDE CODE — COMPLEX FEATURE
+- Individual game goes final → creates a game-level checkpoint (63 total possible)
+- All games in a session complete → session checkpoint marker appears (up to 10)
+- In-progress games → NO checkpoint, NO scoring updates, wait for final
+- Expected scores update only when games are final, not during live play
+- Timeline scrubber can only go up to current moment — cannot scrub into future
+
+### Historical vs Live
+- Historical (2017-2025): all results hardcoded, timeline plays back fully — straightforward
+- Live (2026): has three simultaneous states — past (locked), in-progress (no checkpoint yet), future (empty). This is significantly more complex.
+- **Recommendation to Claude Code:** Build and fully validate historical playback before attempting live 2026 version. Patterns are the same but live adds real-time state management complexity.
+
+### Architecture Notes — FLAG FOR CLAUDE CODE
+1. "Current timeline position" must be global state — every component reads from it
+2. Every data query must be time-aware: "give me leaderboard as of game X" not just "give me current"
+3. Past positions read from score snapshots in DB; current position reads live data
+4. Session checkpoint only triggers when LAST game of that session finalizes
+5. No perspective switching on timeline — players always see their own view. Timeline only controls time, not whose perspective.
+6. Dimension filters (global, state, etc.) stay on their respective pages — NOT on the timeline footer
+
+### What the Demo Has That We Are NOT Keeping
+- Extra filtering on the timeline footer
+- Ability to view from another player's perspective
+- Multiple color scheme options (blue vs orange) — we use ONE color scheme in light and dark mode only
+
+---
+
+## Light/Dark Mode
+- Offer light mode and dark mode toggle
+- ONE color scheme only — light and dark versions of the same Slipper8s palette
+- No alternative color scheme options
+- Color scheme to be defined during design phase in Claude Code
+
+---
+
 ## Pre-Launch Checklist Additions (March 16)
 - [ ] SSL on both domains, HTTP redirects to HTTPS
 - [ ] sleeper8s.com redirects to slipper8s.com
