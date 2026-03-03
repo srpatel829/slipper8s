@@ -6,332 +6,219 @@
 
 ---
 
+## ⚠️ CRITICAL REMINDERS — DO BEFORE LAUNCH
+
+**Remind user to ask "what do we still need to do before going live?" before each milestone.**
+
+1. **Upgrade Vercel to Pro** ($20/mo) by March 16 — required for 5-min cron. Then change `vercel.json` cron back from `"0 12 * * *"` to `"*/5 * * * *"`. Downgrade back to Hobby after April 6.
+2. **Replace AUTH_SECRET** with real secure value — run `openssl rand -base64 32`, update in both `.env` locally AND Vercel Environment Variables. Current placeholder is `slipper8s-secret-2026-replace-this-later`.
+3. **Add CRON_SECRET** — generate with `openssl rand -base64 32`, add to both `.env` and Vercel env vars.
+4. **Add AUTH_URL** — set to `https://slipper8s.vercel.app` in Vercel env vars (required for magic links to work on production domain).
+5. **Add RESEND_FROM_EMAIL** — set sending email address in Vercel env vars.
+6. **Set up Upstash Redis** — leaderboard caching is NOT implemented yet, critical for launch.
+7. **Run db:seed** — seed AppSettings singleton after migration.
+8. **DNS** — point slipper8s.com to Vercel by March 10 (48hr propagation).
+9. **Verify Resend domain** — magic links won't deliver without verified sending domain.
+
+---
+
 ## What We Are Building
 
 Slipper8s (slipper8s.com) is a free college basketball tournament prediction game. Players pick 8 teams. Scoring = seed x wins. Highest total wins. 10-year history (265 players in 2025). Moving from Google Forms/Sheets to a proper web app for 2026.
-
-We are building on top of an existing Next.js codebase (originally called "Super 8s") built by Sumeet's brother. Do not start from scratch. Read the existing code before proposing changes.
 
 ---
 
 ## First Thing Every Session
 
-1. Read this file completely
-2. Read the specific files relevant to today's task (listed below in File Map)
+1. Read this file
+2. Check what was built last session (review /server, /client, recent git commits)
 3. Tell the user your plan before writing any code
-4. Do not assume — verify existing code structure before proposing changes
-5. Be honest and critical — do not be a cheerleader. If something is wrong or risky, say so.
+4. Do not assume — verify data source structures before building against them
 
 ---
 
-## Key Deadlines
+## Tech Stack (Actual — forked from rrpatel2009/super-8s)
 
-- **March 14, 2026** — Site goes live after bracket announced on Selection Sunday
-- **March 19, 2026 at 12:15pm ET** — Entry deadline (server-side UTC, millisecond precision)
-- **April 7, 2026** — Tournament ends
-
----
-
-## Tech Stack (Actual — Do Not Deviate)
-
-- **Framework:** Next.js 16 App Router (monorepo — FE + BE together)
-- **Language:** TypeScript
-- **Frontend:** React 19, Tailwind v4, shadcn/ui
-- **ORM:** Prisma 7 with @prisma/adapter-neon
-- **Database:** Neon PostgreSQL (serverless, free tier, auto-pauses off-season)
-- **Auth:** NextAuth v5 — magic link via Resend (primary), Google OAuth (to add)
-- **Email (auth):** Resend — magic links only
-- **Email (notifications):** TBD — Resend free tier is 100 emails/day, may need upgrade for tournament notifications
-- **Hosting:** Vercel (Hobby free tier off-season, Pro $20/month during tournament)
-- **Cron:** Vercel cron (`*/5 * * * *`) — requires Vercel Pro plan
-- **Error tracking:** Sentry (to add)
-- **File storage:** Cloudinary or AWS S3 (to add — not yet implemented)
-- **Cache:** Upstash Redis / Vercel KV (to add — critical for leaderboard)
-- **Prisma client path:** `src/generated/prisma` — always import from `@/generated/prisma`, never `@prisma/client`
+- **Frontend + Backend:** Next.js 15 (App Router, RSC + API routes), deployed on Vercel
+- **Database:** Neon PostgreSQL (serverless, auto-pauses off-season) via Prisma 7
+- **Cache:** Upstash Redis or Vercel KV — NOT YET IMPLEMENTED, must add before launch
+- **Email:** Resend (magic links only so far) — no SendGrid, no MJML templates yet
+- **Auth:** NextAuth v5 magic links only — NO Google OAuth yet
+- **File storage:** Not yet implemented — profile photos deferred
+- **Error tracking:** Sentry — NOT YET INTEGRATED
+- **SMS:** Phone number stored as optional field — NO SMS in 2026, email only
+- **Repo:** github.com/srpatel829/slipper8s (forked from rrpatel2009/super-8s)
+- **Live URL:** slipper8s.vercel.app
 
 ---
 
-## Terminology — Critical
+## Build Strategy — 2025 Data First, Always
 
-His codebase uses different terms than our spec. Always use our spec terms in new code, UI, and documentation. When reading his existing code:
+Do not touch live 2026 data until every 2025 validation item passes.
 
-| His term | Our term | Meaning |
-|---|---|---|
-| TPS (Total Projected Score) | Max Score | Score + PPR |
-| PPR (Potential Points Remaining) | PPR | Same — keep this term |
-| Points / currentScore | Score | Actual points earned |
+Files in `/data/historical/`:
+- `Super_8s_2025.xlsx` — 265 entries, primary validation source
+- `Sbcb_Mens_Odds_March_16_2025.xlsx` — Silver Bulletin pre-tournament probabilities
+- `Sbcb_Mens_Odds_April_6_2025.xlsx` — Silver Bulletin final state
+- Additional historical files 2019-2024 for player profiles and Hall of Champions
 
-**Never introduce TPS into new code or UI. Use Score, PPR, Max Score exclusively.**
+**2025 validation checklist — every item must pass before 2026:**
+- [ ] All 265 entries display correctly
+- [ ] Optimal 8 = exactly 99 pts: Arkansas(20)+BYU(12)+Ole Miss(12)+Colo.St(12)+McNeese(12)+Drake(11)+Michigan(10)+New Mexico(10)
+- [ ] Champion Jig Samani = 79 pts, efficiency 80% (79/99)
+- [ ] 10-way tie at 62nd-70th handled as T62-T70
+- [ ] Bar chart race animates correctly through all 2025 rounds
+- [ ] Max Possible Score collision detection correct with same-region pick combinations
+- [ ] Expected score correct using Silver Bulletin March 16 2025 file (marginal probabilities, not cumulative)
+- [ ] S-Curve tiebreaker resolves Optimal 8 correctly
+- [ ] Percentile calculations correct across all 6 ranking dimensions
+- [ ] Hall of Champions values match hardcoded data
+- [ ] Team normalization matches teams correctly across all data sources
 
 ---
 
-## Scoring Definitions — Three-Term System (Use Everywhere)
+## Player Registration & Profile Fields
 
-- **Score** — actual points earned to date. `seed × wins` for each of the player's 8 teams. Based entirely on real game results. Immutable once a game is final.
-- **PPR (Potential Points Remaining)** — maximum additional points a player could still earn. Forward-looking only. Uses bracket-path collision analysis. Never uses naive `seed × remaining games`.
-- **Max Score** — `Score + PPR`. The ceiling a player could reach if everything goes their way.
+### Required at Registration (4 fields — no more)
+1. **First name**
+2. **Last name**
+3. **Email** (used for magic link login — never shown publicly)
+4. **Username** — auto-suggested default (e.g. `SheelP` from name), player may override once at registration only. Set once, never changeable after. Unique enforced. 4-20 chars, letters/numbers/underscores only. Filtered through profanity blocklist (`bad-words` library). Admin can rename any username if something slips through.
 
-Do not use "Maximum Possible Score," "Max Potential Score," "TPS," or any other variants anywhere in new code, UI, or documentation.
+### Optional Fields (shown with explanation of why we're asking)
+5. **Favorite team** → *"See how you rank among fans of your team and conference"* — conference auto-assigned from team selection (team-to-conference mapping table in DB, season-specific). If not filled: excluded from fan/conference leaderboard tabs.
+6. **Country** → *"See how you rank among players in your country"* — if not filled: excluded from country leaderboard tab, appears in global only.
+7. **State** → *"See how you rank among players in your state"* — only shown if Country = USA. If not filled: excluded from state leaderboard tab.
+8. **Gender** → *"See how you rank among players of your gender"* — if not filled: excluded from gender leaderboard tab.
+9. **Profile photo** → *"Put a face to your name on the leaderboard"* — 5MB limit, resized to 400x400px server-side, stored on Cloudinary/S3. If not filled: default avatar shown.
+10. **Date of birth** → *"May be required for future prize verification (age 18+)"* — optional, stored securely, not displayed publicly.
+11. **Phone number** → *"For future score update notifications via text (coming soon)"* — optional, encrypted at rest, not used for any functionality in 2026.
+
+### Username Rules (summary)
+- Auto-suggested at registration, player can override
+- Set ONCE — no changes after registration complete
+- Unique across all players — system rejects duplicates in real time
+- Profanity filtered automatically
+- Admin retains ability to rename any username via admin panel
+- Displayed on leaderboard as secondary identifier alongside real name
 
 ---
 
 ## Non-Negotiable Architectural Rules
 
-### 0. Three-Layer Separation
-Maintain logical separation even within the Next.js monorepo:
-- **Frontend (React Client Components):** UI only. No business logic. No direct DB calls.
-- **Backend (API Routes + Server Components):** All calculations, ESPN polling, score recalculation.
-- **Data Layer (Prisma + Neon):** Storage only. No business logic.
-
-Server Components calling Prisma directly is acceptable (idiomatic Next.js App Router). Client Components must never import Prisma or call DB directly — API routes only.
-
-### 1. Leaderboard Caching — #1 Priority Fix
-**This is the most critical architectural gap in the current codebase.**
-The current leaderboard uses `cache: "no-store"` and queries the database on every user page load. This will not scale.
-
-Fix: Write computed leaderboard JSON to Upstash Redis/Vercel KV on every cron tick. Serve from cache only. Invalidate only when a game result changes scores. 50,000 users refreshing = zero database queries between game results.
+### 1. Leaderboard Caching
+Never query the database on a user page load for leaderboard data. Serve from cache only. Cache invalidates ONLY when a game result changes scores. 50,000 users refreshing = zero database queries between game results.
 
 ### 2. Single Internal Poller, No User-Triggered External API Calls
-One background service polls ESPN on schedule via Vercel cron. User requests never trigger an ESPN API call.
+One background service polls ESPN on schedule. User requests never trigger an ESPN API call.
 ```
 No games today:               every 2-3 hours
 Games scheduled, not started: every 5 minutes
 Game in progress:             every 60 seconds
 All today's games complete:   every 2-3 hours
-Tournament complete:          stop
+Tournament complete:          stop until next season
 ```
-Current cron is fixed at every 5 minutes — update to dynamic frequency.
 
 ### 3. Completed Games Are Immutable
-Once `status = FINAL`, never re-fetch. Historical data (2015-2025) hardcoded — never queries any external API.
+Once is_complete = true, never re-fetch. Historical data (2015-2025) hardcoded — never queries any external API.
 
 ### 4. Score Recalculation Is Sequential, Never Parallel
-Queue all recalculations in order:
-1. Save game result (status = FINAL)
+Queue all recalculations. Correct order every time:
+1. Save game result (is_complete = true)
 2. Update team wins
 3. Recalculate all entry scores
-4. Recalculate PPR / Max Score
+4. Recalculate max possible scores (batch job, async)
 5. Recalculate Optimal 8
 6. Recalculate efficiency %
-7. Update rankings AND percentiles
-8. Save score snapshots (BEFORE invalidating cache)
+7. Update rankings AND percentiles for all 6 dimensions
+8. Save score snapshots including rank and percentile (BEFORE invalidating cache)
 9. Invalidate leaderboard cache
 10. Notify affected players
 
 If any step fails, roll back to last good snapshot state.
 
 ### 5. Validate All External API Responses
-Alert admin if ESPN response structure changes. Never silently ingest malformed data.
+Alert admin if ESPN response structure changes. Alert if Silver Bulletin Excel column structure changes. Never silently ingest malformed data.
 
 ### 6. Draft Picks Saved Server-Side
-Bracket picker state saves to database as player makes picks. Not just on final submit.
+Bracket picker state saves to database as player makes picks. Not just on final submit. Survives session expiry, tab close, phone calls.
 
 ### 7. Deadline Is Server-Side UTC Only
-Stored and enforced in UTC. **Deadline: March 19, 2026 at 12:15pm ET.**
-Server timestamp is authoritative. In-flight submissions after deadline rejected.
+Stored and enforced in UTC. Server timestamp is authoritative. In-flight submissions after deadline rejected. Millisecond precision. Deadline date changes each year — confirm exact time before building countdown.
 
 ### 8. Season-Specific Data Structures
-Never hardcode the bracket. Year references are variables, not hardcoded values.
-
-### 9. Manual Game Result Override
-Admin panel must allow manual entry of game results for any game. Overrides ESPN or fills in if ESPN fails. Same recalculation queue fires either way.
-
-### 10. Pre-Deadline Information Fairness
-No player should gain an informational advantage based on when they submit.
-
-**Before deadline — show only:**
-- Universal information identical for every player
-- Objective external data (team stats, probabilities, historical results)
-- Information about the player's own picks only
-
-**After deadline — unlock:**
-- % of field who picked each team
-- Most/least popular picks
-- Seed distribution across all entries
-- Archetype distribution across all players
-- Stats page
-- Popularity view on team browser
-
-A player's own archetype may be shown on their confirmation screen before deadline. Never show how many others share that archetype until after deadline.
-
-Apply this rule proactively — flag anything that could give timing-based information advantage.
+Bracket, seeds, conference mappings, S-Curve rankings are all season-specific. Never hardcode the bracket. Year references are variables, not hardcoded values.
 
 ---
 
-## Admin Export — The Failsafe (Build First)
+## Scoring Rules
 
-This is the most critical feature. Build it first. Test it most thoroughly. Must work even if everything else is broken. This is the safety net that allows the game to be run manually via Google Sheets if the app has issues.
+**Basic score:** sum of (seed x wins) for each of the player's 8 teams.
 
-**Export contains:** player name, email, submission timestamp, last-edited timestamp, 8 picks (team names + seeds)
+**Play-in games:** no points. Player picks the slot. Display as "11) TEX/XAV (Midwest)" before play-in resolves. Auto-update to winning team after. Seed value unchanged.
 
-**Schedule:**
-- Manual: anytime, one click from admin panel
-- Automated: twice daily until deadline
-- Final: automatic at 12:15pm ET March 19th
+### Maximum Possible Score — Bracket-Path Collision Analysis
 
-**Format:** mirrors Google Forms/Sheets export — drop-in replacement for existing manual process
+The naive calculation (seed x remaining games) is WRONG. Never use it.
 
-**Most recent valid submission per player** — reflects final edited state with last-edited timestamp
+**Collision resolution rule:** When two of a player's picks collide, the HIGHER-SEEDED team (larger seed number) survives. Exception: identical seeds at Final Four or Championship — route through either one, math is identical.
 
----
+**Algorithm:**
+1. Map all 8 picks to current bracket positions
+2. Trace each team's forward path through bracket
+3. Identify collision points (where two picks would meet)
+4. At each collision, route through the higher-seeded pick
+5. Check for further downstream collisions for the survivor
+6. Sum optimal-path scores assuming all surviving picks win every remaining game
 
-## What's Already Built (Do Not Rebuild)
+**Unit tests required before implementation:**
+no collisions, one collision, multiple collisions same region, three-way collision, cross-region collision at Final Four, already-resolved collision, all 8 picks eliminated, identical seed collision at Final Four/Championship.
 
-Review these before doing any work in their area:
+Performance: batch job triggered by game results, NOT per-user-request.
 
-- **Bracket-aware PPR algorithm** (`src/lib/bracket-ppr.ts`) — correct, well-tested, keep as-is
-- **Scoring logic** (`src/lib/scoring.ts`) — clean pure functions, extend don't rewrite
-- **ESPN integration** (`src/lib/espn.ts`) — working poller, cron, manual sync
-- **Demo mode** (`/demo`, `src/lib/demo-context.tsx`, `src/lib/demo-game-sequence.ts`) — full app mirror with 2025 real data, game-by-game timeline, bar chart race foundation. This is a major asset — do not break it.
-- **Auth** (`src/lib/auth.ts`, `src/lib/auth.config.ts`) — magic link working
-- **Admin panel basics** — users, settings, sync, CMS
-- **Picks form** with bracket view, conflict detection, view modes
-- **Simulator** with cascade bracket logic
+### Optimal 8
 
----
+Top 8 teams by (wins x seed) at current state.
 
-## What Needs to Be Built or Fixed
+**Tiebreaker:** Use S-Curve ranking to assign positions ordinally where tied teams can be disambiguated (lower S-Curve number = better rank = higher position). For the final remaining slot, if two or more teams are still tied after all other positions are assigned, show them with slashes (e.g. McNeese/Texas). Never show more than 8 positions.
 
-Priority order:
+Example: 4 teams tied for 6th-highest score. S-Curve assigns spots 6 and 7. Remaining 2 teams show as slashes in spot 8.
 
-1. **Leaderboard caching** (Redis/Vercel KV) — architectural fix, do first
-2. **Admin Excel export** (the failsafe)
-3. **Manual game result input** (ESPN failsafe)
-4. **Rebranding** (Super 8s → Slipper8s, remove "March Madness" usage)
-5. **Terminology update** (TPS → Max Score throughout)
-6. **Google OAuth** (add alongside existing magic link)
-7. **Season-aware schema** (Program, TeamSeason, Season, ScoreSnapshot models)
-8. **Player profiles**
-9. **Private leagues**
-10. **Share cards / Open Graph**
-11. **Email notifications** (beyond magic links)
-12. **Tier names + competition ranking**
-13. **Percentile rankings**
-14. **Pre-tournament Expected Score** (KenPom + Silver Bulletin)
-15. **Team name normalization dictionary**
-16. **Historical data migration** (2017-2025 CSV files)
+S-Curve must be ingested before Optimal 8 can run.
 
----
+### Expected Score — CORRECT FORMULA
 
-## Feature Tiers & Build Priority
+Silver Bulletin win probabilities are CUMULATIVE (probability of reaching AT LEAST that round). Derive marginal (per-round) probabilities:
 
-### TIER 1 — Live by March 14th
-- Player registration (magic link + Google OAuth)
-- Entry form + pick submission
-- Draft picks saved server-side as player makes selections
-- Team display with logos, full names, seed colors
-- Team hover/tap cards (full spec below)
-- Pre-tournament Expected Score per team (stored once at bracket announcement)
-- Player archetypes (own confirmation screen only)
-- Multiple pick display views + filters
-- How to Play explanation + worked example
-- 2025 highlights (champion, Optimal 8, bar chart race preview)
-- Private leagues (invite codes, basic league leaderboard)
-- Share cards / Open Graph (pre-deadline version)
-- Email notifications — signup confirmation, pre-deadline reminders (24hr, 1hr)
-- Bug reporting button (prominent, admin alert on submission)
-- Admin Excel export (manual + twice daily + final at deadline)
-- Manual game result input (ESPN failsafe)
-- Admin panel (deadline, export, manual sync, user management)
-- Mobile responsiveness (mobile <768px, tablet 768-1199px, desktop 1200px+)
-- SSL, DNS, domain redirects (sleeper8s.com → slipper8s.com)
-- Legal pages (ToS, Privacy Policy)
-- Demo environment (separate deployment, 2025 data — already built)
-- Admin sandbox toggle
-
-### TIER 2 — Target March 14th, acceptable by March 19th
-- ESPN poller dynamic frequency
-- Score, PPR, Max Score calculations (rename from TPS)
-- Leaderboard with caching
-- Live scores / game schedule page
-- Tier names + competition ranking (T4, T4, 6 format)
-- Percentile rankings
-- Stats page (post-deadline only)
-- Popularity view (post-deadline only)
-- Share card — living card with rank
-- Hall of Champions (2025 focus)
-- Email notifications — field is set, game starts
-- Bar chart race (leverage existing demo code)
-- Player profiles with history
-
-### TIER 3 — During tournament (March 19 → April 7)
-- Multi-dimensional rankings (gender, state, school, conference)
-- Live Expected Score (adjusts as results come in)
-- Email notifications — team wins/losses, leaderboard moves
-- KenPom integration (deeper)
-- Post-deadline share cards
-- What If bracket (planned V2)
-
-### TIER 4 — 2027
-- Native mobile app
-- NCAAW bracket
-
----
-
-## Pick UX — Multiple Display Views
-
-**Display Views (toggle):**
-- **Bracket view** — traditional matchups by region (default) — already built
-- **Seed grid view** — teams by seed tier (1-4, 5-8, 9-12, 13-16) vs regions
-- **Conference view** — teams grouped by conference
-- **My Picks view** — shows only the player's 8 selected teams
-- **Expected Score view** — teams ranked by expected score
-- **Popularity view** — POST-DEADLINE ONLY
-
-**Filters (stackable):**
-- By seed range
-- By region
-- By conference
-- Unpicked only
-- By win/loss record threshold
-- Sleeper filter (high expected score relative to seed)
-
----
-
-## Team Hover/Tap Card — Full Spec
-
-- Logo + full name
-- Seed number + seed color
-- Region
-- S-Curve ranking
-- Conference
-- Season record (W-L)
-- KenPom ranking
-- ESPN BPI rating + ranking
-- Pre-tournament Expected Score
-- Cinderella signal (wins as underdog this season)
-- Upset risk (losses as favorite this season)
-- Whether already picked (highlighted)
-- % of field who picked this team — POST-DEADLINE ONLY
-
----
-
-## Color Palette
-
-| Role | Name | Hex |
-|---|---|---|
-| Primary | NCAA Light Blue | #009FDA |
-| Secondary | Dark Blue | #0D3F65 |
-| Tertiary | Orange | #DC6B1F |
-| Text/Dark | Near Black | #0A0A14 |
-| Background | Off White | #F8FAFB |
-
-**Note:** Current codebase uses a dark theme (deep slate background, orange primary). We are switching to the light theme above. Update `globals.css` CSS variables.
-
-### Seed Colors
 ```
-Seeds 1-4:   Red    #C0392B
-Seeds 5-8:   Orange #E67E22
-Seeds 9-12:  Gold   #D4AC0D
-Seeds 13-16: Green  #27AE60
+P(win R64)    = rd2_win
+P(win R32)    = rd3_win - rd2_win
+P(win S16)    = rd4_win - rd3_win
+P(win E8)     = rd5_win - rd4_win
+P(win F4)     = rd6_win - rd5_win
+P(win Champ)  = rd7_win - rd6_win
+Expected wins = sum of all marginal probabilities for REMAINING rounds only
+Expected score for one team = seed × expected wins
+Player's total expected score = sum of expected scores across all 8 picks
 ```
-**Note:** Current codebase uses primary/blue/emerald/purple for seed tiers. Replace with above.
+
+**Example — 1-seed with cumulative probabilities 99%, 85%, 70%, 50%, 35%, 25%:**
+- Marginal wins: 0.99 + 0.85 + 0.70 + 0.50 + 0.35 + 0.25 = 3.64
+- Expected score = 1 × 3.64 = **3.64 pts**
+
+**Example — 12-seed with cumulative probabilities 45%, 20%, 8%, 3%, 1%, 0.5%:**
+- Marginal wins: 0.45 + 0.20 + 0.08 + 0.03 + 0.01 + 0.005 = 0.775
+- Expected score = 12 × 0.775 = **9.3 pts** (higher than the 1-seed — Cinderella value)
+
+**Mid-tournament rule:** Use actual wins for completed rounds + marginal probabilities for remaining rounds only.
+
+Validate against 2025 Silver Bulletin data before launch.
 
 ---
 
 ## Tier Names & Percentile Rankings
 
-### Tier Names (Exact)
+### Tier Names (Exact — Positions 1-68)
 ```
 Champion      = 1st
 Runner Up     = 2nd
@@ -344,23 +231,29 @@ Play In 68    = 65th-68th
 Below 68th    = no tier name — show percentile only
 ```
 
-### Percentile Rankings
-Show for ALL players in all 6 ranking dimensions. Format: "Top 0.1%", "Top 18%", "Top 45%"
-Store both absolute rank and percentile per year in player history.
+### Percentile Rankings — Universal, Not Just Below 68th
+Percentile shown alongside absolute rank everywhere in the app for ALL players regardless of rank. Both metrics are equally important.
+
+Show in: all 6 ranking dimensions on dashboard, leaderboard rows, player profile history per year, share cards, notifications.
+
+Format: "Top 0.1%", "Top 18%", "Top 45%"
+
+Store both absolute rank and percentile per year in player history for cross-year comparison.
 
 ---
 
 ## Data Architecture
 
 ### Team Name Normalization — Build First
-Canonical dictionary before any other data work. ~360 programs, canonical name + all known variants. Every pipeline normalizes through this.
+Build canonical team name dictionary before any other data work. Master list of ~360 programs with canonical name + all known variants. Every ingestion pipeline normalizes through this before storing.
 
 ### Program vs TeamSeason
-- **Program:** Permanent. Florida Gators. Never changes.
-- **TeamSeason:** Seasonal. Florida 2025 = 1-seed, 6 wins, champion. Historical records IMMUTABLE.
+- **Program:** Permanent entity. Florida Gators. Never changes.
+- **TeamSeason:** Seasonal instance. Florida 2025 = 1-seed, 6 wins, champion. Florida 2026 = new record.
 
-### Schema Extensions Needed
-Current schema has a single flat `Team` table. We need to add:
+Historical TeamSeason records (2015-2025) are IMMUTABLE.
+
+### Key Data Model
 ```
 Season:           year, entry_deadline_utc, status, sponsor_details
 Program:          canonical_name, aliases[], current_conference, logo_url
@@ -368,235 +261,187 @@ TeamSeason:       program_id, season_id, seed, region, s_curve_rank,
                   kenpom_rank, bpi_rating, bpi_rank, games_won, eliminated,
                   is_playin_slot, resolved_team_id, record, champion_flags,
                   win_probabilities_by_round[], last_updated
+BracketPosition:  teamseason_id, region, bracket_half, slot — enables collision detection
+ConferenceMapping: program_id, conference, season_id — season-specific
+Player:           canonical_id, email, display_name, gender, country, state,
+                  favorite_program_id, phone_encrypted, date_of_birth (optional),
+                  notifications_enabled, account_status
+Entry:            player_id, season_id, league_id, nickname, picks[8],
+                  playin_resolved_picks[], score, max_possible_score,
+                  expected_score, teams_left, archetype_labels[], draft_in_progress
+League:           name, admin_player_id, invite_code (8+ alphanumeric), season_id
+GameResult:       teamseason_id, round, win_bool, score, game_date_utc, is_complete
+WinProbability:   teamseason_id, round, probability, source, fetched_at
 ScoreSnapshot:    entry_id, game_result_id, score, rank, percentile, saved_at
 LeaderboardCache: league_id, season_id, snapshot_json, last_updated
-WinProbability:   teamseason_id, round, probability, source, fetched_at
 UpsetHistory:     teamseason_id, game_date, opponent, result, was_underdog, score
-ConferenceMapping: program_id, conference, season_id
 ```
 
-Also update Entry model:
-```
-Entry: add ppr, max_score fields (replacing/supplementing current PPR implementation)
-```
-
-### Historical Data
-Files live locally in `/data/historical/` — never pushed to GitHub (contains personal data).
-Years available: 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025 (no 2020 — Covid).
-One idempotent migration script per year. Running twice must not create duplicates.
+### Historical Data Migration Rules
+- One idempotent migration script per year (running twice = no duplicates)
+- Log every anomaly — never silently drop or misassign
+- Lock scripts after successful validated run
+- Expect inconsistencies: different column names, mixed types, missing fields across years
 
 ---
 
 ## Data Sources
 
-### KenPom — Verify First
-Make authenticated test API call first session. Document every endpoint before building.
+### KenPom (kenpom.com + kenpom.substack.com)
+**FIRST SESSION: Make authenticated test API call. Document every available endpoint and field. Design features based on what is actually available — not assumptions.**
+- API ($95/yr) preferred for stability
+- If API does not expose game log data, web scrape kenpom.com with stored credentials
+- Tournament probabilities: Substack post, fetched once at bracket announcement, stored internally, never re-fetched
+- Document which fields come from API vs scraping
 
-### Silver Bulletin
-Authenticated Substack scraper. Validate column structure on every import.
-Silver Bulletin columns are CUMULATIVE — derive marginals:
-```
-P(win R64)   = rd2_win
-P(win R32)   = rd3_win - rd2_win
-P(win S16)   = rd4_win - rd3_win
-P(win E8)    = rd5_win - rd4_win
-P(win F4)    = rd6_win - rd5_win
-P(win Champ) = rd7_win - rd6_win
-```
+### Silver Bulletin (natesilver.net)
+- Authenticated Substack scraper on schedule
+- Downloads Excel file, validates column structure on every import — alert if changed
+- Check every 2 hours during active tournament days, compare file timestamp to last ingested
 
 ### ESPN Unofficial JSON API
-Single poller only. Validate structure on every call. Manual override in admin for every game.
-Round detection: parse `competition.notes[0].headline` (e.g. "Elite Eight - East Regional").
+- Single poller only, never user-triggered
+- Validate response structure on every call, alert on change
+- Document all discovered endpoints (research before coding)
 
 ---
 
 ## Key Display Rules
 
+### Seed Colors — Supplementary, Never Sole Indicator
+```
+Seeds 1-4:   Red    #C0392B
+Seeds 5-8:   Orange #E67E22
+Seeds 9-12:  Gold   #D4AC0D
+Seeds 13-16: Green  #27AE60
+```
+Always show seed number alongside color. Grayscale users must have full info from number alone. Relative units (rem/em). Test at 150% text scale.
+
 ### Multiple Entry Naming
 - Single entry: Ankur Patel
 - Multi with nickname: Arjun (Ankur Patel 2)
 - Multi without nickname: Ankur Patel 2
-- NEVER just "Ankur Patel" for multi-entry
+- NEVER just "Ankur Patel" for a multi-entry
 
+### Tier Names (exact — see above)
 ### Copy Rules
-- Never use "March Madness" — currently used in codebase, must be removed
-- Never use "midnight" — deadline is 12:15pm ET
+- Never use "March Madness" — use "the tournament", "the big dance", "college basketball tournament"
+- Never use "midnight" — deadline is 12pm ET
 - Deadline stored UTC, displayed in user's local time with ET shown
-
-### isPaid and Charity
-- Global game is free — no payment at global level
-- isPaid and charity are private league features only
-- Charity: Champion 50%, Runner Up 25%, 3rd 12.5%, 4th 12.5%
+- Deadline date changes each year — do not hardcode March 19
 
 ---
 
-## Bug Reporting
+## About Page & FAQ Content
 
-- Prominent button on every page
-- Form: description + auto-captures page URL, timestamp, user info if logged in
-- Triggers immediate email to admin (Sumeet)
-- Admin panel shows all reports with status tracking
-- Mentioned in About page with direct link
-
----
-
-## Environments
-
-**Demo Environment:** Already built at `/demo`. Uses 2025 real data, zero auth, zero DB. Keep working. Use for testing new features before they touch live data.
-
-**Admin Sandbox Toggle:** Within live site, admin-only. Simulate results, preview leaderboard. Invisible to players.
+The About section and all FAQ content is approved final copy in Section 11.1 of the spec. Implement exactly as written — do not reword Sumeet's personal voice in the About section.
 
 ---
 
 ## Security
 
-- All secrets in environment variables. Never in Git.
-- `.env.example` lists all required variables (no values)
-- Rate limit: max 100 requests/minute per IP
+- All secrets in environment variables. Never hardcoded. Never in Git.
+- Create .env.example with all required variables listed (no values)
+- Rate limit own API: max 100 requests/minute per IP
 - Server-side pick validation: max 8, no duplicates, valid teams, before deadline
-- Admin panel: admin flag + re-authentication
-- Super-admins: Sumeet Patel (primary) + brother (secondary)
+- Admin panel: admin flag + re-authentication. Not accessible to regular players.
+- Super-admins: Sumeet Patel (primary) + his brother (secondary)
 - Phone numbers encrypted at rest
-- Profile photos: 5MB limit, resize 400x400px, store on Cloudinary/S3
-- Soft delete: anonymize personal data, retain game history anonymized
+- Profile photos: 5MB limit, resize to 400x400px server-side, store on Cloudinary/S3
+- Soft delete: anonymize personal data, retain game history linked to anonymized ID
 
 ---
 
-## Environment Variables Required
+## Share Cards
 
-```
-DATABASE_URL          # Neon pooler URL
-DIRECT_URL            # Neon direct URL (for migrations)
-AUTH_SECRET           # NextAuth secret (openssl rand -base64 32)
-AUTH_URL              # Base URL (https://slipper8s.com in prod)
-AUTH_RESEND_KEY       # Resend API key
-RESEND_FROM_EMAIL     # e.g. Slipper8s <noreply@slipper8s.com>
-CRON_SECRET           # Bearer token for cron endpoint
-GOOGLE_CLIENT_ID      # Google OAuth (to add)
-GOOGLE_CLIENT_SECRET  # Google OAuth (to add)
-KENPOM_USERNAME       # KenPom credentials (to add)
-KENPOM_PASSWORD       # KenPom credentials (to add)
-SENTRY_DSN            # Sentry error tracking (to add)
-UPSTASH_REDIS_URL     # Leaderboard cache (to add)
-UPSTASH_REDIS_TOKEN   # Leaderboard cache (to add)
-CLOUDINARY_URL        # File storage (to add)
-```
-
----
-
-## Vercel Setup
-
-- **Hobby (free):** off-season, 2 crons/day max
-- **Pro ($20/month):** required for `*/5 * * * *` cron during tournament
-- **Upgrade by:** March 16, 2026
-- **Downgrade after:** April 7, 2026
-- Vercel auto-deploys on push to `main` branch
-- Cron config already in `vercel.json` — no changes needed
+Server-rendered images at stable URLs. Open Graph meta tags on all shareable pages. Enables rich previews in WhatsApp, iMessage, Twitter, Slack. Post-deadline living card includes percentile rank alongside absolute rank.
 
 ---
 
 ## Performance
 
-Client-side polling every 60 seconds (no WebSockets). Leaderboard pagination: 50 per page, own row pinned. Load test: 1,000 simultaneous users before launch.
+Client-side polling every 60 seconds. Leaderboard pagination: 50 per page, own row pinned. Load test script in codebase. Simulate 1,000 simultaneous leaderboard requests before launch.
 
 ---
 
-## Working Effectively in Claude Code
+## Not in V1
+In-app payments, native apps, "March Madness" usage, SMS notifications, historical bar chart races 2019-2024, NCAAW bracket, WebSockets, head-to-head comparison.
 
-### Session Structure
-Always start a session with:
-1. "Read CLAUDE.md"
-2. "We are working on [specific feature]"
-3. "The relevant files are [list exact paths]"
-4. "Do not touch anything outside these files unless you tell me first"
-5. "Explain your plan before writing any code"
+---
 
-### File Pointers — Always Be Specific
-Never say "fix the leaderboard." Say "fix the caching in `src/app/api/leaderboard/route.ts`."
-Point to exact file paths to avoid wasting tokens searching the codebase.
+## Open Questions (Pause and Ask Before Building Affected Features)
+1. Exact deadline time: 12:00pm or 12:15pm ET on March 19?
+2. KenPom API scope: verify first session before building any KenPom features
+3. Silver Bulletin scraping: verify authenticated download works before building
+4. Historical data scope: full 2019-2025 player profiles or Hall of Champions summary only?
+5. DNS: point slipper8s.com to hosting by March 10 — DNS takes 48 hours to propagate
 
-### Key File Map (Read Before Touching That Area)
+---
+
+---
+
+## Leaderboard Design
+
+### Tabs
+Global | By State | By Country | By Conference | By Gender | Private Leagues
+
+Each tab uses the same layout, filtered to that dimension.
+
+### Default View (5 columns — compact, scannable)
+
+| Rank | Player | Score | Max Score | Expected | Percentile |
+|---|---|---|---|---|---|
+| 1 | **Sheel Patel** / SheelATL 🎯 | 24 | 67 | 31.4 | Top 4% |
+
+- **Rank** — standard competition ranking (1, 2, T3, T3, 5...)
+- **Player** — real name bold, username + archetype emoji below in smaller text
+- **Score** — actual points earned so far
+- **Max Score** — Score + PPR (ceiling if all remaining picks win every game). PPR not shown as separate column.
+- **Expected** — expected score based on Silver Bulletin marginal probabilities
+- **Percentile** — "Top 4%", "Top 18%" etc.
+
+Archetype emoji shown in player cell. Full archetype name shown only in expanded view. Hover over emoji shows tooltip with archetype name and description.
+
+### Expanded Row (click any row to expand)
+
+Shows 8 team pills in a horizontal strip, ordered LEFT TO RIGHT by remaining expected value (highest first).
+
+**Team pill format:** `#12 McNeese` — seed number + team name in the pill itself. Region shown in hover callout only.
+
+**Pill colors (background color IS the status — no separate icons):**
+- 🟩 **Green** = won most recent round, still alive
+- 🟨 **Yellow** = still alive, has not played in most recent round yet
+- 🟥 **Red** = eliminated (no strikethrough needed — red conveys it)
+
+**Color legend** shown once above the leaderboard (or as a ? tooltip).
+
+**Hover/tap callout on each pill:**
 ```
-Scoring logic:        src/lib/scoring.ts
-PPR algorithm:        src/lib/bracket-ppr.ts
-ESPN sync:            src/lib/espn.ts
-Auth:                 src/lib/auth.ts + src/lib/auth.config.ts
-Picks API:            src/app/api/picks/route.ts
-Leaderboard API:      src/app/api/leaderboard/route.ts
-Scores API:           src/app/api/scores/route.ts
-Cron:                 src/app/api/cron/sync/route.ts
-Database schema:      prisma/schema.prisma
-Demo data:            src/lib/demo-data.ts + src/lib/demo-users-2025.ts
-Demo engine:          src/lib/demo-game-sequence.ts
-Demo context:         src/lib/demo-context.tsx
-Picks form:           src/components/picks/picks-form.tsx
-Leaderboard table:    src/components/leaderboard/leaderboard-table.tsx
-Bracket component:    src/components/bracket/advancing-bracket.tsx
-Admin panel:          src/app/admin/
-Global styles:        src/app/globals.css
-Types:                src/types/index.ts
+#12 McNeese St.  |  South Region
+Wins: 4  |  Pts: 48
+Exp. remaining: 8.3 pts
+Next: vs #1 Duke
+Win probability: 18%
 ```
 
-### When to Start a New Thread
-- Switching to a completely different feature area
-- Claude seems to be losing context or repeating itself
-- Something went wrong and you want a clean start
-- A session has gotten very long
+**Bottom of expanded row:** Score | Max Score | Expected (totals summary)
 
-### When to Continue the Same Thread
-- Iterating on the same feature
-- Fixing bugs in code just written
-- Small follow-up changes
-
-### If Things Go Wrong
-- Stop Claude immediately — don't let it keep going
-- Start a new thread rather than correcting mid-stream
-- Always ask Claude to explain its plan BEFORE it writes code
-- If the plan sounds wrong, correct it before a single line is written
-
-### Model Choice
-- **Sonnet:** Planning, discussing, spec writing, simple changes, boilerplate
-- **Opus:** Complex algorithmic work, schema design, leaderboard caching, scoring engine
-
-### Be Critical
-Claude Code has a tendency to be agreeable. Push back with:
-- "Is this the right approach or just the easiest one?"
-- "What could go wrong with this?"
-- "Are there any edge cases you haven't handled?"
-- "Is this going to scale to 10,000 users?"
+### Strategic Value
+Players can scan the leaderboard and instantly see what teams people ahead/behind them need to win or lose. Ordering by expected value means the most impactful remaining picks are always leftmost.
 
 ---
 
-## Build Strategy — 2025 Data First
-
-Build and validate ALL features using 2025 historical data BEFORE touching live 2026 data.
-
-**2025 validation checklist:**
-- [ ] All 265 entries display correctly
-- [ ] Optimal 8 = exactly 99 pts: Arkansas(20)+BYU(12)+Ole Miss(12)+Colo.St(12)+McNeese(12)+Drake(11)+Michigan(10)+New Mexico(10)
-- [ ] Champion Jig Samani = 79 pts, efficiency 80% (79/99)
-- [ ] 10-way tie at 62nd-70th handled as T62-T70
-- [ ] Bar chart race animates correctly through all 2025 rounds
-- [ ] Max Score collision detection correct with same-region pick combinations
-- [ ] Expected score correct using Silver Bulletin March 16 2025 file
-- [ ] S-Curve tiebreaker resolves Optimal 8 correctly
-- [ ] Percentile calculations correct across all 6 ranking dimensions
-- [ ] Hall of Champions values match hardcoded data
-- [ ] Team normalization matches teams correctly across all data sources
-
----
-
-## Pre-Launch Checklist (All Must Pass Before March 14)
+## Pre-Launch Checklist Additions (March 16)
 - [ ] SSL on both domains, HTTP redirects to HTTPS
 - [ ] sleeper8s.com redirects to slipper8s.com
 - [ ] DNS propagated
 - [ ] All env vars set in production
 - [ ] Database backup configured and tested
 - [ ] All 2025 validation items pass
-- [ ] Email sending tested (magic link + notifications)
+- [ ] Email sending tested
 - [ ] ESPN poller detecting bracket correctly
-- [ ] Manual game result override tested
-- [ ] Admin Excel export tested (manual + automated + final)
+- [ ] KenPom data on team cards
+- [ ] Silver Bulletin integration tested with 2025 files
 - [ ] Admin panel (Sumeet + brother only)
 - [ ] Terms of Service + Privacy Policy live
 - [ ] Load test passed (1,000 simultaneous users)
@@ -604,27 +449,30 @@ Build and validate ALL features using 2025 historical data BEFORE touching live 
 - [ ] Open Graph tags verified via WhatsApp link preview test
 - [ ] Sentry receiving test errors
 - [ ] Maintenance mode page working
-- [ ] Percentile calculations verified
-- [ ] Bug reporting button live and admin alert tested
-- [ ] Demo environment live with 2025 data
-- [ ] "March Madness" removed from all copy
-- [ ] Rebranding complete (Super 8s → Slipper8s)
-- [ ] Leaderboard caching verified under load
-- [ ] Vercel Pro plan active
+- [ ] Percentile calculations verified across all 6 dimensions
 
 ---
 
-## Not in V1
-In-app payments, native apps, "March Madness" usage, SMS notifications, WebSockets, NCAAW bracket, What If bracket (planned V2)
-
----
-
-## Open Questions
-1. KenPom API scope: verify first session before building
-2. Silver Bulletin scraping: verify authenticated download works before building
-3. Historical player deduplication: some players used different emails across years — need admin merge tool
-4. Notification email volume: Resend free tier is 100/day — may need paid plan during tournament
-5. Google Workspace: set up Sumeet@slipper8s.com and help@slipper8s.com before launch
+## File Structure (Actual Next.js Codebase)
+```
+/src/app              Next.js App Router pages and API routes
+/src/app/api          API routes (cron/sync, admin, leaderboard, picks, auth)
+/src/app/(protected)  Authenticated pages (picks, leaderboard, scores, simulator)
+/src/app/admin        Admin panel pages
+/src/app/demo         Demo mode (no auth, full app, in-memory)
+/src/lib              Core logic (scoring.ts, espn.ts, bracket-ppr.ts, prisma.ts)
+/src/components       React components
+/src/generated/prisma Prisma client (generated — never edit directly)
+/prisma               Schema, migrations, seed
+/data/historical      Excel files 2015-2025 (read-only)
+/docs                 Spec, deploy guide, MVP plan
+/public               Static assets
+.env                  Local secrets (never commit)
+.env.example          All required env var names (no values)
+vercel.json           Cron config (currently daily — change to */5 before launch)
+CLAUDE.md             This file
+Slipper8s_Spec_v9.docx  Full product specification
+```
 
 ---
 
