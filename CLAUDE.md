@@ -35,6 +35,10 @@ Slipper8s (slipper8s.com) is a free college basketball tournament prediction gam
 3. Tell the user your plan before writing any code
 4. Do not assume — verify data source structures before building against them
 
+## Commit Rule — Every Session, Every Task
+
+**Always commit working code before starting each new task.** Never begin a new feature or change without first committing whatever is currently working. This ensures the user can always revert to a known good state if something goes wrong. Use a short descriptive commit message for every commit.
+
 ---
 
 ## Tech Stack (Actual — forked from rrpatel2009/super-8s)
