@@ -6,7 +6,7 @@
  * time-slider: index 0 = just after Selection Sunday (0 wins),
  * index 1 = after First Four / Round of 64, etc.
  *
- * Scoring: seed × wins  (same as Super 8s rules)
+ * Scoring: seed × wins  (same as Slipper8s rules)
  */
 
 export interface DemoTeam {

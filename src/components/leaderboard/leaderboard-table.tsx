@@ -22,6 +22,54 @@ const TIER_CLASSES = {
   longshot: { card: "border-purple-400/40", badge: "bg-purple-400/20 text-purple-400/90", quad: "bg-purple-400/70", solid: "bg-purple-500 text-white" },
 }
 
+// ── Seed color helpers per spec ──────────────────────────────────────────────
+
+const SEED_COLORS: Record<string, string> = {
+  "1-4": "#C0392B",   // Red
+  "5-8": "#E67E22",   // Orange
+  "9-12": "#D4AC0D",  // Gold
+  "13-16": "#27AE60", // Green
+}
+
+function getSeedColor(seed: number): string {
+  if (seed <= 4) return SEED_COLORS["1-4"]
+  if (seed <= 8) return SEED_COLORS["5-8"]
+  if (seed <= 12) return SEED_COLORS["9-12"]
+  return SEED_COLORS["13-16"]
+}
+
+// ── Team pill status colors per spec ─────────────────────────────────────────
+// Green = won most recent round, still alive
+// Yellow = still alive, has not played in most recent round yet
+// Red = eliminated
+
+function getTeamPillStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red" {
+  if (pick.eliminated) return "red"
+  if (pick.wins > 0) return "green"
+  return "yellow"
+}
+
+const PILL_STATUS_CLASSES = {
+  green: "bg-green-500/20 border-green-500/40 text-green-300",
+  yellow: "bg-amber-500/20 border-amber-500/40 text-amber-300",
+  red: "bg-red-500/20 border-red-500/40 text-red-400 line-through",
+}
+
+// ── Spec-compliant team pill ─────────────────────────────────────────────────
+
+function TeamPill({ pick }: { pick: ResolvedPickSummary }) {
+  const status = getTeamPillStatus(pick)
+  return (
+    <div
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${PILL_STATUS_CLASSES[status]}`}
+      title={`#${pick.seed} ${pick.name} · ${pick.region ?? ""} · ${pick.wins} wins · ${pick.eliminated ? "Eliminated" : "Alive"}`}
+    >
+      <span className="font-bold">#{pick.seed}</span>
+      <span className="truncate max-w-[4rem]">{pick.shortName}</span>
+    </div>
+  )
+}
+
 // ── Inline logo strip — always visible in the leaderboard row ──────────────
 
 function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?: number }) {
@@ -207,7 +255,7 @@ interface LeaderboardTableProps {
   optimal8?: Optimal8Data
 }
 
-type SortKey = "rank" | "currentScore" | "ppr" | "tps" | "teamsRemaining"
+type SortKey = "rank" | "currentScore" | "ppr" | "tps" | "teamsRemaining" | "percentile"
 type SortDir = "asc" | "desc"
 
 export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8 }: LeaderboardTableProps) {
@@ -301,8 +349,9 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       )}
 
       {/* Column headers */}
-      <div className="hidden sm:grid grid-cols-[2.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 px-4 py-2">
+      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 px-4 py-2">
         <SortBtn col="rank" label="#" />
+        <SortBtn col="percentile" label="%" />
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
         <div className="text-right"><SortBtn col="teamsRemaining" label="Left" /></div>
         <div className="text-right"><SortBtn col="currentScore" label="Pts" /></div>
@@ -339,7 +388,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                 className="w-full text-left"
                 onClick={() => setExpandedId(isExpanded ? null : entry.userId)}
               >
-                <div className="grid grid-cols-[2.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 items-center px-4 py-3">
+                <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 items-center px-4 py-3">
                   {/* Rank */}
                   <div
                     className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}
@@ -347,12 +396,25 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                     #{entry.rank}
                   </div>
 
+                  {/* Percentile */}
+                  <div className="text-center">
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      Top {entry.percentile}%
+                    </span>
+                  </div>
+
                   {/* Name */}
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-sm truncate">{entry.name}</span>
+                      {entry.username && (
+                        <span className="text-[10px] text-muted-foreground">@{entry.username}</span>
+                      )}
                       {isMe && (
                         <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>
+                      )}
+                      {entry.tierName && (
+                        <Badge variant="outline" className="text-[10px] h-4 shrink-0">{entry.tierName}</Badge>
                       )}
                     </div>
                     {entry.charity && (
@@ -408,9 +470,42 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                 </div>
               </button>
 
-              {/* Expanded picks */}
+              {/* Expanded row — team pills + totals */}
               {isExpanded && entry.picks.length > 0 && (
-                <ExpandedPicksGrid picks={entry.picks} />
+                <div className="border-t border-border/50 px-4 py-3 bg-muted/5">
+                  {/* Team pills strip */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {[...entry.picks]
+                      .sort((a, b) => {
+                        // Sort: alive first, then by remaining potential (seed * (6-wins)) desc
+                        if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1
+                        const aPotential = a.eliminated ? 0 : a.seed * (6 - a.wins)
+                        const bPotential = b.eliminated ? 0 : b.seed * (6 - b.wins)
+                        return bPotential - aPotential
+                      })
+                      .map((pick) => (
+                        <TeamPill key={pick.teamId} pick={pick} />
+                      ))
+                    }
+                  </div>
+                  {/* Summary stats */}
+                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
+                    <span>Score: <strong className="text-foreground">{entry.currentScore}</strong></span>
+                    <span>Max Score: <strong className="text-foreground">{entry.tps}</strong></span>
+                    {entry.percentile !== undefined && (
+                      <span>Percentile: <strong className="text-foreground">Top {entry.percentile}%</strong></span>
+                    )}
+                  </div>
+                  {/* Detailed pick cards */}
+                  <details className="mt-2">
+                    <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
+                      Show detailed view
+                    </summary>
+                    <div className="mt-2">
+                      <ExpandedPicksGrid picks={entry.picks} />
+                    </div>
+                  </details>
+                </div>
               )}
             </div>
           )

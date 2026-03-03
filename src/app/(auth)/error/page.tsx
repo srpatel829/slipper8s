@@ -14,7 +14,7 @@ export default function AuthErrorPage({
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-2 text-2xl font-bold">
             <Trophy className="h-7 w-7 text-orange-500" />
-            Super 8s
+            Slipper8s
           </div>
         </div>
 

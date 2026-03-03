@@ -14,16 +14,23 @@ export const authConfig: NextAuthConfig = {
       const pathname = nextUrl.pathname
 
       const isAdminRoute = pathname.startsWith("/admin")
+      const isRegisterRoute = pathname.startsWith("/register")
       const isProtectedRoute =
         pathname.startsWith("/picks") ||
         pathname.startsWith("/leaderboard") ||
         pathname.startsWith("/scores") ||
         pathname.startsWith("/simulator") ||
+        pathname.startsWith("/teams") ||
         isAdminRoute
 
       if (isAdminRoute) {
         const role = (auth?.user as { role?: string } | undefined)?.role
         return role === "ADMIN" || role === "SUPERADMIN"
+      }
+
+      // Allow register page for logged-in users who haven't completed registration
+      if (isRegisterRoute) {
+        return isLoggedIn
       }
 
       if (isProtectedRoute) {

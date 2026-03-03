@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/layout/theme-provider"
+import { SessionProvider } from "@/components/layout/session-provider"
 import "./globals.css"
 
 const geistSans = Geist({
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Super 8s — March Madness Pool",
-  description: "Pick 8 teams, score seed × wins. The ultimate March Madness pool.",
+  title: "Slipper8s — College Basketball Tournament Pool",
+  description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
 }
 
 export default function RootLayout({
@@ -29,10 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background text-foreground`}
       >
-        <ThemeProvider>
-          {children}
-          <Toaster richColors position="bottom-right" />
-        </ThemeProvider>
+        <SessionProvider>
+          <ThemeProvider>
+            {children}
+            <Toaster richColors position="bottom-right" />
+          </ThemeProvider>
+        </SessionProvider>
       </body>
     </html>
   )

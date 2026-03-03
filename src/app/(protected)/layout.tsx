@@ -5,6 +5,7 @@ import { Navbar } from "@/components/layout/navbar"
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session?.user) redirect("/login")
+  if (!session.user.registrationComplete) redirect("/register")
 
   return (
     <div className="min-h-screen flex flex-col bg-background bg-court">

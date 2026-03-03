@@ -66,7 +66,7 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
           <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
             <Trophy className="h-3.5 w-3.5 text-primary-foreground" />
           </div>
-          <span className="font-bold text-base tracking-tight">Super 8s</span>
+          <span className="font-bold text-base tracking-tight">Slipper8s</span>
           {demoMode && (
             <Badge variant="outline" className="text-[10px] h-4 border-primary/40 text-primary">
               Demo
@@ -206,7 +206,7 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
             <SheetContent side="right" className="w-64 p-4">
               <div className="flex items-center gap-2 mb-6">
                 <Trophy className="h-5 w-5 text-primary" />
-                <span className="font-bold">Super 8s</span>
+                <span className="font-bold">Slipper8s</span>
                 {demoMode && (
                   <Badge variant="outline" className="text-[10px] h-4 border-primary/40 text-primary">
                     Demo

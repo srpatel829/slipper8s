@@ -1,5 +1,6 @@
 import NextAuth from "next-auth"
 import Resend from "next-auth/providers/resend"
+import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 import { authConfig } from "@/lib/auth.config"
@@ -13,15 +14,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Resend({
       apiKey: process.env.AUTH_RESEND_KEY,
-      from: process.env.RESEND_FROM_EMAIL ?? "Super 8s <noreply@example.com>",
+      from: process.env.RESEND_FROM_EMAIL ?? "Slipper8s <noreply@example.com>",
+    }),
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     }),
   ],
   callbacks: {
     async session({ session, user }) {
       if (session.user) {
-        session.user.id = user.id
-        session.user.role = (user as { role: Role }).role
-        session.user.isPaid = (user as { isPaid: boolean }).isPaid
+        const dbUser = user as {
+          id: string
+          role: Role
+          isPaid: boolean
+          username?: string | null
+          firstName?: string | null
+          lastName?: string | null
+          registrationComplete: boolean
+        }
+        session.user.id = dbUser.id
+        session.user.role = dbUser.role
+        session.user.isPaid = dbUser.isPaid
+        session.user.username = dbUser.username ?? null
+        session.user.firstName = dbUser.firstName ?? null
+        session.user.lastName = dbUser.lastName ?? null
+        session.user.registrationComplete = dbUser.registrationComplete ?? false
       }
       return session
     },

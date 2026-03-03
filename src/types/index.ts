@@ -12,11 +12,19 @@ declare module "next-auth" {
       email: string
       name?: string | null
       image?: string | null
+      username?: string | null
+      firstName?: string | null
+      lastName?: string | null
+      registrationComplete: boolean
     }
   }
   interface User {
     role: Role
     isPaid: boolean
+    username?: string | null
+    firstName?: string | null
+    lastName?: string | null
+    registrationComplete: boolean
   }
 }
 
@@ -78,13 +86,18 @@ export interface ESPNScoreboardResponse {
 export interface LeaderboardEntry {
   userId: string
   rank: number
+  percentile: number
   name: string
+  username?: string | null
   email: string
   isPaid: boolean
   currentScore: number
   ppr: number
   tps: number
   teamsRemaining: number
+  maxRank?: number | null
+  floorRank?: number | null
+  tierName?: string | null
   charity?: string | null
   picks: ResolvedPickSummary[]
 }

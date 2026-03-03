@@ -248,13 +248,19 @@ export function computeLeaderboardAtGame(
     (a, b) => b.currentScore - a.currentScore || b.tps - a.tps || a.name.localeCompare(b.name)
   )
 
-  return entries.map((e, i) => ({
-    ...e,
-    rank: i + 1,
-    charity: i < 4
-      ? (users.find(u => u.id === e.userId)?.charityPreference ?? null)
-      : null,
-  }))
+  const total = entries.length
+  return entries.map((e, i) => {
+    const rank = i + 1
+    return {
+      ...e,
+      rank,
+      percentile: total > 1 ? Math.round((rank / total) * 1000) / 10 : 0,
+      tierName: rank === 1 ? "Champion" : rank === 2 ? "Runner Up" : rank <= 4 ? "Final 4" : rank <= 8 ? "Elite 8" : rank <= 16 ? "Sweet 16" : rank <= 32 ? "Worthy 32" : rank <= 64 ? "Dancing 64" : rank <= 68 ? "Play In 68" : null,
+      charity: i < 4
+        ? (users.find(u => u.id === e.userId)?.charityPreference ?? null)
+        : null,
+    }
+  })
 }
 
 // ─── LiveGameData Conversion ─────────────────────────────────────────────────

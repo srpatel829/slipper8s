@@ -69,7 +69,7 @@ function buildPickSummary(pick: PickWithRelations): ResolvedPickSummary | null {
   }
 }
 
-export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "rank"> {
+export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "rank" | "percentile" | "tierName"> {
   let currentScore = 0
   let ppr = 0
   let teamsRemaining = 0
@@ -102,6 +102,25 @@ export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "r
   }
 }
 
+// Tier names by rank range (spec: exact positions)
+function getTierName(rank: number): string | null {
+  if (rank === 1) return "Champion"
+  if (rank === 2) return "Runner Up"
+  if (rank >= 3 && rank <= 4) return "Final 4"
+  if (rank >= 5 && rank <= 8) return "Elite 8"
+  if (rank >= 9 && rank <= 16) return "Sweet 16"
+  if (rank >= 17 && rank <= 32) return "Worthy 32"
+  if (rank >= 33 && rank <= 64) return "Dancing 64"
+  if (rank >= 65 && rank <= 68) return "Play In 68"
+  return null
+}
+
+// Percentile: "Top X%" — lower is better
+function computePercentile(rank: number, total: number): number {
+  if (total <= 1) return 0
+  return Math.round((rank / total) * 1000) / 10 // e.g. Top 6.3%
+}
+
 export function computeLeaderboard(users: UserWithPicks[]): LeaderboardEntry[] {
   const scores = users.map((u) => computeUserScore(u))
 
@@ -110,11 +129,18 @@ export function computeLeaderboard(users: UserWithPicks[]): LeaderboardEntry[] {
     (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
   )
 
-  return scores.map((s, i) => ({
-    ...s,
-    rank: i + 1,
-    charity: i < 4 ? (users.find((u) => u.id === s.userId)?.charityPreference ?? null) : null,
-  }))
+  const total = scores.length
+
+  return scores.map((s, i) => {
+    const rank = i + 1
+    return {
+      ...s,
+      rank,
+      percentile: computePercentile(rank, total),
+      tierName: getTierName(rank),
+      charity: i < 4 ? (users.find((u) => u.id === s.userId)?.charityPreference ?? null) : null,
+    }
+  })
 }
 
 // ─── Optimal 8 helper ────────────────────────────────────────────────────────
@@ -224,5 +250,14 @@ export function computeSimulatedLeaderboard(
     (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
   )
 
-  return simulated.map((s, i) => ({ ...s, rank: i + 1 }))
+  const total = simulated.length
+  return simulated.map((s, i) => {
+    const rank = i + 1
+    return {
+      ...s,
+      rank,
+      percentile: computePercentile(rank, total),
+      tierName: getTierName(rank),
+    }
+  })
 }
