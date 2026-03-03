@@ -1,7 +1,7 @@
 # Slipper8s — CLAUDE.md
 ## Working Instructions for Claude Code Sessions
 
-**Full product specification: Slipper8s_Spec_v9.docx — read it before making architectural decisions.**
+**Full product specification: Slipper8s_Spec_v11.docx — read it before making architectural decisions.**
 **This file is the daily brief. The spec is the source of truth.**
 
 ---
@@ -43,7 +43,7 @@ Slipper8s (slipper8s.com) is a free college basketball tournament prediction gam
 - **Database:** Neon PostgreSQL (serverless, auto-pauses off-season) via Prisma 7
 - **Cache:** Upstash Redis or Vercel KV — NOT YET IMPLEMENTED, must add before launch
 - **Email:** Resend (magic links only so far) — no SendGrid, no MJML templates yet
-- **Auth:** NextAuth v5 magic links only — NO Google OAuth yet
+- **Auth:** NextAuth v5 — magic link AND Google OAuth both supported. Both options shown at login and registration.
 - **File storage:** Not yet implemented — profile photos deferred
 - **Error tracking:** Sentry — NOT YET INTEGRATED
 - **SMS:** Phone number stored as optional field — NO SMS in 2026, email only
@@ -112,12 +112,12 @@ Never query the database on a user page load for leaderboard data. Serve from ca
 ### 2. Single Internal Poller, No User-Triggered External API Calls
 One background service polls ESPN on schedule. User requests never trigger an ESPN API call.
 ```
-No games today:               every 2-3 hours
-Games scheduled, not started: every 5 minutes
-Game in progress:             every 60 seconds
-All today's games complete:   every 2-3 hours
-Tournament complete:          stop until next season
+Tournament game days, games in progress:  every 2-3 minutes
+Tournament game days, between games:       every 15-30 minutes
+Non-game days during tournament:           don't poll
+Off-season:                                no polling
 ```
+Store tournament schedule at bracket release. Poller checks schedule before every run.
 
 ### 3. Completed Games Are Immutable
 Once is_complete = true, never re-fetch. Historical data (2015-2025) hardcoded — never queries any external API.
@@ -272,7 +272,8 @@ Entry:            player_id, season_id, league_id, nickname, picks[8],
 League:           name, admin_player_id, invite_code (8+ alphanumeric), season_id
 GameResult:       teamseason_id, round, win_bool, score, game_date_utc, is_complete
 WinProbability:   teamseason_id, round, probability, source, fetched_at
-ScoreSnapshot:    entry_id, game_result_id, score, rank, percentile, saved_at
+ScoreSnapshot:    entry_id, game_result_id, score, rank, percentile, max_rank, floor_rank, saved_at
+CheckpointDimensionSnapshot: checkpoint_id, dimension_type (global/country/state/conference/gender/fan_base/private_league), dimension_value (e.g. "Georgia", "SEC", "Auburn", league_id, or "No Response"), leader_entry_id, median_entry_id, rolling_optimal_8_score, hindsight_optimal_8_score, total_entries_in_dimension
 LeaderboardCache: league_id, season_id, snapshot_json, last_updated
 UpsetHistory:     teamseason_id, game_date, opponent, result, was_underdog, score
 ```
@@ -354,7 +355,29 @@ The About section and all FAQ content is approved final copy in Section 11.1 of 
 
 ## Share Cards
 
-Server-rendered images at stable URLs. Open Graph meta tags on all shareable pages. Enables rich previews in WhatsApp, iMessage, Twitter, Slack. Post-deadline living card includes percentile rank alongside absolute rank.
+Server-rendered images at stable URLs. Open Graph meta tags on all shareable pages. Enables rich previews in WhatsApp, iMessage, Twitter, Slack, Facebook, email, Android texts. All cards use a single format (1080×1080 or 1080×1350) that works across all platforms — one size, no variants needed.
+
+### Pre-Tournament Card (auto-generated on entry confirmation)
+- Slipper8s branding + season year
+- Player name
+- "I'm in for 2026 — join me!" message
+- Join link (general) or private league invite link if applicable
+- **Private league toggle:** Player can turn on/off whether to include private league invite
+- **Multiple leagues:** If player is in multiple leagues, checkbox dropdown to select which to include — capped at 2 leagues max per card
+- If not in any private league: card auto-generates immediately, no options shown
+
+### During/Post Tournament Card (player-generated on demand)
+- Slipper8s branding + season year
+- Player name
+- Global rank + percentile
+- Private league rank (if in a league)
+- Score
+- During tournament: teams still alive count (X/8 alive)
+- Post tournament: final rank + percentile + score
+- Per player, not per entry — if multiple entries, both shown on one card
+
+### Technical Flag for Claude Code
+Share cards generated server-side as images using Satori or html-to-image. Not a launch blocker but must be built before tournament starts since pre-tournament card drives new player recruitment.
 
 ---
 
@@ -387,22 +410,20 @@ Global | By State | By Country | By Conference | By Gender | Private Leagues
 
 Each tab uses the same layout, filtered to that dimension.
 
-### Default View (5 columns — compact, scannable)
+### Default Column Order
+Rank | Percentile | Player | Teams Left | Score | Expected | Max Score | Max Rank
 
-| Rank | Player | Score | Max Score | Expected | Percentile |
-|---|---|---|---|---|---|
-| 1 | **Sheel Patel** / SheelATL 🎯 | 24 | 67 | 31.4 | Top 4% |
+### Default Display View
+- Top 10 rows
+- Visual break (separator)
+- Your entry/entries with rank context (e.g. "#47 of 265") — all your entries shown here
+- Visual break
+- Bottom 2 rows
 
-- **Rank** — standard competition ranking (1, 2, T3, T3, 5...)
-- **Player** — real name bold, username + archetype emoji below in smaller text
-- **Score** — actual points earned so far
-- **Max Score** — Score + PPR (ceiling if all remaining picks win every game). PPR not shown as separate column.
-- **Expected** — expected score based on Silver Bulletin marginal probabilities
-- **Percentile** — "Top 4%", "Top 18%" etc.
-
-Archetype emoji shown in player cell. Full archetype name shown only in expanded view. Hover over emoji shows tooltip with archetype name and description.
+If you're already in top 10 or bottom 2, no duplication. Multiple entries each appear in the middle section.
 
 ### Expanded Row (click any row to expand)
+Shows: Current Rank | Max Rank ↑ | Floor Rank ↓ | 8 team pills
 
 Shows 8 team pills in a horizontal strip, ordered LEFT TO RIGHT by remaining expected value (highest first).
 
@@ -467,7 +488,32 @@ Logo/Seed/Region | Team | Picked (count) | Picked (%) | Status | Wins | Games Le
 
 ---
 
-## Score History Chart
+## Max Rank and Floor Rank
+
+### Max Rank
+Best possible finishing position for an entry, computed via collision-aware implied bracket.
+
+**Process:**
+1. Run collision analysis on entry → produces collision-optimized implied bracket
+2. Score every other player's entry against that specific bracket scenario
+3. Rank all entries under that scenario
+4. Show where this entry would finish
+
+### Floor Rank
+Worst possible finishing position — inverse collision analysis. Lower seed advances just long enough to lose next round, maximizing damage to the entry.
+
+### Display
+- Shown in expanded leaderboard row: Current Rank | Max Rank ↑ | Floor Rank ↓
+- **Mathematically eliminated entries:** Show current rank with 🔒 lock icon in Max Rank column, grayed out. Tooltip: "This entry's final position is locked."
+
+### Technical Flags for Claude Code
+- Both computed at checkpoint time and stored in CheckpointDimensionSnapshot — NEVER calculated on the fly
+- Build Max Rank completely first, then Floor Rank follows same pattern inverted
+- Multiple collisions require evaluating all possible outcomes for global optimum — not resolving one at a time
+
+---
+
+
 
 ### Default Lines (5 lines when tournament complete, 4 during)
 
@@ -648,8 +694,219 @@ A global time controller shown as a persistent footer on EVERY page of the app. 
 .env.example          All required env var names (no values)
 vercel.json           Cron config (currently daily — change to */5 before launch)
 CLAUDE.md             This file
-Slipper8s_Spec_v9.docx  Full product specification
+Slipper8s_Spec_v11.docx  Full product specification
 ```
+
+---
+
+## Email Notifications
+
+### Authentication (always sends, no opt-out)
+- **Magic link login email** — transactional, always sends on login request
+- **Google OAuth** — no email needed, handled by Google
+
+### Mandatory Emails (cannot opt out — bypass notifications_enabled flag entirely)
+In chronological order of when they trigger:
+1. **Welcome** — on first registration
+2. **Bracket announced / entries open** — when ESPN bracket detected and entries unlock. Critical for returning players who don't need to re-register — this is their annual call to action.
+3. **Entry confirmation** — every time picks are saved or changed before deadline (player controls frequency by how often they save)
+4. **Entries locked / tournament is live** — when deadline passes and picks lock server-side
+5. **Final results** — after tournament ends, last checkpoint finalizes
+
+### Optional Emails (default ON, all-or-nothing opt out via notifications_enabled flag)
+In chronological order:
+1. **Entry deadline reminder** — 24 hours before deadline
+2. **Play-in slot resolved** — "Your play-in pick resolved — you have [Team]"
+3. **Daily recap** — one email per game day, triggers automatically when last game of that day goes final. Personalized per player: score, rank, percentile, movement since yesterday, teams remaining.
+
+### Real-Time In-App Flash Notifications (no email — only if app is open)
+Delivered via websockets or Server-Sent Events to active browser sessions only:
+- Your team just won a game
+- Your team just got eliminated
+- You moved up/down X spots (after checkpoint finalizes)
+- **Seed-based upset alert** — triggers when a higher seed number beats a lower seed number (e.g. #12 beats #5). Pure bracket definition, black and white. NOT probability-based upsets.
+
+### Data Each Email Has Access To
+Player name, score, rank, percentile, teams still alive, teams eliminated, rank movement since last checkpoint.
+
+### Technical Flags for Claude Code
+- All emails fully automated — no manual triggers by admin needed
+- Daily recap triggered by last game of day finalizing (last checkpoint of that day)
+- Mandatory emails must send regardless of notifications_enabled flag
+- Real-time flash notifications are a separate technical system (websockets/SSE) — build after core features stable, NOT a launch blocker
+
+---
+
+## Entry Editing Before Deadline
+
+- Players can edit picks anytime before deadline — as many times as they want
+- Entry confirmation email sends on every save (player controls frequency)
+- Players can **delete an entry entirely** before deadline — confirmation warning shown ("This cannot be undone")
+- **No cap on number of entries** per player per season
+- Optional pre-tournament bracket is also editable anytime before deadline
+- All edits lock automatically server-side at deadline (UTC). Server timestamp is authoritative.
+- If deadline passes mid-edit, server rejects the save even if client UI hasn't updated yet
+- Bookmarkable edit link provided in confirmation email
+
+---
+
+## Landing Page
+
+### Above Fold
+- Logo + tagline
+- Countdown timer to entry deadline
+- Dual auth CTAs: "Sign in with Google" button + "Enter your email" magic link input
+- Login button top right for returning players
+
+### Below Fold (in order)
+1. **"See How 2025 Played Out"** — link to full 2025 historical year view (same view as all historical years). Not a separate embedded demo — just a link to the standard historical view already built.
+2. **Live entry counter** — "X entries submitted so far" updates live during registration period. Entry count, not player count (reflects multiple entries).
+3. **3-step how it works** — Pick 8 teams / Score = seed × wins / Highest total wins
+4. **Florida/McNeese worked example** — shows why upsets matter
+5. **Private league callout** — "Playing with friends? Create or join a private league."
+6. **CTA repeats**
+
+### "See How 2025 Played Out" — Behavior by Login State
+- **Not logged in:** Full 2025 historical view (leaderboard, chart, teams, timeline). No personal data. Small prompt: "Register to see your picks in future tournaments."
+- **Logged in, played in 2025:** Full 2025 view WITH personal line on chart, personal row highlighted in leaderboard, personal picks in My Picks tab.
+- **Logged in, did not play in 2025:** Same as not logged in. Small prompt: "You didn't play in 2025 — enter this year for your chance to compete."
+
+### Design Note
+Mobile-first. No separate experience for returning vs new visitors — both see same page. Login button top right serves returning players without requiring different layout.
+
+---
+
+## Mobile-First Design
+
+### Philosophy
+Mobile IS the primary experience — players check standings on phones during game days. Design every feature for mobile first, then enhance for tablet and desktop.
+
+**Flag for Claude Code:** Build and validate mobile layout for every feature BEFORE building tablet and desktop versions. Never build desktop and retrofit to mobile.
+
+### Breakpoints
+- **Mobile:** <768px — primary design target
+- **Tablet:** 768-1199px
+- **Desktop:** 1200px+
+
+### Mobile-Specific Patterns
+- **Navigation:** Bottom tab bar (Leaderboard, My Picks, Scores, Simulator). Hamburger for secondary nav.
+- **Leaderboard:** Card view instead of table. Each card shows rank, percentile, player name, team pills, score, expected, max score. Tap to expand full detail.
+- **Score history chart:** Simplified by default — fewer lines visible, tap to add more. Portrait-optimized.
+- **Timeline footer:** Touch-optimized scrub handle, large tap target for LIVE button.
+- **Bracket:** Drill-down by region on mobile.
+- **Simulator:** Large tap targets for bracket slot selection.
+
+### Mobile Leaderboard Card Format
+```
+┌─────────────────────────────┐
+│ #14  Top 6%                 │
+│ Ankur Patel | AtkPatel      │
+│ 🟩🟩🟩🟥🟥🟨🟨🟨  5/8 left  │
+│ Score: 87  Expected: 112    │
+│ Max: 156  Max Rank: #3      │
+└─────────────────────────────┘
+```
+Tap card to expand with full team pill detail and callouts.
+
+### Tablet (768-1199px)
+- Side or top navigation
+- Condensed table leaderboard (not cards)
+- Full chart
+- Full timeline scrubber
+- Bracket shows two regions side by side
+
+### Desktop (1200px+)
+- Full side navigation
+- Full leaderboard table with all columns
+- Full chart with all lines
+- Full bracket view
+
+### "Better on tablet/desktop" Messaging
+Only show this for features where extra screen space genuinely matters and cannot be replicated on mobile: full bracket view, simulator. Do NOT show this for leaderboard, chart, or other features designed well for mobile.
+
+**Flag for Claude Code:** Every data table in the app needs a mobile card equivalent designed before the desktop table version. This applies to leaderboard, teams tab, and stats page.
+
+---
+
+## Admin Panel
+
+### Access
+- Separate authentication required. Admin flag + re-authentication. Not accessible to regular players.
+- Super-admins: Sumeet Patel (primary) + his brother (secondary)
+- URL: /admin (or separate subdomain)
+
+### Dashboard — Home Screen
+**Green/red status board** shown immediately on login. One glance shows if anything needs attention:
+- ESPN poller: last run, last success, any errors
+- Silver Bulletin: last fetch timestamp
+- Resend email: delivery status
+- Database: connection health
+- Cache: freshness
+- Cron jobs: last run status
+
+### Features
+
+| Feature | Details |
+|---|---|
+| Poller health | Last successful run, games tracked, errors, cache freshness |
+| Season setup | Create season, set deadline (UTC), sponsor details. Bracket auto-loads from ESPN. |
+| Game results | Auto from ESPN poller. Manual override for every field. |
+| Win probability refresh | Trigger manual re-fetch from KenPom or Silver Bulletin |
+| Conference mapping | Update per season without code deployment |
+| Player management | View all entries, merge duplicate accounts, manage admin flags |
+| Username management | Rename any username if profanity slips through or player requests |
+| Leaderboard cache | Force refresh if needed |
+| Export | CSV/Excel of full leaderboard and player data |
+| Sponsor management | Update sponsor details per season |
+| Entry management | Void or manually adjust entry if ESPN data error or other issue |
+| Play-in resolution monitor | Confirm play-in slots resolved correctly before tournament starts |
+| Checkpoint management | Manually trigger or override checkpoint if automated system fails |
+| Pre-deadline lockdown monitor | Confirm no pick data leaking before deadline |
+| Winner announcement | Trigger final results email, update Hall of Champions |
+| Broadcast email | Send email to all players or subset (mandatory vs optional subscribers) |
+| Audit log | Every admin action logged with timestamp and which admin performed it |
+
+### UI Safety Rules for Admin Panel
+- **Destructive actions** (overrides, cache clears, entry voids, deletions) require confirmation step: "Are you sure? This cannot be undone."
+- **Plain English labels** — no technical jargon. Admin users are not developers.
+- **Audit log** — every action logged. Especially important since two admins share the panel.
+
+### Note
+Most manual override features are insurance policies, not expected to be used regularly. The system should run itself. Manual overrides exist so admin is never stuck waiting for a code fix during the tournament.
+
+---
+
+## How to Play Page
+
+Public page — no login required. Three sections: How to Play, FAQ, About.
+
+### How to Play
+Simple 3-step explanation:
+1. Pick 8 teams from the tournament bracket
+2. Score points based on seed × wins — higher seeds worth more
+3. Track your picks in real time as the tournament unfolds
+
+Includes Florida/McNeese worked example showing why upsets matter.
+
+### FAQ
+25 questions across 5 sections — full approved content in spec Section 11.1. Implement exactly as written.
+
+**Flag for Claude Code — content review before launch:** Verify all 25 FAQ answers are still accurate against: collision analysis and Max Score explanation, play-in slot handling, pre-tournament optional bracket, multiple entries, timeline footer, No Response handling. Schedule content review pass after app is built but before go-live.
+
+### About
+Sumeet's personal voice — do not reword. Exact copy in spec Section 11.1.
+
+---
+
+## Winner Announcement
+
+- Triggers automatically when last checkpoint finalizes (tournament over)
+- Final results mandatory email sends to all players
+- Hall of Champions updates with winner name, score, year, percentile
+- Leaderboard freezes in final state permanently
+- During/post tournament share cards become available for all players to generate
+- Admin panel has manual trigger for final results email if automation fails
+- Messaging/copy details deferred to content review pass before launch
 
 ---
 
