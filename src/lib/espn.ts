@@ -204,7 +204,77 @@ export async function syncTournamentData(): Promise<SyncResult> {
     }
   }
 
+  // ── Recalculate all entry scores after sync ─────────────────────────────────
+  try {
+    const recalcResult = await recalculateAllEntryScores()
+    result.entriesRecalculated = recalcResult.updated
+  } catch (err) {
+    result.errors.push(`Score recalc failed: ${String(err)}`)
+  }
+
   return result
+}
+
+/**
+ * Recalculate scores for all entries in the current season.
+ * Each entry's score = sum of (seed x wins) for their 8 teams.
+ * teamsAlive = count of non-eliminated teams in the entry.
+ */
+export async function recalculateAllEntryScores(): Promise<{ updated: number }> {
+  const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+  const seasonId = settings?.currentSeasonId
+  if (!seasonId) return { updated: 0 }
+
+  // Get all entries with their picks and related teams
+  const entries = await prisma.entry.findMany({
+    where: {
+      seasonId,
+      draftInProgress: false,
+      entryPicks: { some: {} },
+    },
+    include: {
+      entryPicks: {
+        include: {
+          team: { select: { id: true, seed: true, wins: true, eliminated: true } },
+          playInSlot: {
+            include: {
+              winner: { select: { id: true, seed: true, wins: true, eliminated: true } },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  let updated = 0
+
+  // Batch update entries in chunks of 50
+  for (let i = 0; i < entries.length; i += 50) {
+    const chunk = entries.slice(i, i + 50)
+    const updates = chunk.map((entry) => {
+      let score = 0
+      let teamsAlive = 0
+
+      for (const pick of entry.entryPicks) {
+        // Resolve effective team (direct pick or play-in winner)
+        const team = pick.team ?? pick.playInSlot?.winner ?? null
+        if (!team) continue
+
+        score += team.seed * team.wins
+        if (!team.eliminated) teamsAlive++
+      }
+
+      return prisma.entry.update({
+        where: { id: entry.id },
+        data: { score, teamsAlive },
+      })
+    })
+
+    await prisma.$transaction(updates)
+    updated += chunk.length
+  }
+
+  return { updated }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

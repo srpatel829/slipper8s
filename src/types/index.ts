@@ -172,6 +172,7 @@ export interface SyncResult {
   gamesUpdated: number
   teamsUpdated: number
   playInResolved: number
+  entriesRecalculated?: number
   errors: string[]
 }
 

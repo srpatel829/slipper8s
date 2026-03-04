@@ -45,6 +45,7 @@ export function SyncButton() {
             <li>Team win counts and elimination status</li>
             <li>Tournament game results and scores</li>
             <li>Play-in slot resolution (winner advances)</li>
+            <li>Recalculate all entry scores and teams alive</li>
           </ul>
           <Button onClick={handleSync} disabled={syncing} className="w-full">
             <RefreshCw className={`h-4 w-4 mr-2 ${syncing ? "animate-spin" : ""}`} />
@@ -66,7 +67,7 @@ export function SyncButton() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="bg-muted rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold">{lastResult.gamesUpdated}</p>
                 <p className="text-xs text-muted-foreground">Games updated</p>
@@ -78,6 +79,10 @@ export function SyncButton() {
               <div className="bg-muted rounded-lg p-3 text-center">
                 <p className="text-2xl font-bold">{lastResult.playInResolved}</p>
                 <p className="text-xs text-muted-foreground">Play-ins resolved</p>
+              </div>
+              <div className="bg-muted rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{lastResult.entriesRecalculated ?? 0}</p>
+                <p className="text-xs text-muted-foreground">Entries scored</p>
               </div>
             </div>
             {lastResult.errors.length > 0 && (
