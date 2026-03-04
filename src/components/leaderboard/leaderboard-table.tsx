@@ -6,36 +6,35 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 
-// ── Seed-tier helpers (consistent with picks/team-card color scheme) ──────────
-
-function getSeedTier(seed: number): "elite" | "strong" | "mid" | "longshot" {
-  if (seed <= 4) return "elite"
-  if (seed <= 8) return "strong"
-  if (seed <= 12) return "mid"
-  return "longshot"
-}
-
-const TIER_CLASSES = {
-  elite: { card: "border-primary/40", badge: "bg-primary/20 text-primary/90", quad: "bg-primary/70", solid: "bg-primary text-primary-foreground" },
-  strong: { card: "border-blue-400/40", badge: "bg-blue-400/20 text-blue-400/90", quad: "bg-blue-400/70", solid: "bg-blue-500 text-white" },
-  mid: { card: "border-emerald-400/40", badge: "bg-emerald-400/20 text-emerald-400/90", quad: "bg-emerald-400/70", solid: "bg-emerald-500 text-white" },
-  longshot: { card: "border-purple-400/40", badge: "bg-purple-400/20 text-purple-400/90", quad: "bg-purple-400/70", solid: "bg-purple-500 text-white" },
-}
-
-// ── Seed color helpers per spec ──────────────────────────────────────────────
-
-const SEED_COLORS: Record<string, string> = {
-  "1-4": "#C0392B",   // Red
-  "5-8": "#E67E22",   // Orange
-  "9-12": "#D4AC0D",  // Gold
-  "13-16": "#27AE60", // Green
-}
+// ── Seed color helpers per spec (locked) ──────────────────────────────────────
+// Seeds 1-4: Red #C0392B | Seeds 5-8: Orange #E67E22
+// Seeds 9-12: Gold #D4AC0D | Seeds 13-16: Green #27AE60
 
 function getSeedColor(seed: number): string {
-  if (seed <= 4) return SEED_COLORS["1-4"]
-  if (seed <= 8) return SEED_COLORS["5-8"]
-  if (seed <= 12) return SEED_COLORS["9-12"]
-  return SEED_COLORS["13-16"]
+  if (seed <= 4) return "#C0392B"
+  if (seed <= 8) return "#E67E22"
+  if (seed <= 12) return "#D4AC0D"
+  return "#27AE60"
+}
+
+function getSeedTier(seed: number): "chalk" | "darkHorse" | "sleeper" | "buster" {
+  if (seed <= 4) return "chalk"
+  if (seed <= 8) return "darkHorse"
+  if (seed <= 12) return "sleeper"
+  return "buster"
+}
+
+// ── Region badge helpers ──────────────────────────────────────────────────────
+
+const REGION_ABBREV: Record<string, string> = {
+  South: "S", West: "W", East: "E", Midwest: "MW",
+}
+
+const REGION_COLORS: Record<string, string> = {
+  South: "#C0392B",    // Red
+  West: "#2E86C1",     // Blue
+  East: "#27AE60",     // Green
+  Midwest: "#8E44AD",  // Purple
 }
 
 // ── Team pill status colors per spec ─────────────────────────────────────────
@@ -47,6 +46,12 @@ function getTeamPillStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red
   if (pick.eliminated) return "red"
   if (pick.wins > 0) return "green"
   return "yellow"
+}
+
+const STATUS_BORDER_COLORS = {
+  green: "#27AE60",
+  yellow: "#D4AC0D",
+  red: "#C0392B",
 }
 
 const PILL_STATUS_CLASSES = {
@@ -71,6 +76,8 @@ function TeamPill({ pick }: { pick: ResolvedPickSummary }) {
 }
 
 // ── Inline logo strip — always visible in the leaderboard row ──────────────
+// Now with: region badge (top-left), seed badge with spec color (bottom-right),
+// thick status borders (green/yellow/red)
 
 function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?: number }) {
   const activePicks = picks.filter(p => !p.eliminated)
@@ -80,79 +87,121 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
 
   if (!picks.length && !emptySlots) return null
 
-  const renderPick = (pick: ResolvedPickSummary) => (
-    <div
-      key={pick.teamId}
-      className="relative w-7 h-7 shrink-0"
-      title={`${pick.shortName} (#${pick.seed})${pick.eliminated ? " — eliminated" : ""}`}
-    >
+  const renderPick = (pick: ResolvedPickSummary) => {
+    const status = getTeamPillStatus(pick)
+    const statusColor = STATUS_BORDER_COLORS[status]
+    const seedColor = getSeedColor(pick.seed)
+    const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
+    const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
+
+    return (
       <div
-        className={`relative w-7 h-7 rounded-sm border overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold ${pick.eliminated
-          ? "grayscale opacity-40 border-border/30 bg-muted/20"
-          : `border-border/50 bg-background shadow-sm ${TIER_CLASSES[getSeedTier(pick.seed)].card}`
-          }`}
+        key={pick.teamId}
+        className="relative w-8 h-8 shrink-0"
+        title={`#${pick.seed} ${pick.name} · ${pick.region ?? ""} · ${pick.wins} wins · ${pick.eliminated ? "Eliminated" : "Alive"}`}
       >
-        {pick.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={pick.logoUrl} alt="" className="w-full h-full object-contain" />
-        ) : (
-          <span className="text-[7.5px] font-bold text-muted-foreground leading-none text-center px-0.5 break-all">{pick.shortName.substring(0, 3)}</span>
+        {/* Logo box with thick status border */}
+        <div
+          className={`relative w-8 h-8 rounded-md overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold ${
+            pick.eliminated ? "grayscale opacity-40" : "shadow-sm"
+          }`}
+          style={{ border: `2.5px solid ${pick.eliminated ? "#666" : statusColor}`, backgroundColor: "var(--background)" }}
+        >
+          {pick.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pick.logoUrl} alt="" className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-[8px] font-bold text-muted-foreground leading-none text-center break-all">{pick.shortName.substring(0, 3)}</span>
+          )}
+        </div>
+
+        {/* Region badge — top-left */}
+        {regionAbbrev && (
+          <div
+            className="absolute -top-1.5 -left-1.5 h-[13px] min-w-[13px] px-0.5 rounded-sm flex items-center justify-center text-[6.5px] font-black text-white shadow-sm border border-background"
+            style={{ backgroundColor: regionColor }}
+          >
+            {regionAbbrev}
+          </div>
         )}
+
+        {/* Seed badge — bottom-right with spec colors */}
+        <div
+          className="absolute -bottom-1.5 -right-1.5 w-[15px] h-[15px] rounded-sm flex items-center justify-center text-[8px] font-black text-white shadow-sm border border-background"
+          style={{ backgroundColor: seedColor }}
+        >
+          {pick.seed}
+        </div>
       </div>
-      {/* Tiny seed badge for inline strip */}
-      <div className={`absolute -bottom-1 -right-1 w-[14px] h-[14px] rounded-sm flex items-center justify-center text-[7.5px] font-black shadow-sm border border-background ${TIER_CLASSES[getSeedTier(pick.seed)].solid}`}>
-        {pick.seed}
-      </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+    <div className="flex flex-wrap items-center gap-2 mt-1.5">
       {activePicks.map(renderPick)}
 
       {eliminatedPicks.length > 0 && (
         <>
           {activePicks.length > 0 && (
-            <div className="w-[2px] h-5 bg-red-500/60 rounded-full mx-0.5 shrink-0" />
+            <div className="w-[2px] h-6 bg-red-500/60 rounded-full mx-0.5 shrink-0" />
           )}
           {eliminatedPicks.map(renderPick)}
         </>
       )}
 
       {Array.from({ length: emptySlots }).map((_, i) => (
-        <div key={`empty-${i}`} className="w-7 h-7 rounded-sm border border-border/30 bg-muted/10 shrink-0" title="Empty slot" />
+        <div key={`empty-${i}`} className="w-8 h-8 rounded-md border-2 border-dashed border-border/30 bg-muted/10 shrink-0" title="Empty slot" />
       ))}
     </div>
   )
 }
 
 function PickCard({ pick }: { pick: ResolvedPickSummary }) {
-  const tier = getSeedTier(pick.seed)
-  const tierCls = TIER_CLASSES[tier]
   const pts = pick.seed * pick.wins
+  const status = getTeamPillStatus(pick)
+  const statusColor = STATUS_BORDER_COLORS[status]
+  const seedColor = getSeedColor(pick.seed)
+  const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
+  const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
   return (
-    <div className={`flex flex-col items-center gap-1.5 w-16 ${pick.eliminated ? "opacity-60 grayscale" : ""}`}>
-      {/* Logo container */}
-      <div className={`relative w-12 h-12 rounded-lg border flex items-center justify-center bg-card shadow-sm ${tierCls.card} p-1.5`}>
+    <div className={`flex flex-col items-center gap-1.5 w-16 ${pick.eliminated ? "opacity-50 grayscale" : ""}`}>
+      {/* Logo container with status border */}
+      <div
+        className="relative w-12 h-12 rounded-lg flex items-center justify-center bg-card shadow-sm p-1.5"
+        style={{ border: `3px solid ${pick.eliminated ? "#666" : statusColor}` }}
+      >
         {pick.logoUrl ? (
           <img src={pick.logoUrl} alt={pick.shortName} className="w-full h-full object-contain" />
         ) : (
           <span className="text-[10px] font-bold text-muted-foreground">{pick.shortName.substring(0, 3)}</span>
         )}
 
-        {/* Prominent Seed Badge */}
-        <div className={`absolute -top-1.5 -right-1.5 w-[18px] h-[18px] rounded flex items-center justify-center text-[9px] font-black shadow-sm ${tierCls.solid}`}>
+        {/* Region badge — top-left */}
+        {regionAbbrev && (
+          <div
+            className="absolute -top-2 -left-2 h-[15px] min-w-[15px] px-0.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shadow-sm border border-background"
+            style={{ backgroundColor: regionColor }}
+          >
+            {regionAbbrev}
+          </div>
+        )}
+
+        {/* Seed badge — bottom-right with spec colors */}
+        <div
+          className="absolute -bottom-2 -right-2 w-[18px] h-[18px] rounded flex items-center justify-center text-[9px] font-black text-white shadow-sm border border-background"
+          style={{ backgroundColor: seedColor }}
+        >
           {pick.seed}
         </div>
       </div>
 
-      {/* Shaded square with details */}
-      <div className={`w-full rounded border p-1.5 flex flex-col items-center justify-center text-center ${tierCls.badge}`}>
+      {/* Details below logo */}
+      <div className="w-full rounded border border-border/50 p-1.5 flex flex-col items-center justify-center text-center bg-muted/20">
         <span className="text-[9px] font-extrabold truncate w-full">{pick.shortName}</span>
         <div className="flex flex-col items-center gap-0 text-[9px] mt-0.5 opacity-90 font-medium">
           <span className="font-semibold text-[8px] opacity-80 uppercase tracking-wider">{pick.wins} Wins</span>
-          <span className="font-mono font-bold mt-0.5">{pts > 0 ? `${pts} pts` : "–"}</span>
+          <span className="font-mono font-bold mt-0.5">{pts > 0 ? `${pts} pts` : "\u2013"}</span>
         </div>
       </div>
     </div>
@@ -248,7 +297,28 @@ function Optimal8Card({ data }: { data: Optimal8Data }) {
   )
 }
 
-export type DimensionTab = "global" | "state" | "country" | "gender"
+// ── Status color legend ────────────────────────────────────────────────────────
+
+function StatusLegend() {
+  return (
+    <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+      <span className="flex items-center gap-1">
+        <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATUS_BORDER_COLORS.green }} />
+        Won round
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATUS_BORDER_COLORS.yellow }} />
+        Yet to play
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATUS_BORDER_COLORS.red }} />
+        Eliminated
+      </span>
+    </div>
+  )
+}
+
+export type DimensionTab = "global" | "state" | "country" | "gender" | "conference"
 
 interface LeagueInfo {
   id: string
@@ -259,6 +329,7 @@ interface UserProfile {
   country?: string | null
   state?: string | null
   gender?: string | null
+  conference?: string | null
 }
 
 interface LeaderboardTableProps {
@@ -287,6 +358,11 @@ function filterByDimension(
   }
   if (dim === "gender" && userProfile?.gender) {
     return data.filter((e) => e.gender === userProfile.gender)
+  }
+  if (dim === "conference" && userProfile?.conference) {
+    // Conference filtering would need conference data on LeaderboardEntry
+    // For now, return all data — will be enhanced when conference data flows through
+    return data
   }
   return data
 }
@@ -356,11 +432,7 @@ function LeaderboardRow({
           </div>
           {entry.picks.length > 0 && (
             <div className="flex items-center gap-2">
-              <div className="flex flex-wrap gap-1">
-                {entry.picks.map((pick) => (
-                  <TeamPill key={pick.teamId} pick={pick} />
-                ))}
-              </div>
+              <PicksLogoStrip picks={entry.picks} />
               <span className={`text-xs font-mono shrink-0 ${
                 entry.teamsRemaining >= 4 ? "text-green-400" : entry.teamsRemaining > 0 ? "text-amber-400" : "text-muted-foreground"
               }`}>
@@ -551,57 +623,59 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         </div>
       )}
 
+      {/* Status color legend */}
+      <StatusLegend />
+
       {/* Dimension tabs */}
-      {!demoMode && (
-        <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {(
-            [
-              { key: "global" as DimensionTab, label: "Global" },
-              ...(userProfile?.country ? [{ key: "country" as DimensionTab, label: userProfile.country }] : []),
-              ...(userProfile?.state ? [{ key: "state" as DimensionTab, label: userProfile.state }] : []),
-              ...(userProfile?.gender && userProfile.gender !== "NO_RESPONSE"
-                ? [{ key: "gender" as DimensionTab, label: GENDER_LABELS[userProfile.gender] ?? "Gender" }]
-                : []),
-            ]
-          ).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setDimension(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-                dimension === key
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-              }`}
-            >
-              {label}
-              {dimension === key && key !== "global" && (
-                <span className="ml-1.5 text-[10px] opacity-60">
-                  ({filtered.length})
-                </span>
-              )}
-            </button>
-          ))}
-          {/* League tabs */}
-          {userLeagues && userLeagues.length > 0 && (
-            <>
-              <div className="w-px h-5 bg-border mx-1 shrink-0" />
-              {userLeagues.map((league) => (
-                <button
-                  key={league.id}
-                  onClick={() => {
-                    // For now, league filtering just links to the leagues page
-                    // TODO: implement league-specific leaderboard data fetching
-                    window.location.href = "/leagues"
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 whitespace-nowrap"
-                >
-                  {league.name}
-                </button>
-              ))}
-            </>
-          )}
-        </div>
-      )}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+        {(
+          [
+            { key: "global" as DimensionTab, label: "Global" },
+            ...(userProfile?.country ? [{ key: "country" as DimensionTab, label: userProfile.country }] : []),
+            ...(userProfile?.state ? [{ key: "state" as DimensionTab, label: userProfile.state }] : []),
+            ...(userProfile?.gender && userProfile.gender !== "NO_RESPONSE"
+              ? [{ key: "gender" as DimensionTab, label: GENDER_LABELS[userProfile.gender] ?? "Gender" }]
+              : []),
+            ...(userProfile?.conference ? [{ key: "conference" as DimensionTab, label: userProfile.conference }] : []),
+          ]
+        ).map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setDimension(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              dimension === key
+                ? "bg-primary/15 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+            }`}
+          >
+            {label}
+            {dimension === key && key !== "global" && (
+              <span className="ml-1.5 text-[10px] opacity-60">
+                ({filtered.length})
+              </span>
+            )}
+          </button>
+        ))}
+        {/* League tabs */}
+        {userLeagues && userLeagues.length > 0 && (
+          <>
+            <div className="w-px h-5 bg-border mx-1 shrink-0" />
+            {userLeagues.map((league) => (
+              <button
+                key={league.id}
+                onClick={() => {
+                  // For now, league filtering just links to the leagues page
+                  // TODO: implement league-specific leaderboard data fetching
+                  window.location.href = "/leagues"
+                }}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 whitespace-nowrap"
+              >
+                {league.name}
+              </button>
+            ))}
+          </>
+        )}
+      </div>
 
       {/* Column headers */}
       <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 px-4 py-2">
