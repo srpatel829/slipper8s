@@ -47,108 +47,96 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* ── Light mode (fallback) ───────────────────────────────────────────── */
+/* ── Slipper8s Brand Colors ──────────────────────────────────────────────
+   Primary:   Light Blue  #00A9E0  — buttons, links, active states
+   Secondary: Dark Navy   #003087  — backgrounds, surfaces, nav
+   Accent:    Orange      #F47920  — special CTAs, highlights, alerts
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* ── Light mode ──────────────────────────────────────────────────────── */
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.98 0 0);
-  --foreground: oklch(0.12 0 0);
+  --background: oklch(0.97 0.004 240);
+  --foreground: oklch(0.12 0.01 245);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.12 0 0);
+  --card-foreground: oklch(0.12 0.01 245);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.12 0 0);
-  --primary: oklch(0.65 0.2 40);      /* orange */
+  --popover-foreground: oklch(0.12 0.01 245);
+  --primary: oklch(0.58 0.18 213);        /* light blue — primary brand */
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.94 0 0);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.52 0 0);
-  --accent: oklch(0.96 0.04 50);
-  --accent-foreground: oklch(0.25 0 0);
+  --secondary: oklch(0.93 0.006 240);
+  --secondary-foreground: oklch(0.20 0.01 245);
+  --muted: oklch(0.94 0.004 240);
+  --muted-foreground: oklch(0.50 0.008 240);
+  --accent: oklch(0.68 0.18 42);          /* orange — tertiary accent */
+  --accent-foreground: oklch(0.10 0 0);
   --destructive: oklch(0.58 0.24 27);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.65 0.2 40);
-  --chart-1: oklch(0.65 0.2 40);
-  --chart-2: oklch(0.6 0.12 185);
-  --chart-3: oklch(0.4 0.07 227);
-  --chart-4: oklch(0.83 0.19 84);
-  --chart-5: oklch(0.77 0.19 70);
-  --sidebar: oklch(0.97 0 0);
-  --sidebar-foreground: oklch(0.12 0 0);
-  --sidebar-primary: oklch(0.65 0.2 40);
+  --border: oklch(0.88 0.006 240);
+  --input: oklch(0.88 0.006 240);
+  --ring: oklch(0.58 0.18 213);
+  --chart-1: oklch(0.58 0.18 213);        /* light blue */
+  --chart-2: oklch(0.30 0.14 258);        /* dark navy */
+  --chart-3: oklch(0.68 0.18 42);         /* orange */
+  --chart-4: oklch(0.72 0.17 162);        /* teal */
+  --chart-5: oklch(0.65 0.25 16);         /* red */
+  --sidebar: oklch(0.96 0.005 240);
+  --sidebar-foreground: oklch(0.12 0.01 245);
+  --sidebar-primary: oklch(0.58 0.18 213);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
-  --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: oklch(0.9 0 0);
-  --sidebar-ring: oklch(0.65 0.2 40);
+  --sidebar-accent: oklch(0.93 0.006 240);
+  --sidebar-accent-foreground: oklch(0.20 0.01 245);
+  --sidebar-border: oklch(0.88 0.006 240);
+  --sidebar-ring: oklch(0.58 0.18 213);
 }
 
-/* ── Dark mode (forced as default via .dark on html) ─────────────────── */
+/* ── Dark mode (default — .dark on <html>) ───────────────────────────── */
 .dark {
-  /* Slate-950 inspired deep background */
-  --background: oklch(0.10 0.008 264);
+  /* Deep navy background — secondary brand color as base */
+  --background: oklch(0.09 0.018 245);
   --foreground: oklch(0.96 0.005 240);
 
-  /* Cards slightly lifted */
-  --card: oklch(0.14 0.008 264);
+  /* Cards: slightly lifted navy */
+  --card: oklch(0.13 0.015 245);
   --card-foreground: oklch(0.96 0.005 240);
 
-  --popover: oklch(0.15 0.01 264);
+  --popover: oklch(0.14 0.015 245);
   --popover-foreground: oklch(0.96 0.005 240);
 
-  /* Orange as primary brand color */
-  --primary: oklch(0.72 0.18 42);
-  --primary-foreground: oklch(0.10 0.008 264);
+  /* Light blue as primary brand color */
+  --primary: oklch(0.71 0.17 213);
+  --primary-foreground: oklch(0.09 0.018 245);
 
-  --secondary: oklch(0.20 0.008 264);
+  /* Dark navy secondary surfaces */
+  --secondary: oklch(0.20 0.015 255);
   --secondary-foreground: oklch(0.90 0.005 240);
 
-  --muted: oklch(0.18 0.008 264);
-  --muted-foreground: oklch(0.60 0.01 240);
+  --muted: oklch(0.17 0.012 248);
+  --muted-foreground: oklch(0.60 0.010 240);
 
-  --accent: oklch(0.22 0.01 264);
-  --accent-foreground: oklch(0.92 0.005 240);
+  /* Orange as accent/tertiary */
+  --accent: oklch(0.72 0.18 42);
+  --accent-foreground: oklch(0.09 0.018 245);
 
   --destructive: oklch(0.65 0.22 22);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
-  --ring: oklch(0.72 0.18 42);
+  --ring: oklch(0.71 0.17 213);
 
   /* Charts */
-  --chart-1: oklch(0.72 0.18 42);   /* orange */
-  --chart-2: oklch(0.70 0.17 162);  /* teal */
-  --chart-3: oklch(0.77 0.19 70);   /* amber */
-  --chart-4: oklch(0.63 0.26 304);  /* purple */
-  --chart-5: oklch(0.65 0.25 16);   /* red */
+  --chart-1: oklch(0.71 0.17 213);        /* light blue — primary */
+  --chart-2: oklch(0.72 0.18 42);         /* orange — accent */
+  --chart-3: oklch(0.38 0.14 258);        /* dark navy */
+  --chart-4: oklch(0.70 0.17 162);        /* teal */
+  --chart-5: oklch(0.65 0.25 16);         /* red */
 
-  --sidebar: oklch(0.12 0.008 264);
+  --sidebar: oklch(0.11 0.016 245);
   --sidebar-foreground: oklch(0.96 0.005 240);
-  --sidebar-primary: oklch(0.72 0.18 42);
-  --sidebar-primary-foreground: oklch(0.10 0.008 264);
-  --sidebar-accent: oklch(0.20 0.008 264);
+  --sidebar-primary: oklch(0.71 0.17 213);
+  --sidebar-primary-foreground: oklch(0.09 0.018 245);
+  --sidebar-accent: oklch(0.20 0.015 255);
   --sidebar-accent-foreground: oklch(0.90 0.005 240);
   --sidebar-border: oklch(1 0 0 / 8%);
-  --sidebar-ring: oklch(0.72 0.18 42);
-}
-
-/* ── Blue accent — dark mode ───────────────────────────────────────── */
-.dark.accent-blue {
-  --primary: oklch(0.65 0.22 240);
-  --primary-foreground: oklch(0.98 0 0);
-  --ring: oklch(0.65 0.22 240);
-  --chart-1: oklch(0.65 0.22 240);
-  --sidebar-primary: oklch(0.65 0.22 240);
-  --sidebar-ring: oklch(0.65 0.22 240);
-}
-
-/* ── Blue accent — light mode ──────────────────────────────────────── */
-:root.accent-blue {
-  --primary: oklch(0.50 0.22 240);
-  --primary-foreground: oklch(0.99 0 0);
-  --ring: oklch(0.50 0.22 240);
-  --chart-1: oklch(0.50 0.22 240);
-  --sidebar-primary: oklch(0.50 0.22 240);
-  --sidebar-ring: oklch(0.50 0.22 240);
+  --sidebar-ring: oklch(0.71 0.17 213);
 }
 
 @layer base {
@@ -160,13 +148,28 @@
   }
 }
 
-/* ── Utility classes for game-day feel ──────────────────────────────── */
+/* ── Utility classes ─────────────────────────────────────────────────── */
 @layer utilities {
+  /* Blue glow — primary brand */
+  .glow-blue {
+    box-shadow: 0 0 20px oklch(0.71 0.17 213 / 30%);
+  }
+  .glow-blue-sm {
+    box-shadow: 0 0 10px oklch(0.71 0.17 213 / 20%);
+  }
+  /* Orange glow — accent/CTA */
   .glow-orange {
     box-shadow: 0 0 20px oklch(0.72 0.18 42 / 30%);
   }
   .glow-orange-sm {
     box-shadow: 0 0 10px oklch(0.72 0.18 42 / 20%);
+  }
+  /* Text gradients */
+  .text-gradient-blue {
+    background: linear-gradient(135deg, oklch(0.80 0.16 213), oklch(0.62 0.20 225));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
   .text-gradient-orange {
     background: linear-gradient(135deg, oklch(0.80 0.18 52), oklch(0.65 0.22 28));
@@ -175,15 +178,17 @@
     background-clip: text;
   }
   .border-glow {
-    border-color: oklch(0.72 0.18 42 / 40%);
+    border-color: oklch(0.71 0.17 213 / 40%);
   }
+  /* Subtle blue radial on page backgrounds */
   .bg-court {
     background-image: radial-gradient(
       ellipse at 50% 0%,
-      oklch(0.72 0.18 42 / 8%) 0%,
+      oklch(0.71 0.17 213 / 8%) 0%,
       transparent 70%
     );
   }
+  /* Rank badge colors */
   .rank-badge-gold {
     background: linear-gradient(135deg, #f59e0b, #d97706);
     color: #fff;

@@ -163,7 +163,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-orange">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-blue">
             <Trophy className="h-7 w-7 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Complete Your Profile</h1>
@@ -301,7 +301,7 @@ export default function RegisterPage() {
             <Button
               type="submit"
               disabled={submitting || usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "checking" || !firstName.trim() || !lastName.trim() || !username.trim()}
-              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold glow-orange-sm"
+              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold glow-blue-sm"
             >
               {submitting ? (
                 <>

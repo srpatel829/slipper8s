@@ -60,7 +60,7 @@ export default async function HomePage() {
         </Badge>
 
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-none mb-6">
-          <span className="text-gradient-orange">Slipper8s</span>
+          <span className="text-gradient-blue">Slipper8s</span>
         </h1>
 
         <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-4 leading-relaxed">
@@ -79,7 +79,7 @@ export default async function HomePage() {
         {/* Dual CTAs */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
           <Link href="/login">
-            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-orange text-base px-8 h-12 w-full sm:w-auto">
+            <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-blue text-base px-8 h-12 w-full sm:w-auto">
               Sign in to play
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>

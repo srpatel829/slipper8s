@@ -654,7 +654,34 @@ A global time controller shown as a persistent footer on EVERY page of the app. 
 - Offer light mode and dark mode toggle
 - ONE color scheme only — light and dark versions of the same Slipper8s palette
 - No alternative color scheme options
-- Color scheme to be defined during design phase in Claude Code
+
+## ✅ Brand Color Palette — LOCKED (do not change without user approval)
+
+Inspired by the NCAA tournament color palette:
+
+| Role | Name | Hex | Usage |
+|------|------|-----|-------|
+| Primary | Light Blue | `#00A9E0` | Buttons, links, active states, primary CTA |
+| Secondary | Dark Navy | `#003087` | Backgrounds, surfaces, nav, dark mode base |
+| Accent/Tertiary | Orange | `#F47920` | Special highlights, alerts, secondary CTAs |
+| Neutral | White/Gray/Black | — | Text, borders, cards as needed |
+
+**In CSS (globals.css):**
+- Dark mode primary: `oklch(0.71 0.17 213)` — light blue
+- Dark mode background: `oklch(0.09 0.018 245)` — deep navy
+- Accent: `oklch(0.72 0.18 42)` — orange
+
+**Utility classes:**
+- `glow-blue` / `glow-blue-sm` — blue glow on primary buttons
+- `text-gradient-blue` — blue gradient for the Slipper8s logo wordmark
+- `glow-orange` / `glow-orange-sm` — reserved for orange accent elements
+- `bg-court` — subtle blue radial gradient on page backgrounds
+
+**Seed colors (supplementary only — spec-locked):**
+- Seeds 1-4: Red `#C0392B`
+- Seeds 5-8: Orange `#E67E22`
+- Seeds 9-12: Gold `#D4AC0D`
+- Seeds 13-16: Green `#27AE60`
 
 ---
 

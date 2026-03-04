@@ -96,7 +96,7 @@ export function DemoControlPanel() {
         {/* Collapse toggle — more prominent */}
         <button
           onClick={() => setExpanded(e => !e)}
-          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[oklch(0.07_0.012_264)] border border-primary/40 border-b-0 rounded-t-lg px-5 py-1.5 flex items-center gap-2 transition-colors hover:border-primary/70 glow-orange-sm"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[oklch(0.07_0.012_264)] border border-primary/40 border-b-0 rounded-t-lg px-5 py-1.5 flex items-center gap-2 transition-colors hover:border-primary/70 glow-blue-sm"
         >
           <Tv2 className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-semibold text-primary tracking-wide">DEMO MODE</span>

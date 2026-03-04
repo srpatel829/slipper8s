@@ -19,7 +19,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-orange">
+          <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-blue">
             <Trophy className="h-7 w-7 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Slipper8s</h1>
@@ -92,7 +92,7 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold glow-orange-sm"
+              className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold glow-blue-sm"
             >
               Send magic link
             </Button>
