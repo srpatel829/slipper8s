@@ -10,15 +10,35 @@ interface TeamCardProps {
   matchupInfo?: string  // e.g. "vs #16 American · Max 96pts" — shown pre-tournament in demo
 }
 
-/** Returns seed-tier badge classes for unselected state */
-function getSeedBadgeClass(seed: number): string {
-  if (seed <= 4) return "bg-primary/15 text-primary/80"
-  if (seed <= 8) return "bg-blue-400/15 text-blue-400/80"
-  if (seed <= 12) return "bg-emerald-400/15 text-emerald-400/80"
-  return "bg-purple-400/15 text-purple-400/80"
+// ── Spec-locked seed colors ─────────────────────────────────────────────────
+// Seeds 1-4: Red #C0392B | Seeds 5-8: Orange #E67E22
+// Seeds 9-12: Gold #D4AC0D | Seeds 13-16: Green #27AE60
+
+function getSeedColor(seed: number): string {
+  if (seed <= 4) return "#C0392B"
+  if (seed <= 8) return "#E67E22"
+  if (seed <= 12) return "#D4AC0D"
+  return "#27AE60"
+}
+
+// ── Region badge abbreviations & colors ─────────────────────────────────────
+
+const REGION_ABBREV: Record<string, string> = {
+  South: "S", West: "W", East: "E", Midwest: "MW",
+}
+
+const REGION_COLORS: Record<string, string> = {
+  South: "#C0392B",    // Red
+  West: "#2E86C1",     // Blue
+  East: "#27AE60",     // Green
+  Midwest: "#8E44AD",  // Purple
 }
 
 export function TeamCard({ team, selected, onToggle, disabled, matchupInfo }: TeamCardProps) {
+  const seedColor = getSeedColor(team.seed)
+  const regionAbbrev = team.region ? REGION_ABBREV[team.region] ?? team.region.substring(0, 2) : ""
+  const regionColor = team.region ? REGION_COLORS[team.region] ?? "#888" : "#888"
+
   return (
     <button
       onClick={onToggle}
@@ -39,27 +59,41 @@ export function TeamCard({ team, selected, onToggle, disabled, matchupInfo }: Te
         </div>
       )}
 
-      {/* Logo */}
+      {/* Logo + details */}
       <div className="flex items-start gap-2.5">
-        {team.logoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={team.logoUrl}
-            alt={team.name}
-            className={cn("h-8 w-8 object-contain shrink-0", team.eliminated && "opacity-40 grayscale")}
-          />
-        ) : (
-          <div className={cn("h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0 text-xs font-bold", team.eliminated && "opacity-40")}>
-            {team.shortName?.[0] ?? "?"}
-          </div>
-        )}
+        {/* Logo box with region badge and seed badge */}
+        <div className="relative shrink-0">
+          {team.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={team.logoUrl}
+              alt={team.name}
+              className={cn("h-9 w-9 object-contain", team.eliminated && "opacity-40 grayscale")}
+            />
+          ) : (
+            <div className={cn("h-9 w-9 rounded-md bg-muted flex items-center justify-center text-xs font-bold", team.eliminated && "opacity-40")}>
+              {team.shortName?.[0] ?? "?"}
+            </div>
+          )}
+
+          {/* Region badge — top-left */}
+          {regionAbbrev && (
+            <div
+              className="absolute -top-1.5 -left-1.5 h-[14px] min-w-[14px] px-0.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shadow-sm"
+              style={{ backgroundColor: regionColor }}
+            >
+              {regionAbbrev}
+            </div>
+          )}
+        </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1 mb-0.5">
-            <span className={cn(
-              "text-[10px] font-semibold px-1 py-0.5 rounded",
-              selected ? "bg-primary/20 text-primary" : getSeedBadgeClass(team.seed)
-            )}>
+            {/* Seed badge with spec color */}
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
+              style={{ backgroundColor: seedColor }}
+            >
               #{team.seed}
             </span>
             {team.isPlayIn && (
