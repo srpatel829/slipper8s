@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HealthBoard } from "@/components/admin/health-board"
@@ -8,19 +8,19 @@ import { HealthBoard } from "@/components/admin/health-board"
 export const dynamic = "force-dynamic"
 
 async function getStats() {
-  const [userCount, pickCount, teamCount, settings] = await Promise.all([
+  const [userCount, entryCount, teamCount, settings] = await Promise.all([
     prisma.user.count(),
-    prisma.user.count({ where: { picks: { some: {} } } }),
+    prisma.entry.count(),
     prisma.team.count({ where: { isPlayIn: false } }),
     prisma.appSettings.findUnique({ where: { id: "main" } }),
   ])
-  const paidCount = await prisma.user.count({ where: { isPaid: true, picks: { some: {} } } })
-  return { userCount, pickCount, teamCount, paidCount, settings }
+  const paidCount = await prisma.user.count({ where: { isPaid: true } })
+  return { userCount, entryCount, teamCount, paidCount, settings }
 }
 
 export default async function AdminDashboardPage() {
   const session = await auth()
-  const { userCount, pickCount, teamCount, paidCount, settings } = await getStats()
+  const { userCount, entryCount, teamCount, paidCount, settings } = await getStats()
 
   return (
     <div className="space-y-6">
@@ -39,7 +39,7 @@ export default async function AdminDashboardPage() {
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard icon={Users} label="Entries" value={pickCount} color="text-blue-400" />
+        <StatCard icon={Users} label="Entries" value={entryCount} color="text-blue-400" />
         <StatCard icon={CheckCircle2} label="Paid" value={paidCount} color="text-green-400" />
         <StatCard icon={BarChart3} label="Total Users" value={userCount} color="text-primary" />
         <StatCard icon={Database} label="Teams in DB" value={teamCount} color="text-violet-400" />
@@ -77,6 +77,31 @@ export default async function AdminDashboardPage() {
               <RefreshCw className="h-3 w-3" />
               Go to ESPN Sync
             </Link>
+          </Button>
+        </div>
+      </div>
+
+      {/* Data export — Google Sheets fallback */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Download className="h-4 w-4 text-muted-foreground" />
+          <h3 className="text-sm font-semibold">Data Export</h3>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Download CSV files for Google Sheets. Use as fallback if the app has issues during the tournament.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+            <a href="/api/admin/export" download>
+              <Download className="h-3 w-3" />
+              All Entries + Picks
+            </a>
+          </Button>
+          <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+            <a href="/api/admin/export/players" download>
+              <Download className="h-3 w-3" />
+              Player Directory
+            </a>
           </Button>
         </div>
       </div>
