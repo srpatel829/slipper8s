@@ -73,6 +73,13 @@ export async function syncTournamentData(): Promise<SyncResult> {
       const seed1 = c1.curatedRank?.current ?? 0
       const seed2 = c2.curatedRank?.current ?? 0
 
+      // Check if this game was already marked complete (to avoid double-counting wins)
+      const existingGame = await prisma.tournamentGame.findUnique({
+        where: { espnGameId: event.id },
+        select: { status: true, isComplete: true },
+      })
+      const wasAlreadyComplete = existingGame?.isComplete === true
+
       // Upsert both teams
       const [team1, team2] = await Promise.all([
         prisma.team.upsert({
@@ -122,12 +129,14 @@ export async function syncTournamentData(): Promise<SyncResult> {
         create: {
           espnGameId: event.id,
           round,
+          region,
           team1Id: team1.id,
           team2Id: team2.id,
           winnerId: winnerTeam?.id ?? null,
           team1Score: score1,
           team2Score: score2,
           status,
+          isComplete: isCompleted,
           startTime: new Date(event.date),
         },
         update: {
@@ -135,13 +144,15 @@ export async function syncTournamentData(): Promise<SyncResult> {
           team1Score: score1,
           team2Score: score2,
           status,
+          isComplete: isCompleted,
         },
       })
       result.gamesUpdated++
 
-      // Update wins / eliminated after game completes
-      if (isCompleted && winnerTeam && loserTeam) {
-        // Only count wins for round > 0 (play-in wins don't count)
+      // Update wins / eliminated ONLY when game JUST completed (not already processed)
+      // This prevents double-counting wins on repeated syncs
+      if (isCompleted && winnerTeam && loserTeam && !wasAlreadyComplete) {
+        // Only count wins for round > 0 (play-in wins don't count per spec)
         if (round > 0) {
           await prisma.team.update({
             where: { id: winnerTeam.id },
