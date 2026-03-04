@@ -405,6 +405,39 @@ In-app payments, native apps, "March Madness" usage, SMS notifications, historic
 
 ---
 
+## 🔴 UI Feedback from User Testing (March 3, 2026) — MUST IMPLEMENT
+
+### Logo
+- **Redesign logo** — Glass slipper inspired by Cinderella slipper image. Heel should be a stylized figure-8 (two loops stacked = looks like both an 8 and a stiletto heel). Use brand light blue color.
+- **Update logo everywhere** — nav bar, login page, register page, hero section
+
+### Landing Page
+- **Entry deadline text** — Add "Thursday" → *"Thursday, March 19 · 12:00pm ET"*
+- **Mobile spacing** — More gap between countdown/deadline area and "Sign in to play" button (looks smushed on mobile)
+- **Section spacing** — Consistent gaps between all cards/sections (too much gap before "Playing with friends" box — should match gap between other sections)
+
+### Login Page
+- **Copy change** — *"try the demo first — no sign-in required"* → *"see how 2025 played out: no sign-in required"*
+
+### Leaderboard
+- **Mobile must match desktop** — Mobile currently shows seeds and acronyms; desktop shows logos. Both should show team logos consistently.
+- **Team logo overlays** — Already in CLAUDE.md spec but NOT implemented:
+  - Bottom-right of logo: seed number, color-coded (red 1-4, orange 5-8, yellow 9-12, green 13-16)
+  - Top-left of logo: region badge (S/W/E/MW)
+  - Border color = status: green (won most recent round), yellow (still to play), red (eliminated)
+  - Border should be thick enough to see clearly
+- **Dimension tabs MUST be shown** even for 2025 (Global tab only active, but the tab bar should be visible to show the feature exists)
+
+### My Picks
+- **Remove "All Teams" view** — already specified in CLAUDE.md as redundant. Only By Region and By Seed views.
+
+### Critical Priority — Core Flow
+- **Registration → picks → confirm → change → export** is the #1 priority
+- If all else fails, admin must be able to export all player picks to CSV so the game can run on Google Sheets as fallback
+- Must have a working demo/sandbox mode where user can test the full flow without real OAuth/email credentials
+
+---
+
 ---
 
 ## Leaderboard Design
