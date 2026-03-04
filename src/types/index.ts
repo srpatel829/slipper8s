@@ -98,6 +98,8 @@ export interface LeaderboardEntry {
   ppr: number
   tps: number
   teamsRemaining: number
+  maxPossibleScore?: number | null
+  expectedScore?: number | null
   maxRank?: number | null
   floorRank?: number | null
   tierName?: string | null

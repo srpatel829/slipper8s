@@ -17,6 +17,9 @@ export type EntryWithRelations = {
   entryNumber: number
   nickname: string | null
   charityPreference: string | null
+  score?: number | null
+  maxPossibleScore?: number | null
+  expectedScore?: number | null
   user: {
     id: string
     name: string | null
@@ -193,6 +196,8 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     ppr,
     tps: currentScore + ppr,
     teamsRemaining,
+    maxPossibleScore: entry.maxPossibleScore ?? null,
+    expectedScore: entry.expectedScore ?? null,
     picks,
   }
 }

@@ -25,7 +25,16 @@ async function getLeaderboard() {
       draftInProgress: false,
       entryPicks: { some: {} },
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      entryNumber: true,
+      nickname: true,
+      charityPreference: true,
+      score: true,
+      maxPossibleScore: true,
+      expectedScore: true,
+      createdAt: true,
       user: {
         select: {
           id: true,
@@ -96,7 +105,7 @@ export default async function LeaderboardPage() {
             <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Score = seed x wins | PPR = possible points remaining | TPS = total potential score
+            Score = seed × wins · Max Score = collision-aware maximum possible
           </p>
         </div>
         <Link

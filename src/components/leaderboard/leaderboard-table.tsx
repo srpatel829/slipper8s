@@ -341,7 +341,7 @@ interface LeaderboardTableProps {
   userProfile?: UserProfile | null
 }
 
-type SortKey = "rank" | "currentScore" | "ppr" | "tps" | "teamsRemaining" | "percentile"
+type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore"
 type SortDir = "asc" | "desc"
 
 function filterByDimension(
@@ -440,10 +440,15 @@ function LeaderboardRow({
               </span>
             </div>
           )}
-          <div className="flex items-center gap-4 text-xs">
+          <div className="flex items-center gap-3 text-xs flex-wrap">
             <span>Score: <strong className="font-mono">{entry.currentScore}</strong></span>
-            <span className="text-muted-foreground">PPR: <strong className="font-mono">+{entry.ppr}</strong></span>
-            <span>Max: <strong className="font-mono text-primary">{entry.tps}</strong></span>
+            {entry.expectedScore != null && (
+              <span className="text-muted-foreground">Exp: <strong className="font-mono">{entry.expectedScore.toFixed(1)}</strong></span>
+            )}
+            <span>Max: <strong className="font-mono text-primary">{entry.maxPossibleScore ?? entry.tps}</strong></span>
+            {entry.maxRank != null && (
+              <span className="text-green-400">Max↑: <strong className="font-mono">#{entry.maxRank}</strong></span>
+            )}
           </div>
         </div>
       </button>
@@ -453,7 +458,7 @@ function LeaderboardRow({
         className="w-full text-left hidden sm:block"
         onClick={onToggle}
       >
-        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 items-center px-4 py-3">
+        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
           <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
             #{entry.rank}
           </div>
@@ -481,13 +486,21 @@ function LeaderboardRow({
             </span>
           </div>
           <div className="text-right"><span className="font-mono font-semibold text-sm">{entry.currentScore}</span></div>
-          <div className="text-right"><span className="font-mono text-sm text-muted-foreground">+{entry.ppr}</span></div>
-          <div className="text-right"><span className="font-mono font-bold text-sm text-primary">{entry.tps}</span></div>
-          <div className="flex justify-center">
-            {entry.isPaid ? (
-              <div className="w-2 h-2 rounded-full bg-green-400" title="Paid" />
+          <div className="text-right">
+            <span className="font-mono text-sm text-muted-foreground">
+              {entry.expectedScore != null ? entry.expectedScore.toFixed(1) : "–"}
+            </span>
+          </div>
+          <div className="text-right">
+            <span className="font-mono font-bold text-sm text-primary">
+              {entry.maxPossibleScore != null ? entry.maxPossibleScore : entry.tps}
+            </span>
+          </div>
+          <div className="text-center">
+            {entry.maxRank != null ? (
+              <span className="font-mono text-sm text-green-400">#{entry.maxRank}</span>
             ) : (
-              <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
+              <span className="text-sm text-muted-foreground/40">–</span>
             )}
           </div>
         </div>
@@ -508,9 +521,25 @@ function LeaderboardRow({
                 <TeamPill key={pick.teamId} pick={pick} />
               ))}
           </div>
-          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
+            <span>Rank: <strong className="text-foreground">#{entry.rank}</strong></span>
+            {entry.maxRank != null ? (
+              <span>Max Rank: <strong className="text-green-400">↑ #{entry.maxRank}</strong></span>
+            ) : (
+              <span>Max Rank: <span className="text-muted-foreground/40">–</span></span>
+            )}
+            {entry.floorRank != null ? (
+              <span>Floor Rank: <strong className="text-red-400">↓ #{entry.floorRank}</strong></span>
+            ) : (
+              <span>Floor Rank: <span className="text-muted-foreground/40">–</span></span>
+            )}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 flex-wrap">
             <span>Score: <strong className="text-foreground">{entry.currentScore}</strong></span>
-            <span>Max Score: <strong className="text-foreground">{entry.tps}</strong></span>
+            <span>Max Score: <strong className="text-foreground">{entry.maxPossibleScore ?? entry.tps}</strong></span>
+            {entry.expectedScore != null && (
+              <span>Expected: <strong className="text-foreground">{entry.expectedScore.toFixed(1)}</strong></span>
+            )}
             {entry.percentile !== undefined && (
               <span>Percentile: <strong className="text-foreground">Top {entry.percentile}%</strong></span>
             )}
@@ -532,8 +561,8 @@ function LeaderboardRow({
 export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, userLeagues, userProfile }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
-  const [sortKey, setSortKey] = useState<SortKey>("currentScore")
-  const [sortDir, setSortDir] = useState<SortDir>("desc")
+  const [sortKey, setSortKey] = useState<SortKey>("rank")
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dimension, setDimension] = useState<DimensionTab>("global")
@@ -577,7 +606,9 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
   const filtered = dimension === "global" ? data : rerankFiltered(filterByDimension(data, dimension, userProfile))
   const sorted = [...filtered].sort((a, b) => {
     const mult = sortDir === "asc" ? 1 : -1
-    return (a[sortKey] - b[sortKey]) * mult
+    const aVal = a[sortKey] ?? 0
+    const bVal = b[sortKey] ?? 0
+    return ((aVal as number) - (bVal as number)) * mult
   })
 
   const SortBtn = ({ col, label }: { col: SortKey; label: string }) => (
@@ -677,16 +708,16 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         )}
       </div>
 
-      {/* Column headers */}
-      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 px-4 py-2">
+      {/* Column headers — Spec: Rank | Percentile | Player | Teams Left | Score | Expected | Max Score | Max Rank */}
+      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 px-4 py-2">
         <SortBtn col="rank" label="#" />
         <SortBtn col="percentile" label="%" />
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
         <div className="text-right"><SortBtn col="teamsRemaining" label="Left" /></div>
-        <div className="text-right"><SortBtn col="currentScore" label="Pts" /></div>
-        <div className="text-right"><SortBtn col="ppr" label="PPR" /></div>
-        <div className="text-right"><SortBtn col="tps" label="TPS" /></div>
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">$</span>
+        <div className="text-right"><SortBtn col="currentScore" label="Score" /></div>
+        <div className="text-right"><SortBtn col="expectedScore" label="Exp" /></div>
+        <div className="text-right"><SortBtn col="maxPossibleScore" label="Max" /></div>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Max↑</span>
       </div>
 
       {/* Optimal 8 card (above real leaderboard) */}
@@ -819,7 +850,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
           <div className="flex items-center gap-1.5">
             <TrendingUp className="h-3 w-3" />
-            TPS = Score + PPR (Possible Points Remaining)
+            Max Score = collision-aware maximum possible score
           </div>
           <span>
             {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}

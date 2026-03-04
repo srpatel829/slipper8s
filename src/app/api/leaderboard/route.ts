@@ -51,7 +51,16 @@ export async function GET(req: NextRequest) {
       draftInProgress: false,
       entryPicks: { some: {} },
     },
-    include: {
+    select: {
+      id: true,
+      userId: true,
+      entryNumber: true,
+      nickname: true,
+      charityPreference: true,
+      score: true,
+      maxPossibleScore: true,
+      expectedScore: true,
+      createdAt: true,
       user: {
         select: {
           id: true,
