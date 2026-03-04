@@ -18,6 +18,8 @@ export default function DemoTeamsPage() {
     return counts
   }, [demoUserPicks])
 
+  const totalDemoEntries = demoUserPicks.size
+
   const rows: TeamRow[] = useMemo(() => {
     return teamsData
       .filter(t => !t.isPlayIn)
@@ -30,6 +32,7 @@ export default function DemoTeamsPage() {
         eliminated: t.eliminated,
         wins: t.wins,
         logoUrl: t.logoUrl,
+        conference: (t as Record<string, unknown>).conference as string ?? null,
         pickerCount: pickerCountMap.get(t.id) ?? 0,
       }))
   }, [teamsData, pickerCountMap])
@@ -39,10 +42,10 @@ export default function DemoTeamsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Tournament Teams</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          All {rows.length} teams · Score = seed × wins · PPR = remaining potential · TPS = Score + PPR
+          All {rows.length} teams · {totalDemoEntries} entries · Default sort: % Selected
         </p>
       </div>
-      <TeamsTable teams={rows} />
+      <TeamsTable teams={rows} totalEntries={totalDemoEntries} />
     </div>
   )
 }
