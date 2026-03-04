@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma"
+import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
 
 const ESPN_URL =
@@ -42,6 +43,9 @@ export function transformESPNEvents(events: ESPNEvent[]): LiveGameData[] {
 // Full ESPN sync: upsert teams, games, update wins/eliminated, resolve play-in slots
 export async function syncTournamentData(): Promise<SyncResult> {
   const result: SyncResult = { gamesUpdated: 0, teamsUpdated: 0, playInResolved: 0, errors: [] }
+
+  // Track newly completed games for snapshot/checkpoint pipeline
+  const newlyCompletedGameIds: string[] = []
 
   let data: ESPNScoreboardResponse
   try {
@@ -124,7 +128,7 @@ export async function syncTournamentData(): Promise<SyncResult> {
       const loserTeam = isCompleted ? (c1.winner ? team2 : team1) : null
 
       // Upsert tournament game
-      await prisma.tournamentGame.upsert({
+      const upsertedGame = await prisma.tournamentGame.upsert({
         where: { espnGameId: event.id },
         create: {
           espnGameId: event.id,
@@ -152,6 +156,9 @@ export async function syncTournamentData(): Promise<SyncResult> {
       // Update wins / eliminated ONLY when game JUST completed (not already processed)
       // This prevents double-counting wins on repeated syncs
       if (isCompleted && winnerTeam && loserTeam && !wasAlreadyComplete) {
+        // Track this game as newly completed for snapshot pipeline
+        newlyCompletedGameIds.push(upsertedGame.id)
+
         // Only count wins for round > 0 (play-in wins don't count per spec)
         if (round > 0) {
           await prisma.team.update({
@@ -216,11 +223,23 @@ export async function syncTournamentData(): Promise<SyncResult> {
   }
 
   // ── Recalculate all entry scores after sync ─────────────────────────────────
-  try {
-    const recalcResult = await recalculateAllEntryScores()
-    result.entriesRecalculated = recalcResult.updated
-  } catch (err) {
-    result.errors.push(`Score recalc failed: ${String(err)}`)
+  if (newlyCompletedGameIds.length > 0) {
+    try {
+      const recalcResult = await recalculateAllEntryScores()
+      result.entriesRecalculated = recalcResult.updated
+    } catch (err) {
+      result.errors.push(`Score recalc failed: ${String(err)}`)
+    }
+
+    // ── Save score snapshots for newly completed games (spec step 8) ──────
+    try {
+      for (const gameId of newlyCompletedGameIds) {
+        await saveScoreSnapshots(gameId)
+        await checkAndCreateCheckpoint(gameId)
+      }
+    } catch (err) {
+      result.errors.push(`Snapshot save failed: ${String(err)}`)
+    }
   }
 
   return result
