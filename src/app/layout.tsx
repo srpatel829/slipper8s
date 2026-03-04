@@ -36,11 +36,13 @@ export const metadata: Metadata = {
     title: "Slipper8s — College Basketball Tournament Pool",
     description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
     locale: "en_US",
+    images: [{ url: "/api/og", width: 1200, height: 630, alt: "Slipper8s — College Basketball Tournament Pool" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Slipper8s — College Basketball Tournament Pool",
     description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
+    images: ["/api/og"],
   },
   icons: {
     icon: "/favicon.ico",
