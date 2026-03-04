@@ -99,6 +99,9 @@ export interface LeaderboardEntry {
   floorRank?: number | null
   tierName?: string | null
   charity?: string | null
+  country?: string | null
+  state?: string | null
+  gender?: string | null
   picks: ResolvedPickSummary[]
 }
 

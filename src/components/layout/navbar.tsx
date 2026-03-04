@@ -34,6 +34,7 @@ const NAV_LINKS = [
   { href: "/bracket", label: "Bracket", icon: GitBranch },
   { href: "/simulator", label: "Simulator", icon: Play },
   { href: "/teams", label: "Teams", icon: Grid2X2 },
+  { href: "/leagues", label: "Leagues", icon: Users },
 ]
 
 export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {

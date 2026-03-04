@@ -248,23 +248,76 @@ function Optimal8Card({ data }: { data: Optimal8Data }) {
   )
 }
 
+export type DimensionTab = "global" | "state" | "country" | "gender"
+
+interface LeagueInfo {
+  id: string
+  name: string
+}
+
+interface UserProfile {
+  country?: string | null
+  state?: string | null
+  gender?: string | null
+}
+
 interface LeaderboardTableProps {
   initialData: LeaderboardEntry[]
   currentUserId?: string
   demoMode?: boolean
   optimal8?: Optimal8Data
+  userLeagues?: LeagueInfo[]
+  userProfile?: UserProfile | null
 }
 
 type SortKey = "rank" | "currentScore" | "ppr" | "tps" | "teamsRemaining" | "percentile"
 type SortDir = "asc" | "desc"
 
-export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8 }: LeaderboardTableProps) {
+function filterByDimension(
+  data: LeaderboardEntry[],
+  dim: DimensionTab,
+  userProfile?: UserProfile | null,
+): LeaderboardEntry[] {
+  if (dim === "global") return data
+  if (dim === "state" && userProfile?.state) {
+    return data.filter((e) => e.state === userProfile.state)
+  }
+  if (dim === "country" && userProfile?.country) {
+    return data.filter((e) => e.country === userProfile.country)
+  }
+  if (dim === "gender" && userProfile?.gender) {
+    return data.filter((e) => e.gender === userProfile.gender)
+  }
+  return data
+}
+
+function rerankFiltered(entries: LeaderboardEntry[]): LeaderboardEntry[] {
+  const sorted = [...entries].sort(
+    (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
+  )
+  const total = sorted.length
+  return sorted.map((e, i) => ({
+    ...e,
+    rank: i + 1,
+    percentile: total <= 1 ? 0 : Math.round(((i + 1) / total) * 1000) / 10,
+  }))
+}
+
+const GENDER_LABELS: Record<string, string> = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  NO_RESPONSE: "All",
+}
+
+export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, userLeagues, userProfile }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>("currentScore")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [dimension, setDimension] = useState<DimensionTab>("global")
 
   // Sync initialData → data when it changes in demo mode (timeline scrubbing)
   useEffect(() => {
@@ -300,7 +353,9 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
     }
   }
 
-  const sorted = [...data].sort((a, b) => {
+  // Apply dimension filter, then re-rank, then sort
+  const filtered = dimension === "global" ? data : rerankFiltered(filterByDimension(data, dimension, userProfile))
+  const sorted = [...filtered].sort((a, b) => {
     const mult = sortDir === "asc" ? 1 : -1
     return (a[sortKey] - b[sortKey]) * mult
   })
@@ -345,6 +400,58 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
+        </div>
+      )}
+
+      {/* Dimension tabs */}
+      {!demoMode && (
+        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+          {(
+            [
+              { key: "global" as DimensionTab, label: "Global" },
+              ...(userProfile?.country ? [{ key: "country" as DimensionTab, label: userProfile.country }] : []),
+              ...(userProfile?.state ? [{ key: "state" as DimensionTab, label: userProfile.state }] : []),
+              ...(userProfile?.gender && userProfile.gender !== "NO_RESPONSE"
+                ? [{ key: "gender" as DimensionTab, label: GENDER_LABELS[userProfile.gender] ?? "Gender" }]
+                : []),
+            ]
+          ).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setDimension(key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                dimension === key
+                  ? "bg-primary/15 text-primary"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              }`}
+            >
+              {label}
+              {dimension === key && key !== "global" && (
+                <span className="ml-1.5 text-[10px] opacity-60">
+                  ({filtered.length})
+                </span>
+              )}
+            </button>
+          ))}
+          {/* League tabs */}
+          {userLeagues && userLeagues.length > 0 && (
+            <>
+              <div className="w-px h-5 bg-border mx-1 shrink-0" />
+              {userLeagues.map((league) => (
+                <button
+                  key={league.id}
+                  onClick={() => {
+                    // For now, league filtering just links to the leagues page
+                    // TODO: implement league-specific leaderboard data fetching
+                    window.location.href = "/leagues"
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 whitespace-nowrap"
+                >
+                  {league.name}
+                </button>
+              ))}
+            </>
+          )}
         </div>
       )}
 
@@ -513,13 +620,16 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       </div>
 
       {/* Footer */}
-      {data.length > 0 && (
+      {filtered.length > 0 && (
         <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
           <div className="flex items-center gap-1.5">
             <TrendingUp className="h-3 w-3" />
             TPS = Score + PPR (Possible Points Remaining)
           </div>
-          <span>{data.length} entr{data.length === 1 ? "y" : "ies"}</span>
+          <span>
+            {filtered.length} entr{filtered.length === 1 ? "y" : "ies"}
+            {dimension !== "global" && ` (${data.length} total)`}
+          </span>
         </div>
       )}
     </div>

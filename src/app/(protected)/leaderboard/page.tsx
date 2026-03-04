@@ -14,6 +14,10 @@ async function getLeaderboard() {
       name: true,
       email: true,
       isPaid: true,
+      username: true,
+      country: true,
+      state: true,
+      gender: true,
       picks: {
         include: {
           team: true,
@@ -33,10 +37,34 @@ async function getLeaderboard() {
   return computeLeaderboard(usersWithCharity)
 }
 
+async function getUserLeagues(userId: string) {
+  const leagues = await prisma.league.findMany({
+    where: {
+      OR: [
+        { adminId: userId },
+        { entries: { some: { userId } } },
+      ],
+    },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  })
+  return leagues
+}
+
+async function getUserProfile(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { country: true, state: true, gender: true },
+  })
+  return user
+}
+
 export default async function LeaderboardPage() {
-  const [session, leaderboard] = await Promise.all([
-    auth(),
+  const session = await auth()
+  const [leaderboard, userLeagues, userProfile] = await Promise.all([
     getLeaderboard(),
+    session?.user?.id ? getUserLeagues(session.user.id) : Promise.resolve([]),
+    session?.user?.id ? getUserProfile(session.user.id) : Promise.resolve(null),
   ])
 
   return (
@@ -64,6 +92,8 @@ export default async function LeaderboardPage() {
       <LeaderboardTable
         initialData={leaderboard}
         currentUserId={session?.user?.id}
+        userLeagues={userLeagues}
+        userProfile={userProfile}
       />
     </div>
   )

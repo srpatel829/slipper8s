@@ -13,6 +13,10 @@ type UserWithPicks = {
   email: string
   isPaid: boolean
   charityPreference?: string | null
+  username?: string | null
+  country?: string | null
+  state?: string | null
+  gender?: string | null
   picks: PickWithRelations[]
 }
 
@@ -94,6 +98,10 @@ export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "r
     name: user.name ?? user.email,
     email: user.email,
     isPaid: user.isPaid,
+    username: user.username ?? null,
+    country: user.country ?? null,
+    state: user.state ?? null,
+    gender: user.gender ?? null,
     currentScore,
     ppr,
     tps: currentScore + ppr,

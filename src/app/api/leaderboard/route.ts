@@ -13,6 +13,10 @@ export async function GET() {
       name: true,
       email: true,
       isPaid: true,
+      username: true,
+      country: true,
+      state: true,
+      gender: true,
       picks: {
         include: {
           team: true,
