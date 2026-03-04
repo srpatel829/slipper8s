@@ -3,6 +3,7 @@ import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
+import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
 
@@ -123,6 +124,9 @@ export default async function LeaderboardPage() {
         userLeagues={userLeagues}
         userProfile={userProfile}
       />
+
+      {/* Score history chart — collapsible */}
+      <ScoreHistorySection />
     </div>
   )
 }

@@ -657,27 +657,29 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       {/* Status color legend */}
       <StatusLegend />
 
-      {/* Dimension tabs */}
+      {/* Dimension tabs — always visible per spec */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {(
           [
-            { key: "global" as DimensionTab, label: "Global" },
-            ...(userProfile?.country ? [{ key: "country" as DimensionTab, label: userProfile.country }] : []),
-            ...(userProfile?.state ? [{ key: "state" as DimensionTab, label: userProfile.state }] : []),
-            ...(userProfile?.gender && userProfile.gender !== "NO_RESPONSE"
-              ? [{ key: "gender" as DimensionTab, label: GENDER_LABELS[userProfile.gender] ?? "Gender" }]
-              : []),
-            ...(userProfile?.conference ? [{ key: "conference" as DimensionTab, label: userProfile.conference }] : []),
+            { key: "global" as DimensionTab, label: "Global", available: true },
+            { key: "country" as DimensionTab, label: userProfile?.country ?? "Country", available: !!userProfile?.country },
+            { key: "state" as DimensionTab, label: userProfile?.state ?? "State", available: !!userProfile?.state },
+            { key: "gender" as DimensionTab, label: userProfile?.gender ? (GENDER_LABELS[userProfile.gender] ?? "Gender") : "Gender", available: !!userProfile?.gender && userProfile.gender !== "NO_RESPONSE" },
+            { key: "conference" as DimensionTab, label: userProfile?.conference ?? "Conference", available: !!userProfile?.conference },
           ]
-        ).map(({ key, label }) => (
+        ).map(({ key, label, available }) => (
           <button
             key={key}
-            onClick={() => setDimension(key)}
+            onClick={() => available && setDimension(key)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               dimension === key
                 ? "bg-primary/15 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                : available
+                  ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  : "text-muted-foreground/30 cursor-not-allowed"
             }`}
+            disabled={!available}
+            title={!available ? `Add your ${key} in profile settings to filter` : undefined}
           >
             {label}
             {dimension === key && key !== "global" && (
