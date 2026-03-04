@@ -34,7 +34,9 @@ interface PicksFormProps {
   demoMode?: boolean
   onDemoSubmit?: (picks: SelectedPick[], charity: string | null) => void
   matchupInfoMap?: Map<string, string>  // teamId → "vs #X Opp · Max Xpts" — for demo pre-tournament
-  enableViewModes?: boolean             // true in demo mode — shows region/all/seed view toggles + enhanced tracker
+  enableViewModes?: boolean             // shows region/seed view toggles + enhanced tracker
+  entryId?: string                      // current entry ID for updates
+  seasonId?: string                     // current season ID for new entries
 }
 
 export type SelectedPick = { teamId?: string; playInSlotId?: string }
@@ -53,6 +55,8 @@ export function PicksForm({
   onDemoSubmit,
   matchupInfoMap,
   enableViewModes,
+  entryId,
+  seasonId,
 }: PicksFormProps) {
   const router = useRouter()
   const isEditing = existingPicks.length > 0
@@ -103,10 +107,20 @@ export function PicksForm({
     setSubmitting(true)
     try {
       const method = isEditing ? "PUT" : "POST"
+      const payload: Record<string, unknown> = {
+        picks: selected,
+        charityPreference: charity || null,
+      }
+      if (method === "PUT" && entryId) {
+        payload.entryId = entryId
+      }
+      if (method === "POST" && seasonId) {
+        payload.seasonId = seasonId
+      }
       const res = await fetch("/api/picks", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ picks: selected, charityPreference: charity || null }),
+        body: JSON.stringify(payload),
       })
       if (!res.ok) {
         const err = await res.json()
@@ -221,28 +235,25 @@ export function PicksForm({
         </div>
       )}
 
-      {/* View mode selector (demo only) */}
-      {enableViewModes && (
-        <div className="flex items-center gap-1">
-          <span className="text-[10px] text-muted-foreground mr-1.5 uppercase tracking-wider font-semibold">View</span>
-          {([
-            { mode: "region" as const, label: "By Region", icon: Grid2x2 },
-            { mode: "all" as const, label: "All Teams", icon: LayoutGrid },
-            { mode: "seed" as const, label: "By Seed", icon: Layers },
-          ]).map(({ mode, label, icon: Icon }) => (
-            <Button
-              key={mode}
-              size="sm"
-              variant={viewMode === mode ? "default" : "outline"}
-              className={cn("h-7 text-xs gap-1", viewMode !== mode && "text-muted-foreground")}
-              onClick={() => setViewMode(mode)}
-            >
-              <Icon className="h-3 w-3" />
-              {label}
-            </Button>
-          ))}
-        </div>
-      )}
+      {/* View mode selector — By Region and By Seed (no All Teams per spec) */}
+      <div className="flex items-center gap-1">
+        <span className="text-[10px] text-muted-foreground mr-1.5 uppercase tracking-wider font-semibold">View</span>
+        {([
+          { mode: "region" as const, label: "By Region", icon: Grid2x2 },
+          { mode: "seed" as const, label: "By Seed", icon: Layers },
+        ]).map(({ mode, label, icon: Icon }) => (
+          <Button
+            key={mode}
+            size="sm"
+            variant={viewMode === mode ? "default" : "outline"}
+            className={cn("h-7 text-xs gap-1", viewMode !== mode && "text-muted-foreground")}
+            onClick={() => setViewMode(mode)}
+          >
+            <Icon className="h-3 w-3" />
+            {label}
+          </Button>
+        ))}
+      </div>
 
       {/* ── Region tabs view (default) ── */}
       {viewMode === "region" && (
