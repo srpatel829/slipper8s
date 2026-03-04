@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
     rowParts.push(
       entry.score,
       entry.maxPossibleScore,
-      Math.round(entry.expectedScore * 100) / 100,
+      entry.expectedScore != null ? Math.round(entry.expectedScore * 100) / 100 : null,
       entry.teamsAlive,
       entry.createdAt.toISOString()
     )

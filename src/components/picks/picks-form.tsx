@@ -41,7 +41,7 @@ interface PicksFormProps {
 
 export type SelectedPick = { teamId?: string; playInSlotId?: string }
 
-type ViewMode = "region" | "all" | "seed"
+type ViewMode = "region" | "seed"
 
 const MAX_PICKS = 8
 
