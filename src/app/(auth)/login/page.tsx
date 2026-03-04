@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Trophy, Zap, TrendingUp, Play } from "lucide-react"
 import Link from "next/link"
+import { DevLoginForm } from "@/components/dev-login-form"
 
 export default function LoginPage() {
   return (
@@ -12,7 +13,7 @@ export default function LoginPage() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] rounded-full opacity-15"
-          style={{ background: "radial-gradient(ellipse, oklch(0.72 0.18 42), transparent 70%)" }}
+          style={{ background: "radial-gradient(ellipse, oklch(0.71 0.17 213), transparent 70%)" }}
         />
       </div>
 
@@ -97,6 +98,9 @@ export default function LoginPage() {
               Send magic link
             </Button>
           </form>
+
+          {/* Dev-only login bypass */}
+          {process.env.NODE_ENV !== "production" && <DevLoginForm />}
         </div>
 
         {/* Feature pills */}
@@ -119,7 +123,7 @@ export default function LoginPage() {
         <div className="text-center mt-4">
           <Link href="/demo" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1.5">
             <Play className="h-3 w-3" />
-            Try the demo first — no sign-in required
+            See how 2025 played out — no sign-in required
           </Link>
         </div>
       </div>
