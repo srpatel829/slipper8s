@@ -99,7 +99,7 @@ export default function HowToPlayPage() {
         </section>
 
         {/* FAQ Section */}
-        <section className="mb-16">
+        <section className="mb-16" id="faq">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
               <HelpCircle className="h-5 w-5 text-amber-400" />
@@ -107,54 +107,194 @@ export default function HowToPlayPage() {
             <h2 className="text-2xl font-bold tracking-tight">Frequently Asked Questions</h2>
           </div>
 
-          <div className="space-y-4">
-            {[
-              {
-                q: "How many teams do I pick?",
-                a: "Exactly 8. You can pick from any region and any seed.",
-              },
-              {
-                q: "What are play-in games?",
-                a: "Some seeds (typically 11 and 16) have play-in games before the main bracket. When you pick one of these slots, the winner of the play-in game automatically becomes your pick. The seed value stays the same.",
-              },
-              {
-                q: "Can I change my picks after submitting?",
-                a: "Yes — you can edit your picks as many times as you want before the entry deadline. Once the deadline passes, all picks are locked.",
-              },
-              {
-                q: "Can I submit multiple entries?",
-                a: "Yes. There is no cap on the number of entries per player per season.",
-              },
-              {
-                q: "How is the score calculated?",
-                a: "Score = seed x wins for each of your 8 teams, summed together. Play-in game wins do not count.",
-              },
-              {
-                q: "What is Max Score?",
-                a: "Max Score is the highest score your entry could theoretically achieve if all your remaining alive teams win every future game. It accounts for bracket collisions — if two of your picks would meet each other, only one can advance.",
-              },
-              {
-                q: "What is the Optimal 8?",
-                a: "The 8 teams with the highest combined score at any given point in the tournament. It represents the theoretical ceiling — the best possible picks given what has happened so far.",
-              },
-              {
-                q: "What are private leagues?",
-                a: "Private leagues let you compete with friends or coworkers. You appear on both the global leaderboard and your league leaderboard. Create a league and share the invite code.",
-              },
-              {
-                q: "When is the entry deadline?",
-                a: "Picks lock before the first game of the tournament. The exact deadline is shown on the homepage countdown timer. All deadlines are enforced server-side in UTC.",
-              },
-              {
-                q: "Is it free to play?",
-                a: "Yes. Slipper8s is completely free.",
-              },
-            ].map(({ q, a }) => (
-              <div key={q} className="bg-card border border-border rounded-xl p-5">
-                <h3 className="font-semibold text-sm mb-2">{q}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
-              </div>
-            ))}
+          {/* Section 1: Getting Started */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <span className="h-px flex-1 bg-border" />
+              Getting Started
+              <span className="h-px flex-1 bg-border" />
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "How many teams do I pick?",
+                  a: "Exactly 8. You can pick from any region and any seed — there are no restrictions on how you build your roster.",
+                },
+                {
+                  q: "When is the entry deadline?",
+                  a: "Picks lock before the first game of the tournament. The exact date and time is shown on the homepage countdown timer and is always displayed in Eastern Time. All deadlines are enforced server-side — if you are mid-edit when the deadline passes, your save will be rejected.",
+                },
+                {
+                  q: "Can I change my picks after submitting?",
+                  a: "Yes — you can edit your picks as many times as you want before the entry deadline. You will receive a confirmation email each time you save. Once the deadline passes, all picks are permanently locked.",
+                },
+                {
+                  q: "Can I submit multiple entries?",
+                  a: "Yes. There is no cap on the number of entries per player per season. Each entry is scored independently. You can give each entry a nickname to keep track of them.",
+                },
+                {
+                  q: "Can I delete an entry?",
+                  a: "Yes, but only before the deadline. Once the tournament starts, all entries are locked and cannot be deleted. A confirmation warning is shown before deletion since it cannot be undone.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-semibold text-sm mb-2">{q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 2: Scoring & Strategy */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <span className="h-px flex-1 bg-border" />
+              Scoring & Strategy
+              <span className="h-px flex-1 bg-border" />
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "How is the score calculated?",
+                  a: "Score = seed x wins for each of your 8 teams, summed together. A #12 seed with 2 wins earns 24 points (12 x 2). A #1 seed with 6 wins (national champion) earns only 6 points (1 x 6). Play-in game wins do not count toward scoring.",
+                },
+                {
+                  q: "What are play-in games and how do they work?",
+                  a: "Some seeds (typically 11 and 16) have play-in games before the main bracket begins. When you pick one of these play-in slots, the winner of the play-in game automatically becomes your pick. The seed value stays the same regardless of which team wins the play-in.",
+                },
+                {
+                  q: "What is Max Score?",
+                  a: "Max Score is the highest score your entry could theoretically achieve if all your remaining alive teams win every future game. Importantly, it accounts for bracket collisions — if two of your picks are in the same region and would eventually meet, only one can advance. The higher-seeded pick (larger seed number) is assumed to survive because it earns more points per win.",
+                },
+                {
+                  q: "What is Expected Score?",
+                  a: "Expected Score uses pre-tournament win probabilities to estimate how many points your picks will earn. It is calculated using marginal win probabilities for each remaining round. During the tournament, it updates to use actual wins for completed rounds and probabilities for future rounds only.",
+                },
+                {
+                  q: "What is the Optimal 8?",
+                  a: "The Optimal 8 is the set of 8 teams with the highest combined score at any given point in the tournament. It represents the theoretical ceiling — the best possible picks given results so far. After the tournament ends, a Hindsight Optimal 8 shows the true best picks knowing all final results.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-semibold text-sm mb-2">{q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 3: Leaderboard & Rankings */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <span className="h-px flex-1 bg-border" />
+              Leaderboard & Rankings
+              <span className="h-px flex-1 bg-border" />
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "How are rankings determined?",
+                  a: "Entries are ranked by total score (seed x wins summed across all 8 picks). In the event of a tie, the tiebreaker is current score, then alphabetical by name. Rankings update after every completed game.",
+                },
+                {
+                  q: "What are the tier names?",
+                  a: "Based on your finishing position: Champion (1st), Runner Up (2nd), Final 4 (3rd-4th), Elite 8 (5th-8th), Sweet 16 (9th-16th), Worthy 32 (17th-32nd), Dancing 64 (33rd-64th), and Play In 68 (65th-68th). Your tier name and percentile are shown on the leaderboard.",
+                },
+                {
+                  q: "What is the percentile ranking?",
+                  a: "Percentile shows where you stand relative to all entries. \"Top 5%\" means you scored better than 95% of all entries. Percentile is shown alongside your absolute rank everywhere in the app — on the leaderboard, your dashboard, and in notifications.",
+                },
+                {
+                  q: "What are the leaderboard dimensions?",
+                  a: "You can view rankings filtered by different dimensions: Global (everyone), Country, State (US only), Gender, and Conference (based on your favorite team). Each dimension has its own independent rankings and percentiles. Fill in your profile to appear in dimension-specific views.",
+                },
+                {
+                  q: "What are Max Rank and Floor Rank?",
+                  a: "Max Rank is the best finishing position your entry could achieve if everything goes your way — it uses collision-aware bracket analysis. Floor Rank is the worst case. Together they show the range of possible outcomes for your entry.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-semibold text-sm mb-2">{q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 4: Features */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <span className="h-px flex-1 bg-border" />
+              Features
+              <span className="h-px flex-1 bg-border" />
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "What are private leagues?",
+                  a: "Private leagues let you compete with friends, family, or coworkers. Create a league, share the invite code, and your group gets its own leaderboard. You still appear on the global leaderboard too. There is no limit on how many leagues you can join.",
+                },
+                {
+                  q: "How does the score history chart work?",
+                  a: "The score history chart shows how scores evolved throughout the tournament. It plots your entry, the current leader, the median player, and the Optimal 8 at each checkpoint. Checkpoints are created after all games in a session are final.",
+                },
+                {
+                  q: "How does the simulator work?",
+                  a: "The simulator lets you explore \"what if\" scenarios. Completed game results are locked, but you can change the outcomes of future games to see how the leaderboard would change. The right side panel updates in real time as you modify scenarios.",
+                },
+                {
+                  q: "What email notifications will I receive?",
+                  a: "You will always receive: a welcome email, an entry confirmation when you save picks, a notification when entries lock, and final results after the tournament. Optional notifications (on by default) include deadline reminders and daily recaps during the tournament. You can turn off optional notifications in your profile settings.",
+                },
+                {
+                  q: "Can I share my results?",
+                  a: "Yes. Share cards are generated with your rank, percentile, score, and teams remaining. They work as rich previews in WhatsApp, iMessage, Twitter, Slack, and anywhere else that supports Open Graph previews.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-semibold text-sm mb-2">{q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Section 5: General */}
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-4 flex items-center gap-2">
+              <span className="h-px flex-1 bg-border" />
+              General
+              <span className="h-px flex-1 bg-border" />
+            </h3>
+            <div className="space-y-3">
+              {[
+                {
+                  q: "Is it free to play?",
+                  a: "Yes. Slipper8s is completely free to play. No entry fees, no hidden costs.",
+                },
+                {
+                  q: "Do I need to fill in all my profile fields?",
+                  a: "No. Only your first name, last name, email, and username are required. Optional fields like country, state, gender, and favorite team unlock additional leaderboard dimensions — for example, filling in your state lets you see how you rank among players in your state.",
+                },
+                {
+                  q: "Can I change my username after registration?",
+                  a: "No. Your username is set once during registration and cannot be changed afterward. Choose carefully! The system will suggest a username based on your name, but you can customize it before confirming.",
+                },
+                {
+                  q: "How is this different from a traditional bracket?",
+                  a: "In a traditional bracket, you predict every game outcome. In Slipper8s, you just pick 8 teams. The scoring system (seed x wins) means higher-seeded underdogs are worth more per win, making sleeper picks and upsets central to your strategy — not just picking favorites.",
+                },
+                {
+                  q: "Where can I see past results?",
+                  a: "Historical tournament results are available in the app for past seasons. You can browse leaderboards, see who won, and explore the score history charts for previous years.",
+                },
+              ].map(({ q, a }) => (
+                <div key={q} className="bg-card border border-border rounded-xl p-5">
+                  <h3 className="font-semibold text-sm mb-2">{q}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{a}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -195,7 +335,7 @@ export default function HowToPlayPage() {
             <Link href="/demo">
               <Button size="lg" variant="outline" className="text-base px-8 h-12 gap-2">
                 <Play className="h-4 w-4 text-primary" />
-                Try the demo
+                See how 2025 played out
               </Button>
             </Link>
           </div>

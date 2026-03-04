@@ -311,12 +311,14 @@ model CheckpointDimensionSnapshot {
 }
 
 model AppSettings {
-  id               String    @id @default("main")
-  picksDeadline    DateTime?
-  payoutStructure  Json      @default("[]")
-  defaultCharities Json      @default("[]")
-  currentSeasonId  String?
-  updatedAt        DateTime  @updatedAt
+  id                      String    @id @default("main")
+  picksDeadline           DateTime?
+  payoutStructure         Json      @default("[]")
+  defaultCharities        Json      @default("[]")
+  currentSeasonId         String?
+  deadlineReminderSentAt  DateTime? // Tracks when 24h deadline reminder was last sent
+  entriesLockedSentAt     DateTime? // Tracks when entries-locked email was last sent
+  updatedAt               DateTime  @updatedAt
 }
 
 model ContentPage {

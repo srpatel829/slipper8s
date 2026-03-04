@@ -139,10 +139,10 @@ export default function RegisterPage() {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           username: username.trim(),
-          country: country || null,
-          state: state || null,
+          country: country && country !== "none" ? country : null,
+          state: state && state !== "none" ? state : null,
           gender: gender || null,
-          favoriteTeamId: favoriteTeamId || null,
+          favoriteTeamId: favoriteTeamId && favoriteTeamId !== "none" ? favoriteTeamId : null,
         }),
       })
 
