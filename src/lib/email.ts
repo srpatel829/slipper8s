@@ -268,3 +268,83 @@ export async function sendFinalResultsEmail(
     return { success: false, error }
   }
 }
+
+// ─── Daily Recap Email (optional — one per game day, after last game finalizes)
+
+export async function sendDailyRecapEmail(
+  to: string,
+  firstName: string,
+  data: {
+    rank: number
+    percentile: number
+    score: number
+    totalEntries: number
+    teamsRemaining: number
+    rankChange: number // positive = moved up, negative = moved down
+    roundLabel: string
+  },
+) {
+  const rankChangeText =
+    data.rankChange > 0
+      ? `⬆️ Moved up ${data.rankChange} spot${data.rankChange > 1 ? "s" : ""}`
+      : data.rankChange < 0
+        ? `⬇️ Dropped ${Math.abs(data.rankChange)} spot${Math.abs(data.rankChange) > 1 ? "s" : ""}`
+        : "➡️ Rank unchanged"
+
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `Slipper8s Daily Recap: #${data.rank} · ${data.score} pts 🏀`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#00A9E0;line-height:40px;text-align:center;font-size:20px;">🏀</div>
+      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Daily Recap — ${data.roundLabel}</h1>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">All games are final for today</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 20px;">
+        Hey ${firstName}! Here's where you stand after today's games.
+      </p>
+      <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px;">
+        <div>
+          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
+          <p style="color:#00A9E0;font-size:24px;font-weight:700;margin:0;">#${data.rank}</p>
+        </div>
+        <div>
+          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
+          <p style="color:#e4e4e7;font-size:24px;font-weight:700;margin:0;">${data.score}</p>
+        </div>
+        <div>
+          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Alive</p>
+          <p style="color:${data.teamsRemaining > 0 ? "#27AE60" : "#C0392B"};font-size:24px;font-weight:700;margin:0;">${data.teamsRemaining}/8</p>
+        </div>
+      </div>
+      <div style="text-align:center;padding:8px;background:#27272a;border-radius:8px;margin-bottom:16px;">
+        <p style="color:#e4e4e7;font-size:14px;margin:0;">${rankChangeText}</p>
+        <p style="color:#71717a;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entries</p>
+      </div>
+      <div style="text-align:center;">
+        <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+          View Full Leaderboard
+        </a>
+      </div>
+    </div>
+    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+      You can turn off daily recaps in your profile settings. — Slipper8s
+    </p>
+  </div>
+</body>
+</html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send daily recap:", error)
+    return { success: false, error }
+  }
+}

@@ -266,12 +266,13 @@ model TournamentGame {
 }
 
 model Checkpoint {
-  id          String   @id @default(cuid())
-  seasonId    String
-  gameIndex   Int
-  roundLabel  String
-  isSession   Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  id                String    @id @default(cuid())
+  seasonId          String
+  gameIndex         Int
+  roundLabel        String
+  isSession         Boolean   @default(false)
+  dailyRecapSentAt  DateTime? // Tracks when daily recap was sent for this checkpoint
+  createdAt         DateTime  @default(now())
 
   season     Season                       @relation(fields: [seasonId], references: [id])
   dimensions CheckpointDimensionSnapshot[]
