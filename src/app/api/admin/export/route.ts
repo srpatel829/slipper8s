@@ -103,9 +103,24 @@ export async function GET(request: NextRequest) {
     ],
   })
 
+  // ── Sort entries by score descending for ranking ─────────────────────────
+  const sortedEntries = [...entries].sort((a, b) => {
+    const scoreA = a.score ?? 0
+    const scoreB = b.score ?? 0
+    if (scoreB !== scoreA) return scoreB - scoreA
+    // Tiebreaker: alphabetical by name
+    const nameA = [a.user.firstName, a.user.lastName].filter(Boolean).join(" ")
+    const nameB = [b.user.firstName, b.user.lastName].filter(Boolean).join(" ")
+    return nameA.localeCompare(nameB)
+  })
+
+  const totalEntries = sortedEntries.length
+
   // ── Build CSV ─────────────────────────────────────────────────────────────
   // Header: fixed columns + 8 pick triplets (name, seed, region)
   const headerParts = [
+    "Rank",
+    "Percentile",
     "Entry ID",
     "Entry Number",
     "Player Name",
@@ -120,12 +135,19 @@ export async function GET(request: NextRequest) {
 
   const rows: string[] = [headerParts.map(csvEscape).join(",")]
 
-  for (const entry of entries) {
+  for (let rank = 0; rank < sortedEntries.length; rank++) {
+    const entry = sortedEntries[rank]
     const playerName = [entry.user.firstName, entry.user.lastName]
       .filter(Boolean)
       .join(" ") || ""
 
+    const percentile = totalEntries > 1
+      ? Math.round(((rank + 1) / totalEntries) * 1000) / 10
+      : 0
+
     const rowParts: (string | number | null)[] = [
+      rank + 1,
+      `Top ${percentile}%`,
       entry.id,
       entry.entryNumber,
       playerName,
