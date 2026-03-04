@@ -705,13 +705,13 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
           if (!showAll && sorted.length > 15 && currentUserId) {
             const top10 = sorted.slice(0, 10)
             const bottom2 = sorted.slice(-2)
-            const top10Ids = new Set(top10.map((e) => e.userId))
-            const bottom2Ids = new Set(bottom2.map((e) => e.userId))
+            const top10EntryIds = new Set(top10.map((e) => e.entryId))
+            const bottom2EntryIds = new Set(bottom2.map((e) => e.entryId))
             // User entries NOT already in top 10 or bottom 2
             const myEntries = sorted.filter(
-              (e) => e.userId === currentUserId && !top10Ids.has(e.userId) && !bottom2Ids.has(e.userId)
+              (e) => e.userId === currentUserId && !top10EntryIds.has(e.entryId) && !bottom2EntryIds.has(e.entryId)
             )
-            const bottom2Filtered = bottom2.filter((e) => !top10Ids.has(e.userId))
+            const bottom2Filtered = bottom2.filter((e) => !top10EntryIds.has(e.entryId))
             const hasMyEntries = myEntries.length > 0
             const hasBottom = bottom2Filtered.length > 0
 
@@ -754,13 +754,13 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                     )}
                     {section.entries.map((entry) => (
                       <LeaderboardRow
-                        key={entry.userId + "-" + sIdx}
+                        key={entry.entryId + "-" + sIdx}
                         entry={entry}
                         isMe={entry.userId === currentUserId}
-                        isExpanded={expandedId === entry.userId}
+                        isExpanded={expandedId === entry.entryId}
                         rankStyle={rankStyle}
                         onToggle={() =>
-                          setExpandedId(expandedId === entry.userId ? null : entry.userId)
+                          setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                         }
                       />
                     ))}
@@ -786,13 +786,13 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
             <>
               {sorted.map((entry) => (
                 <LeaderboardRow
-                  key={entry.userId}
+                  key={entry.entryId}
                   entry={entry}
                   isMe={entry.userId === currentUserId}
-                  isExpanded={expandedId === entry.userId}
+                  isExpanded={expandedId === entry.entryId}
                   rankStyle={rankStyle}
                   onToggle={() =>
-                    setExpandedId(expandedId === entry.userId ? null : entry.userId)
+                    setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                   }
                 />
               ))}

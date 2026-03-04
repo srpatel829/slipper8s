@@ -231,10 +231,13 @@ export function computeLeaderboardAtGame(
     const { totalPPR: ppr } = computeBracketAwarePPR(userPicks, bracketInfoMap)
 
     return {
+      entryId: user.id, // use userId as entryId in demo
       userId: user.id,
       name: user.name,
       email: user.email,
       isPaid: user.isPaid,
+      entryNumber: 1,
+      nickname: null,
       currentScore,
       ppr,
       tps: currentScore + ppr,

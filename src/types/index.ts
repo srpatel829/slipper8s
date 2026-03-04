@@ -84,6 +84,7 @@ export interface ESPNScoreboardResponse {
 // ─── App Types ─────────────────────────────────────────────────────────────────
 
 export interface LeaderboardEntry {
+  entryId: string
   userId: string
   rank: number
   percentile: number
@@ -91,6 +92,8 @@ export interface LeaderboardEntry {
   username?: string | null
   email: string
   isPaid: boolean
+  entryNumber: number
+  nickname?: string | null
   currentScore: number
   ppr: number
   tps: number

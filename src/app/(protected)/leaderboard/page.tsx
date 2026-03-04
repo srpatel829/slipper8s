@@ -1,40 +1,48 @@
 import { auth } from "@/lib/auth"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
 import { prisma } from "@/lib/prisma"
-import { computeLeaderboard } from "@/lib/scoring"
+import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
 async function getLeaderboard() {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      isPaid: true,
-      username: true,
-      country: true,
-      state: true,
-      gender: true,
-      picks: {
+  const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+  const seasonId = settings?.currentSeasonId
+
+  if (!seasonId) return []
+
+  const entries = await prisma.entry.findMany({
+    where: {
+      seasonId,
+      draftInProgress: false,
+      entryPicks: { some: {} },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isPaid: true,
+          username: true,
+          country: true,
+          state: true,
+          gender: true,
+        },
+      },
+      entryPicks: {
         include: {
           team: true,
           playInSlot: { include: { team1: true, team2: true, winner: true } },
         },
       },
     },
-    where: { picks: { some: {} } },
     orderBy: { createdAt: "asc" },
-  })
+  }) as EntryWithRelations[]
 
-  const usersWithCharity = users.map((u) => ({
-    ...u,
-    charityPreference: u.picks[0]?.charityPreference ?? null,
-  }))
-
-  return computeLeaderboard(usersWithCharity)
+  return computeLeaderboardFromEntries(entries)
 }
 
 async function getUserLeagues(userId: string) {
@@ -77,7 +85,7 @@ export default async function LeaderboardPage() {
             <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Score = seed × wins · PPR = possible points remaining · TPS = total potential score
+            Score = seed x wins | PPR = possible points remaining | TPS = total potential score
           </p>
         </div>
         <Link

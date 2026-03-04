@@ -1,38 +1,51 @@
 import { prisma } from "@/lib/prisma"
-import { computeLeaderboard } from "@/lib/scoring"
+import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { SimulatorPanel } from "@/components/simulator/simulator-panel"
 
 export const dynamic = "force-dynamic"
 
 export default async function SimulatorPage() {
-  const [teams, users] = await Promise.all([
+  const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+  const seasonId = settings?.currentSeasonId
+
+  const [teams, entries] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
-    prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        isPaid: true,
-        picks: {
-          include: {
-            team: true,
-            playInSlot: { include: { team1: true, team2: true, winner: true } },
+    seasonId
+      ? prisma.entry.findMany({
+          where: {
+            seasonId,
+            draftInProgress: false,
+            entryPicks: { some: {} },
           },
-        },
-      },
-      where: { picks: { some: {} } },
-    }),
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                isPaid: true,
+                username: true,
+                country: true,
+                state: true,
+                gender: true,
+              },
+            },
+            entryPicks: {
+              include: {
+                team: true,
+                playInSlot: { include: { team1: true, team2: true, winner: true } },
+              },
+            },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : Promise.resolve([]),
   ])
 
-  const usersWithCharity = users.map((u) => ({
-    ...u,
-    charityPreference: u.picks[0]?.charityPreference ?? null,
-  }))
-
-  const leaderboard = computeLeaderboard(usersWithCharity)
+  const leaderboard = computeLeaderboardFromEntries(entries as EntryWithRelations[])
   const aliveTeams = teams.filter(t => !t.eliminated)
 
   return (

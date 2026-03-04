@@ -1,13 +1,46 @@
-import type { Pick, Team, PlayInSlot } from "@/generated/prisma"
+import type { Team, PlayInSlot } from "@/generated/prisma"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
-import { computeBracketAwarePPR, seedToSlot, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 
-type PickWithRelations = Pick & {
+// ─── Entry-based types (current system) ───────────────────────────────────────
+
+type EntryPickWithRelations = {
+  teamId: string | null
+  playInSlotId: string | null
   team: Team | null
   playInSlot: (PlayInSlot & { winner: Team | null; team1: Team; team2: Team }) | null
 }
 
-type UserWithPicks = {
+export type EntryWithRelations = {
+  id: string
+  userId: string
+  entryNumber: number
+  nickname: string | null
+  charityPreference: string | null
+  user: {
+    id: string
+    name: string | null
+    email: string
+    isPaid: boolean
+    username: string | null
+    country: string | null
+    state: string | null
+    gender: string | null
+  }
+  entryPicks: EntryPickWithRelations[]
+}
+
+// ─── Legacy types (kept for demo mode backward compat) ────────────────────────
+
+type LegacyPickWithRelations = {
+  teamId: string | null
+  playInSlotId: string | null
+  team: Team | null
+  playInSlot: (PlayInSlot & { winner: Team | null; team1: Team; team2: Team }) | null
+  charityPreference?: string | null
+}
+
+export type LegacyUserWithPicks = {
   id: string
   name: string | null
   email: string
@@ -17,11 +50,13 @@ type UserWithPicks = {
   country?: string | null
   state?: string | null
   gender?: string | null
-  picks: PickWithRelations[]
+  picks: LegacyPickWithRelations[]
 }
 
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+
 // Resolve a pick to its effective team (handles play-in slot resolution)
-export function resolvePickTeam(pick: PickWithRelations): Team | null {
+export function resolvePickTeam(pick: { team: Team | null; playInSlot?: { winner: Team | null } | null }): Team | null {
   if (pick.team) return pick.team
   if (pick.playInSlot?.winner) return pick.playInSlot.winner
   return null
@@ -40,7 +75,12 @@ export function teamPPR(team: Team): number {
 }
 
 // Build pick summary for display
-function buildPickSummary(pick: PickWithRelations): ResolvedPickSummary | null {
+function buildPickSummary(pick: {
+  teamId?: string | null
+  playInSlotId?: string | null
+  team: Team | null
+  playInSlot: (PlayInSlot & { winner: Team | null; team1: Team; team2: Team }) | null
+}): ResolvedPickSummary | null {
   const team = resolvePickTeam(pick)
   if (!team) {
     // Unresolved play-in slot — show slot info if available
@@ -73,7 +113,124 @@ function buildPickSummary(pick: PickWithRelations): ResolvedPickSummary | null {
   }
 }
 
-export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "rank" | "percentile" | "tierName"> {
+// Tier names by rank range (spec: exact positions)
+function getTierName(rank: number): string | null {
+  if (rank === 1) return "Champion"
+  if (rank === 2) return "Runner Up"
+  if (rank >= 3 && rank <= 4) return "Final 4"
+  if (rank >= 5 && rank <= 8) return "Elite 8"
+  if (rank >= 9 && rank <= 16) return "Sweet 16"
+  if (rank >= 17 && rank <= 32) return "Worthy 32"
+  if (rank >= 33 && rank <= 64) return "Dancing 64"
+  if (rank >= 65 && rank <= 68) return "Play In 68"
+  return null
+}
+
+// Percentile: "Top X%" — lower is better
+export function computePercentile(rank: number, total: number): number {
+  if (total <= 1) return 0
+  return Math.round((rank / total) * 1000) / 10 // e.g. Top 6.3%
+}
+
+// ─── Entry display name (spec rules for multiple entries) ─────────────────────
+// Single entry: "Ankur Patel"
+// Multi with nickname: "Arjun (Ankur Patel 2)"
+// Multi without nickname: "Ankur Patel 2"
+
+function entryDisplayName(
+  userName: string | null,
+  email: string,
+  entryNumber: number,
+  nickname: string | null,
+  isMultiEntry: boolean,
+): string {
+  const base = userName ?? email
+  if (!isMultiEntry || entryNumber === 1) {
+    // Only show plain name if user has 1 entry, OR this is entry #1 of a multi
+    // But per spec: for multi-entry users, even entry #1 should never be "just the name"
+    // Actually spec says: "Single entry: Ankur Patel" but for multi, even entry 1 needs qualifier
+    if (!isMultiEntry) return base
+  }
+  if (nickname) return `${nickname} (${base} ${entryNumber})`
+  return `${base} ${entryNumber}`
+}
+
+// ─── Entry-based scoring (primary) ────────────────────────────────────────────
+
+export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boolean): Omit<LeaderboardEntry, "rank" | "percentile" | "tierName"> {
+  let currentScore = 0
+  let ppr = 0
+  let teamsRemaining = 0
+  const picks: ResolvedPickSummary[] = []
+
+  for (const pick of entry.entryPicks) {
+    const summary = buildPickSummary(pick)
+    if (summary) picks.push(summary)
+
+    const team = resolvePickTeam(pick)
+    if (!team) continue
+
+    currentScore += teamScore(team)
+    if (!team.eliminated) {
+      teamsRemaining++
+      ppr += teamPPR(team)
+    }
+  }
+
+  return {
+    entryId: entry.id,
+    userId: entry.user.id,
+    name: entryDisplayName(entry.user.name, entry.user.email, entry.entryNumber, entry.nickname, isMultiEntry),
+    email: entry.user.email,
+    isPaid: entry.user.isPaid,
+    username: entry.user.username ?? null,
+    entryNumber: entry.entryNumber,
+    nickname: entry.nickname,
+    country: entry.user.country ?? null,
+    state: entry.user.state ?? null,
+    gender: entry.user.gender ?? null,
+    currentScore,
+    ppr,
+    tps: currentScore + ppr,
+    teamsRemaining,
+    picks,
+  }
+}
+
+export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): LeaderboardEntry[] {
+  // Determine which users have multiple entries
+  const entriesByUser = new Map<string, number>()
+  for (const e of entries) {
+    entriesByUser.set(e.userId, (entriesByUser.get(e.userId) ?? 0) + 1)
+  }
+
+  const scores = entries.map((e) =>
+    computeEntryScore(e, (entriesByUser.get(e.userId) ?? 1) > 1)
+  )
+
+  // Sort: TPS desc, then currentScore desc as tiebreaker, then name asc
+  scores.sort(
+    (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
+  )
+
+  const total = scores.length
+
+  return scores.map((s, i) => {
+    const rank = i + 1
+    const entry = entries.find((e) => e.id === s.entryId)
+    return {
+      ...s,
+      rank,
+      percentile: computePercentile(rank, total),
+      tierName: getTierName(rank),
+      charity: i < 4 ? (entry?.charityPreference ?? null) : null,
+    }
+  })
+}
+
+// ─── Legacy scoring (for demo mode backward compat) ───────────────────────────
+
+function computeUserScore(user: LegacyUserWithPicks): Omit<LeaderboardEntry, "rank" | "percentile" | "tierName"> {
   let currentScore = 0
   let ppr = 0
   let teamsRemaining = 0
@@ -94,11 +251,14 @@ export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "r
   }
 
   return {
+    entryId: user.id, // use userId as entryId for legacy compat
     userId: user.id,
     name: user.name ?? user.email,
     email: user.email,
     isPaid: user.isPaid,
     username: user.username ?? null,
+    entryNumber: 1,
+    nickname: null,
     country: user.country ?? null,
     state: user.state ?? null,
     gender: user.gender ?? null,
@@ -110,26 +270,7 @@ export function computeUserScore(user: UserWithPicks): Omit<LeaderboardEntry, "r
   }
 }
 
-// Tier names by rank range (spec: exact positions)
-function getTierName(rank: number): string | null {
-  if (rank === 1) return "Champion"
-  if (rank === 2) return "Runner Up"
-  if (rank >= 3 && rank <= 4) return "Final 4"
-  if (rank >= 5 && rank <= 8) return "Elite 8"
-  if (rank >= 9 && rank <= 16) return "Sweet 16"
-  if (rank >= 17 && rank <= 32) return "Worthy 32"
-  if (rank >= 33 && rank <= 64) return "Dancing 64"
-  if (rank >= 65 && rank <= 68) return "Play In 68"
-  return null
-}
-
-// Percentile: "Top X%" — lower is better
-function computePercentile(rank: number, total: number): number {
-  if (total <= 1) return 0
-  return Math.round((rank / total) * 1000) / 10 // e.g. Top 6.3%
-}
-
-export function computeLeaderboard(users: UserWithPicks[]): LeaderboardEntry[] {
+export function computeLeaderboard(users: LegacyUserWithPicks[]): LeaderboardEntry[] {
   const scores = users.map((u) => computeUserScore(u))
 
   // Sort: TPS desc, then currentScore desc as tiebreaker, then name asc
@@ -171,18 +312,11 @@ export interface Optimal8Result {
 /**
  * Computes the 8 teams with the highest current score (seed × wins) at this
  * moment in the tournament.
- *
- * Algorithm:
- * 1. For every non-play-in team, compute current score (seed × wins).
- * 2. Sort ALL teams globally by score desc, seed asc as tiebreaker.
- * 3. Pick top 8.
- * 4. Run bracket-aware PPR on the selected 8 to get the display TPS.
  */
 export function computeOptimal8(
   aliveTeams: Optimal8Team[],
   teamInfoMap: Map<string, TeamBracketInfo>
 ): Optimal8Result {
-  // Score every non-play-in team by current points earned
   const scored = aliveTeams
     .filter(t => !t.isPlayIn)
     .map(t => {
@@ -195,15 +329,12 @@ export function computeOptimal8(
       return { ...t, seed, wins, eliminated, score, ppr }
     })
 
-  // Sort globally: highest current score first, lower seed as tiebreaker
   scored.sort((a, b) => b.score - a.score || a.seed - b.seed)
 
   const selectedIds = scored.slice(0, 8).map(t => t.id)
 
-  // Compute bracket-aware PPR for the selection
   const { totalPPR } = computeBracketAwarePPR(selectedIds, teamInfoMap)
 
-  // Compute score
   let score = 0
   for (const id of selectedIds) {
     const info = teamInfoMap.get(id)
