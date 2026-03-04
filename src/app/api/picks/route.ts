@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendEntryConfirmationEmail } from "@/lib/email"
+import { invalidateLeaderboardCache } from "@/lib/cache"
 
 // ─── GET — Fetch user's entries + picks for current season ────────────────────
 export async function GET(req: NextRequest) {
@@ -132,6 +133,13 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Invalidate leaderboard cache (new entry changes rankings)
+  if (seasonId) {
+    invalidateLeaderboardCache(seasonId).catch((err) =>
+      console.error("[picks] Cache invalidation failed:", err)
+    )
+  }
+
   // Send confirmation email (fire and forget)
   sendPickConfirmationEmail(session.user.id, entry.id).catch((err) =>
     console.error("[picks] Confirmation email failed:", err)
@@ -199,6 +207,13 @@ export async function PUT(req: NextRequest) {
     }
   }
 
+  // Invalidate leaderboard cache (updated picks change rankings)
+  if (entry.seasonId) {
+    invalidateLeaderboardCache(entry.seasonId).catch((err) =>
+      console.error("[picks] Cache invalidation failed:", err)
+    )
+  }
+
   // Send confirmation email
   sendPickConfirmationEmail(session.user.id, entryId).catch((err) =>
     console.error("[picks] Confirmation email failed:", err)
@@ -230,6 +245,13 @@ export async function DELETE(req: NextRequest) {
 
   // Delete entry (cascades to EntryPicks)
   await prisma.entry.delete({ where: { id: entryId } })
+
+  // Invalidate leaderboard cache
+  if (entry.seasonId) {
+    invalidateLeaderboardCache(entry.seasonId).catch((err) =>
+      console.error("[picks] Cache invalidation failed:", err)
+    )
+  }
 
   return NextResponse.json({ success: true })
 }

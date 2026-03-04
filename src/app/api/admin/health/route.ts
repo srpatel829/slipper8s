@@ -195,22 +195,50 @@ export async function GET() {
     checks.push({ name: "Cache", status: "error", message: "Failed to check cache" })
   }
 
-  // 10. User stats
+  // 10. User & Entry stats
   try {
-    const totalUsers = await prisma.user.count()
-    const registeredUsers = await prisma.user.count({
-      where: { registrationComplete: true },
-    })
-    const usersWithPicks = await prisma.user.count({
-      where: { picks: { some: {} } },
-    })
+    const [totalUsers, registeredUsers, totalEntries, submittedEntries] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { registrationComplete: true } }),
+      prisma.entry.count(),
+      prisma.entry.count({
+        where: { draftInProgress: false, entryPicks: { some: {} } },
+      }),
+    ])
     checks.push({
       name: "Users",
       status: "ok",
-      message: `${totalUsers} total, ${registeredUsers} registered, ${usersWithPicks} with picks`,
+      message: `${totalUsers} total, ${registeredUsers} registered`,
+    })
+    checks.push({
+      name: "Entries",
+      status: submittedEntries > 0 ? "ok" : "warning",
+      message: submittedEntries > 0
+        ? `${submittedEntries} submitted (${totalEntries} total incl. drafts)`
+        : "No entries submitted yet",
     })
   } catch {
     checks.push({ name: "Users", status: "error", message: "Failed to count users" })
+  }
+
+  // 11. Game stats
+  try {
+    const [totalGames, completedGames, inProgressGames] = await Promise.all([
+      prisma.tournamentGame.count(),
+      prisma.tournamentGame.count({ where: { isComplete: true } }),
+      prisma.tournamentGame.count({ where: { status: "IN_PROGRESS" } }),
+    ])
+    if (totalGames > 0) {
+      checks.push({
+        name: "Games",
+        status: inProgressGames > 0 ? "ok" : "ok",
+        message: inProgressGames > 0
+          ? `${completedGames}/${totalGames} complete, ${inProgressGames} in progress`
+          : `${completedGames}/${totalGames} complete`,
+      })
+    }
+  } catch {
+    checks.push({ name: "Games", status: "error", message: "Failed to count games" })
   }
 
   const overallStatus = checks.some((c) => c.status === "error")
