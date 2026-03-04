@@ -12,10 +12,12 @@ interface UserRow {
   id: string
   name: string | null
   email: string
+  username?: string | null
   role: Role
   isPaid: boolean
+  registrationComplete?: boolean
   createdAt: Date
-  _count: { picks: number }
+  _count: { picks: number; entries?: number }
 }
 
 interface UserTableProps {
@@ -68,10 +70,11 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name / Email</TableHead>
+            <TableHead>Name / Username</TableHead>
             <TableHead>Role</TableHead>
-            <TableHead className="text-center">Picks</TableHead>
+            <TableHead className="text-center">Entries</TableHead>
             <TableHead className="text-center">Paid</TableHead>
+            <TableHead className="text-center">Status</TableHead>
             <TableHead>Joined</TableHead>
           </TableRow>
         </TableHeader>
@@ -85,7 +88,12 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                 <TableCell>
                   <div>
                     <p className="font-medium text-sm">{user.name ?? "—"}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <div className="flex items-center gap-2">
+                      {user.username && (
+                        <span className="text-xs text-primary">@{user.username}</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">{user.email}</span>
+                    </div>
                   </div>
                 </TableCell>
                 <TableCell>
@@ -114,7 +122,7 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge variant="outline" className="text-xs">
-                    {user._count.picks}
+                    {user._count.entries ?? user._count.picks}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">
@@ -123,6 +131,17 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                     onCheckedChange={(val) => patch(user.id, { isPaid: val })}
                     disabled={isUpdating}
                   />
+                </TableCell>
+                <TableCell className="text-center">
+                  {user.registrationComplete !== false ? (
+                    <Badge className="text-[10px] bg-green-500/20 text-green-400 border-green-500/30">
+                      Complete
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">
+                      Incomplete
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {new Date(user.createdAt).toLocaleDateString()}

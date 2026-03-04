@@ -11,10 +11,12 @@ export default async function AdminUsersPage() {
       id: true,
       name: true,
       email: true,
+      username: true,
       role: true,
       isPaid: true,
+      registrationComplete: true,
       createdAt: true,
-      _count: { select: { picks: true } },
+      _count: { select: { picks: true, entries: true } },
     },
     orderBy: { createdAt: "asc" },
   })
