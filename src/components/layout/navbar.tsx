@@ -16,7 +16,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import {
   Menu, Trophy, BarChart3, Target, Zap, Play, Settings,
-  Users, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch
+  Users, User, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch
 } from "lucide-react"
 import type { Session } from "next-auth"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
@@ -153,6 +153,13 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
                     )}
                   </div>
                 </div>
+                <DropdownMenuItem asChild>
+                  <Link href={prefixHref("/profile")} className="gap-2 text-sm">
+                    <User className="h-3.5 w-3.5" />
+                    Profile & Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 {isAdmin && (
                   <>
                     <DropdownMenuItem asChild>
