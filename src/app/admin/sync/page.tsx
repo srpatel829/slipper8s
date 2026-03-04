@@ -1,4 +1,5 @@
 import { SyncButton } from "@/components/admin/sync-button"
+import { RecalculateButton } from "@/components/admin/recalculate-button"
 
 export default function AdminSyncPage() {
   return (
@@ -11,6 +12,7 @@ export default function AdminSyncPage() {
         </p>
       </div>
       <SyncButton />
+      <RecalculateButton />
     </div>
   )
 }
