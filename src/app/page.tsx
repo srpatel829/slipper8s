@@ -4,6 +4,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Trophy, TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
+import { EntryCounter } from "@/components/landing/entry-counter"
 import { prisma } from "@/lib/prisma"
 
 export default async function HomePage() {
@@ -89,6 +90,9 @@ export default async function HomePage() {
           <p className="text-sm text-muted-foreground">Your invitation to the big dance expires in...</p>
           <CountdownTimer deadline={deadline} />
         </div>
+
+        {/* Live entry counter */}
+        <EntryCounter />
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">

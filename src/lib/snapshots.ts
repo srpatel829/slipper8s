@@ -384,6 +384,8 @@ export async function getSeasonCheckpoints(seasonId: string) {
           leaderEntryId: true,
           medianEntryId: true,
           totalEntries: true,
+          rollingOptimal8Score: true,
+          hindsightOptimal8Score: true,
         },
       },
     },
