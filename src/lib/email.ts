@@ -348,3 +348,161 @@ export async function sendDailyRecapEmail(
     return { success: false, error }
   }
 }
+
+// ─── Bracket Announced / Entries Open Email (mandatory — when bracket is released) ──
+
+export async function sendBracketAnnouncedEmail(to: string, firstName: string, deadlineStr: string) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "The bracket is out — Slipper8s entries are OPEN! 🏀",
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+      <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Slipper8s entries are now open for 2026</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Hey ${firstName}! The tournament bracket has been released and it's time to make your picks.
+      </p>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        <strong style="color:#e4e4e7;">Pick 8 teams.</strong> Score = seed × wins. Higher seeds score more when they win — so those sleeper picks can pay off big.
+      </p>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        <strong style="color:#eab308;">Deadline:</strong> <span style="color:#e4e4e7;">${deadlineStr}</span>
+      </p>
+      <div style="text-align:center;">
+        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+          Make Your Picks
+        </a>
+      </div>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 12px;">
+        <strong style="color:#e4e4e7;">Playing with friends?</strong> Create or join a private league for bragging rights.
+      </p>
+      <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
+        Private Leagues →
+      </a>
+    </div>
+    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+      Slipper8s — slipper8s.com
+    </p>
+  </div>
+</body>
+</html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send bracket announced email:", error)
+    return { success: false, error }
+  }
+}
+
+// ─── Play-In Slot Resolved Email (optional — when a play-in game resolves) ──
+
+export async function sendPlayInResolvedEmail(
+  to: string,
+  firstName: string,
+  resolvedTeamName: string,
+  seed: number,
+  region: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `Your play-in pick resolved — you have ${resolvedTeamName}! 🏀`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#27AE60;line-height:40px;text-align:center;font-size:20px;">✓</div>
+      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Play-In Resolved!</h1>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Your play-in slot has a winner</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Hey ${firstName}! Your play-in pick in the <strong>${region}</strong> region has been resolved.
+      </p>
+      <div style="text-align:center;padding:16px;background:#27272a;border-radius:8px;margin-bottom:16px;">
+        <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Team</p>
+        <p style="color:#00A9E0;font-size:22px;font-weight:700;margin:0;">#${seed} ${resolvedTeamName}</p>
+      </div>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        ${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed on your part — your entry has been updated automatically.
+      </p>
+      <div style="text-align:center;">
+        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+          View Your Picks
+        </a>
+      </div>
+    </div>
+    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+      You can turn off optional notifications in your profile settings. — Slipper8s
+    </p>
+  </div>
+</body>
+</html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send play-in resolved email:", error)
+    return { success: false, error }
+  }
+}
+
+// ─── Admin Broadcast Email (admin-triggered — to all players or subset) ──────
+
+export async function sendBroadcastEmail(
+  to: string,
+  firstName: string,
+  subject: string,
+  messageHtml: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `Slipper8s: ${subject}`,
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">📢</div>
+      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">${subject}</h1>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        Hey ${firstName},
+      </p>
+      <div style="color:#a1a1aa;font-size:14px;line-height:1.6;">
+        ${messageHtml}
+      </div>
+    </div>
+    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+      Slipper8s — slipper8s.com
+    </p>
+  </div>
+</body>
+</html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send broadcast email:", error)
+    return { success: false, error }
+  }
+}

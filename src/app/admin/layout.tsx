@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/navbar"
 import Link from "next/link"
-import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar } from "lucide-react"
+import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar, Mail } from "lucide-react"
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -11,6 +11,7 @@ const adminLinks = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/sync", label: "ESPN Sync", icon: RefreshCw },
   { href: "/admin/content", label: "Content", icon: FileText },
+  { href: "/admin/broadcast", label: "Broadcast", icon: Mail },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

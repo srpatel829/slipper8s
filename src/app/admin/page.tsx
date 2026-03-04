@@ -175,12 +175,13 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Quick nav cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {[
           { href: "/admin/seasons", icon: Calendar, label: "Seasons", desc: "Create and manage tournament seasons" },
           { href: "/admin/users", icon: Users, label: "Manage Users", desc: "Mark paid, change roles" },
           { href: "/admin/content", icon: Settings, label: "Content Pages", desc: "Edit rules, prizes, info pages" },
           { href: "/admin/settings", icon: Trophy, label: "Pool Settings", desc: "Deadline, payouts, charities" },
+          { href: "/admin/broadcast", icon: Mail, label: "Broadcast Email", desc: "Send email to all players" },
         ].map((link) => (
           <Link
             key={link.href}
