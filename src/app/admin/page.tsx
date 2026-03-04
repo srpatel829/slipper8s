@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HealthBoard } from "@/components/admin/health-board"
@@ -8,19 +8,23 @@ import { HealthBoard } from "@/components/admin/health-board"
 export const dynamic = "force-dynamic"
 
 async function getStats() {
-  const [userCount, entryCount, teamCount, settings] = await Promise.all([
+  const [userCount, entryCount, teamCount, settings, recentAuditLogs] = await Promise.all([
     prisma.user.count(),
     prisma.entry.count(),
     prisma.team.count({ where: { isPlayIn: false } }),
     prisma.appSettings.findUnique({ where: { id: "main" } }),
+    prisma.auditLog.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
   ])
   const paidCount = await prisma.user.count({ where: { isPaid: true } })
-  return { userCount, entryCount, teamCount, paidCount, settings }
+  return { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs }
 }
 
 export default async function AdminDashboardPage() {
   const session = await auth()
-  const { userCount, entryCount, teamCount, paidCount, settings } = await getStats()
+  const { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs } = await getStats()
 
   return (
     <div className="space-y-6">
@@ -103,6 +107,70 @@ export default async function AdminDashboardPage() {
               Player Directory
             </a>
           </Button>
+        </div>
+      </div>
+
+      {/* Email Status + Audit Log */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Email notification status */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Automated Emails</h3>
+          </div>
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center justify-between py-1.5 border-b border-border/50">
+              <span className="text-muted-foreground">Deadline Reminder (24h)</span>
+              {settings?.deadlineReminderSentAt ? (
+                <span className="text-green-400 font-medium">
+                  Sent {new Date(settings.deadlineReminderSentAt).toLocaleDateString()}
+                </span>
+              ) : (
+                <span className="text-amber-400 font-medium">Pending</span>
+              )}
+            </div>
+            <div className="flex items-center justify-between py-1.5 border-b border-border/50">
+              <span className="text-muted-foreground">Entries Locked</span>
+              {settings?.entriesLockedSentAt ? (
+                <span className="text-green-400 font-medium">
+                  Sent {new Date(settings.entriesLockedSentAt).toLocaleDateString()}
+                </span>
+              ) : (
+                <span className="text-amber-400 font-medium">Pending</span>
+              )}
+            </div>
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-muted-foreground">Daily Recap</span>
+              <span className="text-muted-foreground/60 font-medium">Auto (per game day)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Recent audit log */}
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <ScrollText className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Recent Activity</h3>
+          </div>
+          {recentAuditLogs.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No admin actions recorded yet.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {recentAuditLogs.map((log) => (
+                <div key={log.id} className="flex items-start gap-2 text-xs py-1 border-b border-border/30 last:border-0">
+                  <span className="text-muted-foreground shrink-0 tabular-nums">
+                    {new Date(log.createdAt).toLocaleString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="text-foreground font-medium truncate">{log.action}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
