@@ -2,9 +2,9 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Trophy, TrendingUp, Zap, Users, Play, ArrowRight, Star, Clock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 
 export default async function HomePage() {
   // Gracefully handle missing DB/auth config in demo environments
@@ -21,15 +21,13 @@ export default async function HomePage() {
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full opacity-10"
-          style={{ background: "radial-gradient(ellipse, oklch(0.72 0.18 42), transparent 70%)" }} />
+          style={{ background: "radial-gradient(ellipse, oklch(0.71 0.17 213), transparent 70%)" }} />
       </div>
 
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <Trophy className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Slipper8sLogo size={28} className="text-primary" />
           <span className="font-bold text-lg tracking-tight">Slipper8s</span>
         </div>
         <div className="flex items-center gap-3">
@@ -38,10 +36,9 @@ export default async function HomePage() {
               How to Play
             </Button>
           </Link>
-          <Link href="/demo">
+          <Link href="/how-to-play#faq">
             <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
-              <Play className="h-3.5 w-3.5" />
-              Demo
+              FAQ
             </Button>
           </Link>
           <Link href="/login">
@@ -53,31 +50,41 @@ export default async function HomePage() {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-12 pb-20 text-center">
-        <Badge className="mb-6 bg-primary/15 text-primary border-primary/30 px-3 py-1">
-          <Star className="h-3 w-3 mr-1.5" />
-          The Big Dance 2026
-        </Badge>
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pt-10 pb-20 text-center">
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-none mb-6">
+        {/* Logo mark */}
+        <div className="flex justify-center mb-5">
+          <Slipper8sLogo size={72} className="text-primary" />
+        </div>
+
+        {/* Brand name */}
+        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-none mb-5">
           <span className="text-gradient-blue">Slipper8s</span>
         </h1>
 
-        <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-4 leading-relaxed">
-          Pick <span className="text-foreground font-semibold">8 teams</span>.
-          Score <span className="text-foreground font-semibold">seed x wins</span>.
-          Where sleeper picks become glass slippers.
+        {/* 3-bullet summary */}
+        <ul className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 mb-5 text-sm sm:text-base text-muted-foreground">
+          {["Pick 8 teams", "Seed × Wins = Points", "Highest Score Wins"].map((item) => (
+            <li key={item} className="flex items-center gap-1.5">
+              <Check className="h-4 w-4 text-primary shrink-0" />
+              <span className="text-foreground font-medium">{item}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* Tagline */}
+        <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto mb-10">
+          No bracket to bust. Just pick 8 sleepers and root for chaos!
         </p>
 
-        <p className="text-base text-muted-foreground/70 mb-8">
-          Higher seeds that go on runs score big. Chalk is safe. Chaos wins pools.
-        </p>
+        {/* Countdown */}
+        <div className="flex flex-col items-center gap-2 mb-10">
+          <p className="text-sm text-muted-foreground">Your invitation to the big dance expires in...</p>
+          <CountdownTimer />
+        </div>
 
-        {/* Countdown timer */}
-        <CountdownTimer />
-
-        {/* Dual CTAs */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link href="/login">
             <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-blue text-base px-8 h-12 w-full sm:w-auto">
               Sign in to play
@@ -85,36 +92,37 @@ export default async function HomePage() {
             </Button>
           </Link>
           <Link href="/demo">
-            <Button size="lg" variant="outline" className="text-base px-8 h-12 border-border hover:border-primary/50 gap-2 w-full sm:w-auto">
-              <Play className="h-4 w-4 text-primary" />
+            <Button size="lg" variant="outline" className="text-base px-8 h-12 border-border hover:border-primary/50 w-full sm:w-auto">
               See how 2025 played out
             </Button>
           </Link>
         </div>
       </section>
 
-      {/* 3-step how it works */}
+      {/* How the game works */}
       <section className="relative z-10 max-w-6xl mx-auto px-6 pb-20">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8 text-center">
-          How it works
+          How the game works
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             {
               step: "1",
-              icon: Trophy,
+              icon: Slipper8sLogo,
               title: "Pick 8 teams",
-              desc: "Choose any 8 teams from the tournament bracket. Play-in slots let you pick both teams — the winner counts.",
+              desc: "Choose any 8 teams from the tournament bracket. Play-in slots let you pick both teams — only the winner counts.",
               color: "text-primary",
               bg: "bg-primary/10",
+              isLogoIcon: true,
             },
             {
               step: "2",
               icon: TrendingUp,
-              title: "Score = seed x wins",
-              desc: "Each win earns seed points. A #12 seed winning 4 games scores 48 pts — more than a #1 seed can earn in the same rounds.",
+              title: "Score = Seed × Wins",
+              desc: "In 2025, Florida (#1 seed) won the national championship (1 × 6 = 6 points) while McNeese (#12 seed) only won their first game (12 × 1 = 12 points). Note: wins in play-in games don't count for scoring.",
               color: "text-emerald-400",
               bg: "bg-emerald-400/10",
+              isLogoIcon: false,
             },
             {
               step: "3",
@@ -123,8 +131,9 @@ export default async function HomePage() {
               desc: "Track your picks in real time as the tournament unfolds. Live leaderboard shows who can still catch the leader.",
               color: "text-amber-400",
               bg: "bg-amber-400/10",
+              isLogoIcon: false,
             },
-          ].map(({ step, icon: Icon, title, desc, color, bg }) => (
+          ].map(({ step, icon: Icon, title, desc, color, bg, isLogoIcon }) => (
             <div
               key={title}
               className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 transition-colors relative"
@@ -133,7 +142,11 @@ export default async function HomePage() {
                 {step}
               </div>
               <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4`}>
-                <Icon className={`h-5 w-5 ${color}`} />
+                {isLogoIcon ? (
+                  <Slipper8sLogo size={22} className={color} />
+                ) : (
+                  <Icon className={`h-5 w-5 ${color}`} />
+                )}
               </div>
               <h3 className="font-semibold text-base mb-2">{title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
@@ -142,34 +155,8 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Florida/McNeese worked example */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-20">
-        <div className="bg-card border border-border rounded-2xl p-8">
-          <h3 className="font-bold text-lg mb-4 text-center">Why upsets matter</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
-            <div className="text-center p-4 rounded-xl border border-border">
-              <div className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Safe pick</div>
-              <div className="text-lg font-bold mb-1">#1 Florida</div>
-              <div className="text-sm text-muted-foreground mb-3">Won 6 games (National Champion)</div>
-              <div className="text-4xl font-black text-muted-foreground">6</div>
-              <div className="text-xs text-muted-foreground mt-1">points (1 x 6 wins)</div>
-            </div>
-            <div className="text-center p-4 rounded-xl border border-primary/40 bg-primary/5">
-              <div className="text-xs text-primary uppercase tracking-wider mb-2">Sleeper pick</div>
-              <div className="text-lg font-bold mb-1">#12 McNeese</div>
-              <div className="text-sm text-muted-foreground mb-3">Won 1 game (upset in R64)</div>
-              <div className="text-4xl font-black text-primary">12</div>
-              <div className="text-xs text-muted-foreground mt-1">points (12 x 1 win)</div>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground text-center mt-4 max-w-lg mx-auto">
-            One upset win from a #12 seed is worth more than a #1 seed winning the whole tournament. That&apos;s the magic of Slipper8s.
-          </p>
-        </div>
-      </section>
-
       {/* Private league callout */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-20">
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-24">
         <div className="bg-card border border-border rounded-2xl p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
           <div className="w-12 h-12 rounded-xl bg-purple-500/15 flex items-center justify-center shrink-0">
             <Users className="h-6 w-6 text-purple-400" />
@@ -190,47 +177,10 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Scoring examples */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-24">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-6 text-center">
-          Scoring examples
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { seed: 12, wins: 4, label: "Cinderella run", highlight: true },
-            { seed: 1,  wins: 6, label: "Perfect chalk", highlight: false },
-            { seed: 8,  wins: 3, label: "Sweet 16 upset", highlight: false },
-            { seed: 5,  wins: 2, label: "R32 exit", highlight: false },
-          ].map(({ seed, wins, label, highlight }) => (
-            <div
-              key={label}
-              className={`rounded-xl border p-4 text-center ${
-                highlight
-                  ? "border-primary/40 bg-primary/10"
-                  : "border-border bg-card"
-              }`}
-            >
-              <div className="text-3xl font-black text-primary mb-1">
-                {seed * wins}
-              </div>
-              <div className="text-xs text-muted-foreground mb-2">pts</div>
-              <div className="text-sm font-medium">
-                #{seed} seed · {wins} wins
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">{label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* Footer */}
       <footer className="relative z-10 border-t border-border">
-        <div className="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-3.5 w-3.5 text-primary" />
-            Slipper8s — Where sleeper picks become glass slippers
-          </div>
-          <div className="flex gap-4">
+        <div className="max-w-6xl mx-auto px-6 py-6 flex justify-center sm:justify-end">
+          <div className="flex gap-4 text-xs text-muted-foreground">
             <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play</Link>
             <Link href="/demo" className="hover:text-foreground transition-colors">Demo</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>

@@ -40,16 +40,16 @@ export function CountdownTimer() {
 
   if (!mounted) {
     return (
-      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+      <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
         <Clock className="h-4 w-4 text-primary" />
-        <span className="text-sm">Entry deadline loading...</span>
+        <span className="text-sm">Loading...</span>
       </div>
     )
   }
 
   if (!timeLeft) {
     return (
-      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+      <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
         <Clock className="h-4 w-4 text-red-500" />
         <span className="text-sm font-medium text-red-400">Entries are closed</span>
       </div>
@@ -57,11 +57,8 @@ export function CountdownTimer() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
-        <Clock className="h-3.5 w-3.5 text-primary" />
-        Entry deadline
-      </div>
+    <div className="flex flex-col items-center gap-3">
+      {/* Countdown boxes */}
       <div className="flex gap-3">
         {[
           { value: timeLeft.days, label: "days" },
@@ -80,6 +77,12 @@ export function CountdownTimer() {
             </span>
           </div>
         ))}
+      </div>
+
+      {/* Label below */}
+      <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+        <Clock className="h-3.5 w-3.5 text-primary" />
+        Entry deadline: March 19 · 12:00pm ET
       </div>
     </div>
   )
