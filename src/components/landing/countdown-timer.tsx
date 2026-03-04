@@ -71,14 +71,12 @@ export function CountdownTimer({ deadline: deadlineProp, compact }: CountdownTim
   }
 
   const deadline = new Date(deadlineStr)
-  const deadlineLabel = deadline.toLocaleString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  })
+
+  // Format as "Thursday, March 19 · 12:00pm ET" per UI feedback
+  const dayOfWeek = deadline.toLocaleString("en-US", { weekday: "long", timeZone: "America/New_York" })
+  const monthDay = deadline.toLocaleString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" })
+  const timePart = deadline.toLocaleString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" }).toLowerCase()
+  const deadlineLabel = `${dayOfWeek}, ${monthDay} · ${timePart} ET`
 
   if (!timeLeft) {
     if (compact) {

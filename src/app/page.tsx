@@ -86,7 +86,7 @@ export default async function HomePage() {
         </p>
 
         {/* Countdown */}
-        <div className="flex flex-col items-center gap-2 mb-8">
+        <div className="flex flex-col items-center gap-2 mb-10 sm:mb-8">
           <p className="text-sm text-muted-foreground">Your invitation to the big dance expires in...</p>
           <CountdownTimer deadline={deadline} />
         </div>
@@ -95,7 +95,7 @@ export default async function HomePage() {
         <EntryCounter />
 
         {/* CTAs */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8 sm:mt-6">
           <Link href="/login">
             <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 glow-blue text-base px-8 h-12 w-full sm:w-auto">
               Sign in to play
@@ -111,7 +111,7 @@ export default async function HomePage() {
       </section>
 
       {/* How the game works */}
-      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-14">
+      <section className="relative z-10 max-w-6xl mx-auto px-6 pb-16">
         <h2 className="text-sm font-semibold uppercase tracking-widest text-muted-foreground mb-8 text-center">
           How the game works
         </h2>

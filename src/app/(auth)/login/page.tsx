@@ -123,7 +123,7 @@ export default function LoginPage() {
         <div className="text-center mt-4">
           <Link href="/demo" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1.5">
             <Play className="h-3 w-3" />
-            See how 2025 played out — no sign-in required
+            See how 2025 played out: no sign-in required
           </Link>
         </div>
       </div>
