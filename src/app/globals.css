@@ -196,4 +196,7 @@
     background: linear-gradient(135deg, #cd7c3a, #a05c22);
     color: #fff;
   }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

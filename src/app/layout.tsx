@@ -16,8 +16,27 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Slipper8s — College Basketball Tournament Pool",
+  title: {
+    default: "Slipper8s — College Basketball Tournament Pool",
+    template: "%s | Slipper8s",
+  },
   description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"),
+  openGraph: {
+    type: "website",
+    siteName: "Slipper8s",
+    title: "Slipper8s — College Basketball Tournament Pool",
+    description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Slipper8s — College Basketball Tournament Pool",
+    description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({
