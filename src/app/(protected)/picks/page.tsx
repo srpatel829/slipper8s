@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { PicksForm } from "@/components/picks/picks-form"
 import { EntrySelector } from "@/components/picks/entry-selector"
+import { CountdownTimer } from "@/components/landing/countdown-timer"
 
 export const dynamic = "force-dynamic"
 
@@ -100,18 +101,24 @@ export default async function PicksPage({
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="text-2xl font-bold">My Picks</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Select exactly 8 teams.{" "}
-          {deadlinePassed
-            ? "Picks are locked."
-            : `You can edit picks until the deadline${
-                settings?.picksDeadline
-                  ? `: ${new Date(settings.picksDeadline).toLocaleString()}`
-                  : " (not set yet)"
-              }.`}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">My Picks</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Select exactly 8 teams.{" "}
+            {deadlinePassed
+              ? "Picks are locked."
+              : "Edit anytime before the deadline."}
+          </p>
+        </div>
+        {!deadlinePassed && settings?.picksDeadline && (
+          <div className="shrink-0">
+            <CountdownTimer
+              deadline={new Date(settings.picksDeadline).toISOString()}
+              compact
+            />
+          </div>
+        )}
       </div>
 
       {/* Entry selector — shows when user has multiple entries */}

@@ -5,14 +5,18 @@ import { Button } from "@/components/ui/button"
 import { TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
 import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { prisma } from "@/lib/prisma"
 
 export default async function HomePage() {
   // Gracefully handle missing DB/auth config in demo environments
   let session = null
+  let deadline: string | null = null
   try {
     session = await auth()
+    const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+    deadline = settings?.picksDeadline?.toISOString() ?? null
   } catch {
-    // No-op: renders landing page without auth
+    // No-op: renders landing page without auth/db
   }
   if (session?.user) redirect("/leaderboard")
 
@@ -80,7 +84,7 @@ export default async function HomePage() {
         {/* Countdown */}
         <div className="flex flex-col items-center gap-2 mb-8">
           <p className="text-sm text-muted-foreground">Your invitation to the big dance expires in...</p>
-          <CountdownTimer />
+          <CountdownTimer deadline={deadline} />
         </div>
 
         {/* CTAs */}

@@ -23,22 +23,45 @@ function getTimeLeft(deadline: Date): TimeLeft | null {
   }
 }
 
-export function CountdownTimer() {
-  // Default deadline: March 19, 2026 12:00pm ET (16:00 UTC)
-  const deadline = new Date("2026-03-19T16:00:00Z")
+interface CountdownTimerProps {
+  /** ISO string for the deadline. If not provided, fetches from /api/settings. */
+  deadline?: string | null
+  /** Compact mode for inline display (e.g. picks page) */
+  compact?: boolean
+}
+
+export function CountdownTimer({ deadline: deadlineProp, compact }: CountdownTimerProps) {
+  const [deadlineStr, setDeadlineStr] = useState<string | null>(deadlineProp ?? null)
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
   const [mounted, setMounted] = useState(false)
 
+  // If no deadline prop, fetch from API
+  useEffect(() => {
+    if (deadlineProp !== undefined) {
+      setDeadlineStr(deadlineProp)
+      return
+    }
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.picksDeadline) setDeadlineStr(data.picksDeadline)
+      })
+      .catch(() => {})
+  }, [deadlineProp])
+
   useEffect(() => {
     setMounted(true)
+    if (!deadlineStr) return
+    const deadline = new Date(deadlineStr)
     setTimeLeft(getTimeLeft(deadline))
     const interval = setInterval(() => {
       setTimeLeft(getTimeLeft(deadline))
     }, 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [deadlineStr])
 
-  if (!mounted) {
+  if (!mounted || !deadlineStr) {
+    if (compact) return null
     return (
       <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
         <Clock className="h-4 w-4 text-primary" />
@@ -47,7 +70,25 @@ export function CountdownTimer() {
     )
   }
 
+  const deadline = new Date(deadlineStr)
+  const deadlineLabel = deadline.toLocaleString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  })
+
   if (!timeLeft) {
+    if (compact) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-red-400">
+          <Clock className="h-3 w-3" />
+          Entries closed
+        </div>
+      )
+    }
     return (
       <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
         <Clock className="h-4 w-4 text-red-500" />
@@ -56,9 +97,25 @@ export function CountdownTimer() {
     )
   }
 
+  // Compact mode — single line
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 text-xs">
+        <Clock className="h-3 w-3 text-primary shrink-0" />
+        <span className="text-muted-foreground">
+          <span className="font-mono font-semibold text-foreground">
+            {timeLeft.days}d {String(timeLeft.hours).padStart(2, "0")}h{" "}
+            {String(timeLeft.minutes).padStart(2, "0")}m
+          </span>
+          {" "}until deadline
+        </span>
+      </div>
+    )
+  }
+
+  // Full mode — landing page
   return (
     <div className="flex flex-col items-center gap-3">
-      {/* Countdown boxes */}
       <div className="flex gap-3">
         {[
           { value: timeLeft.days, label: "days" },
@@ -79,10 +136,9 @@ export function CountdownTimer() {
         ))}
       </div>
 
-      {/* Label below */}
       <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
         <Clock className="h-3.5 w-3.5 text-primary" />
-        Entry deadline: Thursday, March 19 · 12:00pm ET
+        Entry deadline: {deadlineLabel}
       </div>
     </div>
   )
