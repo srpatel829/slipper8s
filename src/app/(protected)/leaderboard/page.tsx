@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
+import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
 
@@ -96,6 +97,11 @@ export default async function LeaderboardPage() {
     session?.user?.id ? getUserProfile(session.user.id) : Promise.resolve(null),
   ])
 
+  // Find the current user's best entry for share card
+  const userEntry = session?.user?.id
+    ? leaderboard.find((e) => e.userId === session.user!.id)
+    : null
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -109,13 +115,25 @@ export default async function LeaderboardPage() {
             Score = seed × wins · Max Score = collision-aware maximum possible
           </p>
         </div>
-        <Link
-          href="/demo"
-          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors shrink-0"
-        >
-          <Info className="h-3.5 w-3.5" />
-          View demo replay
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          {userEntry && (
+            <LeaderboardShareButton
+              name={userEntry.name}
+              rank={userEntry.rank}
+              score={userEntry.currentScore}
+              percentile={userEntry.percentile}
+              teamsAlive={userEntry.teamsRemaining}
+              totalEntries={leaderboard.length}
+            />
+          )}
+          <Link
+            href="/demo"
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
+          >
+            <Info className="h-3.5 w-3.5" />
+            View demo replay
+          </Link>
+        </div>
       </div>
 
       <LeaderboardTable
