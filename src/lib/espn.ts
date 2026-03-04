@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
 import { invalidateLeaderboardCache } from "@/lib/cache"
+import { computeMaxPossibleScore } from "@/lib/max-possible-score"
+import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
 
 const ESPN_URL =
@@ -260,6 +262,7 @@ export async function syncTournamentData(): Promise<SyncResult> {
  * Recalculate scores for all entries in the current season.
  * Each entry's score = sum of (seed x wins) for their 8 teams.
  * teamsAlive = count of non-eliminated teams in the entry.
+ * maxPossibleScore = collision-aware max score (spec step 4).
  */
 export async function recalculateAllEntryScores(): Promise<{ updated: number }> {
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
@@ -276,16 +279,31 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
     include: {
       entryPicks: {
         include: {
-          team: { select: { id: true, seed: true, wins: true, eliminated: true } },
+          team: { select: { id: true, seed: true, wins: true, eliminated: true, region: true } },
           playInSlot: {
             include: {
-              winner: { select: { id: true, seed: true, wins: true, eliminated: true } },
+              winner: { select: { id: true, seed: true, wins: true, eliminated: true, region: true } },
             },
           },
         },
       },
     },
   })
+
+  // Build a team info map for max possible score calculation
+  const teamInfoMap = new Map<string, TeamBracketInfo>()
+  for (const entry of entries) {
+    for (const pick of entry.entryPicks) {
+      const team = pick.team ?? pick.playInSlot?.winner ?? null
+      if (!team || teamInfoMap.has(team.id)) continue
+      teamInfoMap.set(team.id, {
+        seed: team.seed,
+        region: team.region,
+        wins: team.wins,
+        eliminated: team.eliminated,
+      })
+    }
+  }
 
   let updated = 0
 
@@ -295,6 +313,7 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
     const updates = chunk.map((entry) => {
       let score = 0
       let teamsAlive = 0
+      const pickTeamIds: string[] = []
 
       for (const pick of entry.entryPicks) {
         // Resolve effective team (direct pick or play-in winner)
@@ -303,11 +322,19 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
 
         score += team.seed * team.wins
         if (!team.eliminated) teamsAlive++
+        pickTeamIds.push(team.id)
       }
+
+      // Compute collision-aware max possible score
+      const maxResult = computeMaxPossibleScore(pickTeamIds, teamInfoMap)
 
       return prisma.entry.update({
         where: { id: entry.id },
-        data: { score, teamsAlive },
+        data: {
+          score,
+          teamsAlive,
+          maxPossibleScore: maxResult.maxPossibleScore,
+        },
       })
     })
 
