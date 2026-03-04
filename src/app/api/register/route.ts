@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isProfane } from "@/lib/profanity"
+import { sendWelcomeEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -65,6 +66,13 @@ export async function POST(request: Request) {
       registrationComplete: true,
     },
   })
+
+  // Send welcome email (mandatory — fire and forget, don't block registration)
+  if (updatedUser.email && updatedUser.firstName) {
+    sendWelcomeEmail(updatedUser.email, updatedUser.firstName).catch((err) =>
+      console.error("[register] Welcome email failed:", err)
+    )
+  }
 
   return NextResponse.json({
     success: true,

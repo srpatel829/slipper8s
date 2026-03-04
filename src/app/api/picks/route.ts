@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendEntryConfirmationEmail } from "@/lib/email"
 
 export async function GET() {
   const session = await auth()
@@ -49,6 +50,11 @@ export async function POST(req: NextRequest) {
     })),
   })
 
+  // Send entry confirmation email (mandatory — fire and forget)
+  sendPickConfirmationEmail(session.user.id).catch((err) =>
+    console.error("[picks] Confirmation email failed:", err)
+  )
+
   return NextResponse.json({ success: true })
 }
 
@@ -80,7 +86,37 @@ export async function PUT(req: NextRequest) {
     }),
   ])
 
+  // Send entry confirmation email (mandatory — fire and forget)
+  sendPickConfirmationEmail(session.user.id).catch((err) =>
+    console.error("[picks] Confirmation email failed:", err)
+  )
+
   return NextResponse.json({ success: true })
+}
+
+async function sendPickConfirmationEmail(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, firstName: true },
+  })
+  if (!user?.email || !user?.firstName) return
+
+  const savedPicks = await prisma.pick.findMany({
+    where: { userId },
+    include: { team: { select: { name: true, seed: true, region: true } } },
+  })
+
+  const pickDetails = savedPicks
+    .filter((p) => p.team)
+    .map((p) => ({
+      name: p.team!.name,
+      seed: p.team!.seed,
+      region: p.team!.region ?? "",
+    }))
+
+  if (pickDetails.length > 0) {
+    await sendEntryConfirmationEmail(user.email, user.firstName, pickDetails)
+  }
 }
 
 function validatePicks(picks: unknown): string | null {

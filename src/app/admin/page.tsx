@@ -1,8 +1,9 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { HealthBoard } from "@/components/admin/health-board"
 
 export const dynamic = "force-dynamic"
 
@@ -32,6 +33,9 @@ export default async function AdminDashboardPage() {
           <span className="text-primary text-xs font-semibold">({session?.user?.role})</span>
         </p>
       </div>
+
+      {/* Health Board — green/red status at a glance */}
+      <HealthBoard />
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -80,7 +84,7 @@ export default async function AdminDashboardPage() {
       {/* Quick nav cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { href: "/admin/seasons", icon: Trophy, label: "Seasons", desc: "Create and manage tournament seasons" },
+          { href: "/admin/seasons", icon: Calendar, label: "Seasons", desc: "Create and manage tournament seasons" },
           { href: "/admin/users", icon: Users, label: "Manage Users", desc: "Mark paid, change roles" },
           { href: "/admin/content", icon: Settings, label: "Content Pages", desc: "Edit rules, prizes, info pages" },
           { href: "/admin/settings", icon: Trophy, label: "Pool Settings", desc: "Deadline, payouts, charities" },

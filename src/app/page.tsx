@@ -232,8 +232,9 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-4">
             <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play</Link>
-            <Link href="/rules" className="hover:text-foreground transition-colors">Rules</Link>
             <Link href="/demo" className="hover:text-foreground transition-colors">Demo</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
           </div>
         </div>
       </footer>

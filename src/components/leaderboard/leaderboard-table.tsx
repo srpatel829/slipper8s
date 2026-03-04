@@ -310,6 +310,153 @@ const GENDER_LABELS: Record<string, string> = {
   NO_RESPONSE: "All",
 }
 
+function LeaderboardRow({
+  entry,
+  isMe,
+  isExpanded,
+  rankStyle,
+  onToggle,
+}: {
+  entry: LeaderboardEntry
+  isMe: boolean
+  isExpanded: boolean
+  rankStyle: (rank: number) => string
+  onToggle: () => void
+}) {
+  return (
+    <div
+      className={`rounded-xl border overflow-hidden transition-all duration-200 ${isMe
+        ? "border-primary/40 bg-primary/5 shadow-sm shadow-primary/10"
+        : "border-border bg-card hover:border-border/80"
+        }`}
+    >
+      {/* ─── Mobile card view (<sm) ─── */}
+      <button
+        className="w-full text-left sm:hidden"
+        onClick={onToggle}
+      >
+        <div className="px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-bold shrink-0 ${rankStyle(entry.rank)}`}>
+                #{entry.rank}
+              </div>
+              <span className="text-[11px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
+              {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4">You</Badge>}
+            </div>
+            {entry.isPaid ? (
+              <div className="w-2 h-2 rounded-full bg-green-400" title="Paid" />
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm truncate">{entry.name}</span>
+            {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
+          </div>
+          {entry.picks.length > 0 && (
+            <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-1">
+                {entry.picks.map((pick) => (
+                  <TeamPill key={pick.teamId} pick={pick} />
+                ))}
+              </div>
+              <span className={`text-xs font-mono shrink-0 ${
+                entry.teamsRemaining >= 4 ? "text-green-400" : entry.teamsRemaining > 0 ? "text-amber-400" : "text-muted-foreground"
+              }`}>
+                {entry.teamsRemaining}/8
+              </span>
+            </div>
+          )}
+          <div className="flex items-center gap-4 text-xs">
+            <span>Score: <strong className="font-mono">{entry.currentScore}</strong></span>
+            <span className="text-muted-foreground">PPR: <strong className="font-mono">+{entry.ppr}</strong></span>
+            <span>Max: <strong className="font-mono text-primary">{entry.tps}</strong></span>
+          </div>
+        </div>
+      </button>
+
+      {/* ─── Desktop row (sm+) ─── */}
+      <button
+        className="w-full text-left hidden sm:block"
+        onClick={onToggle}
+      >
+        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 items-center px-4 py-3">
+          <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
+            #{entry.rank}
+          </div>
+          <div className="text-center">
+            <span className="text-[10px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-sm truncate">{entry.name}</span>
+              {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
+              {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
+              {entry.tierName && <Badge variant="outline" className="text-[10px] h-4 shrink-0">{entry.tierName}</Badge>}
+            </div>
+            {entry.charity && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
+                <Heart className="h-2.5 w-2.5 text-rose-400" />
+                {entry.charity}
+              </div>
+            )}
+            {entry.picks.length > 0 && <PicksLogoStrip picks={entry.picks} />}
+          </div>
+          <div className="text-right">
+            <span className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0 ? "text-muted-foreground" : entry.teamsRemaining >= 4 ? "text-green-400" : "text-amber-400"}`}>
+              {entry.teamsRemaining}<span className="text-muted-foreground text-xs">/8</span>
+            </span>
+          </div>
+          <div className="text-right"><span className="font-mono font-semibold text-sm">{entry.currentScore}</span></div>
+          <div className="text-right"><span className="font-mono text-sm text-muted-foreground">+{entry.ppr}</span></div>
+          <div className="text-right"><span className="font-mono font-bold text-sm text-primary">{entry.tps}</span></div>
+          <div className="flex justify-center">
+            {entry.isPaid ? (
+              <div className="w-2 h-2 rounded-full bg-green-400" title="Paid" />
+            ) : (
+              <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
+            )}
+          </div>
+        </div>
+      </button>
+
+      {/* Expanded row */}
+      {isExpanded && entry.picks.length > 0 && (
+        <div className="border-t border-border/50 px-4 py-3 bg-muted/5">
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {[...entry.picks]
+              .sort((a, b) => {
+                if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1
+                const aPotential = a.eliminated ? 0 : a.seed * (6 - a.wins)
+                const bPotential = b.eliminated ? 0 : b.seed * (6 - b.wins)
+                return bPotential - aPotential
+              })
+              .map((pick) => (
+                <TeamPill key={pick.teamId} pick={pick} />
+              ))}
+          </div>
+          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <span>Score: <strong className="text-foreground">{entry.currentScore}</strong></span>
+            <span>Max Score: <strong className="text-foreground">{entry.tps}</strong></span>
+            {entry.percentile !== undefined && (
+              <span>Percentile: <strong className="text-foreground">Top {entry.percentile}%</strong></span>
+            )}
+          </div>
+          <details className="mt-2">
+            <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
+              Show detailed view
+            </summary>
+            <div className="mt-2">
+              <ExpandedPicksGrid picks={entry.picks} />
+            </div>
+          </details>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, userLeagues, userProfile }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
@@ -318,6 +465,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dimension, setDimension] = useState<DimensionTab>("global")
+  const [showAll, setShowAll] = useState(false)
 
   // Sync initialData → data when it changes in demo mode (timeline scrubbing)
   useEffect(() => {
@@ -478,195 +626,118 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
           </div>
         )}
 
-        {sorted.map((entry) => {
-          const isMe = entry.userId === currentUserId
-          const isExpanded = expandedId === entry.userId
+        {(() => {
+          // Compute the default condensed view: top 10, your entries, bottom 2
+          if (!showAll && sorted.length > 15 && currentUserId) {
+            const top10 = sorted.slice(0, 10)
+            const bottom2 = sorted.slice(-2)
+            const top10Ids = new Set(top10.map((e) => e.userId))
+            const bottom2Ids = new Set(bottom2.map((e) => e.userId))
+            // User entries NOT already in top 10 or bottom 2
+            const myEntries = sorted.filter(
+              (e) => e.userId === currentUserId && !top10Ids.has(e.userId) && !bottom2Ids.has(e.userId)
+            )
+            const bottom2Filtered = bottom2.filter((e) => !top10Ids.has(e.userId))
+            const hasMyEntries = myEntries.length > 0
+            const hasBottom = bottom2Filtered.length > 0
 
-          return (
-            <div
-              key={entry.userId}
-              className={`rounded-xl border overflow-hidden transition-all duration-200 ${isMe
-                ? "border-primary/40 bg-primary/5 shadow-sm shadow-primary/10"
-                : "border-border bg-card hover:border-border/80"
-                }`}
-            >
-              {/* ─── Mobile card view (<sm) ─── */}
-              <button
-                className="w-full text-left sm:hidden"
-                onClick={() => setExpandedId(isExpanded ? null : entry.userId)}
-              >
-                <div className="px-4 py-3 space-y-2">
-                  {/* Row 1: Rank + Percentile */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-bold shrink-0 ${rankStyle(entry.rank)}`}>
-                        #{entry.rank}
+            const sections: { entries: LeaderboardEntry[]; separator?: string }[] = [
+              { entries: top10 },
+            ]
+            if (hasMyEntries) {
+              const myRank = myEntries[0]?.rank ?? 0
+              sections.push({
+                entries: myEntries,
+                separator: `Your position — #${myRank} of ${sorted.length}`,
+              })
+            }
+            if (hasBottom) {
+              sections.push({
+                entries: bottom2Filtered,
+                separator: hasMyEntries ? undefined : `...`,
+              })
+            }
+
+            return (
+              <>
+                {sections.map((section, sIdx) => (
+                  <div key={sIdx}>
+                    {section.separator && (
+                      <div className="flex items-center gap-3 py-2 px-4">
+                        <div className="flex-1 border-t border-border/50" />
+                        <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                          {section.separator}
+                        </span>
+                        <div className="flex-1 border-t border-border/50" />
                       </div>
-                      <span className="text-[11px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
-                      {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4">You</Badge>}
-                    </div>
-                    {entry.isPaid ? (
-                      <div className="w-2 h-2 rounded-full bg-green-400" title="Paid" />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
                     )}
-                  </div>
-                  {/* Row 2: Name + Username */}
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate">{entry.name}</span>
-                    {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
-                  </div>
-                  {/* Row 3: Team pills strip */}
-                  {entry.picks.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-wrap gap-1">
-                        {entry.picks.map((pick) => (
-                          <TeamPill key={pick.teamId} pick={pick} />
-                        ))}
+                    {!section.separator && sIdx > 0 && (
+                      <div className="flex items-center gap-3 py-2 px-4">
+                        <div className="flex-1 border-t border-dashed border-border/40" />
+                        <span className="text-[10px] text-muted-foreground/50">···</span>
+                        <div className="flex-1 border-t border-dashed border-border/40" />
                       </div>
-                      <span className={`text-xs font-mono shrink-0 ${
-                        entry.teamsRemaining >= 4 ? "text-green-400" : entry.teamsRemaining > 0 ? "text-amber-400" : "text-muted-foreground"
-                      }`}>
-                        {entry.teamsRemaining}/8
-                      </span>
-                    </div>
-                  )}
-                  {/* Row 4: Score stats */}
-                  <div className="flex items-center gap-4 text-xs">
-                    <span>Score: <strong className="font-mono">{entry.currentScore}</strong></span>
-                    <span className="text-muted-foreground">PPR: <strong className="font-mono">+{entry.ppr}</strong></span>
-                    <span>Max: <strong className="font-mono text-primary">{entry.tps}</strong></span>
+                    )}
+                    {section.entries.map((entry) => (
+                      <LeaderboardRow
+                        key={entry.userId + "-" + sIdx}
+                        entry={entry}
+                        isMe={entry.userId === currentUserId}
+                        isExpanded={expandedId === entry.userId}
+                        rankStyle={rankStyle}
+                        onToggle={() =>
+                          setExpandedId(expandedId === entry.userId ? null : entry.userId)
+                        }
+                      />
+                    ))}
                   </div>
-                </div>
-              </button>
-
-              {/* ─── Desktop row (sm+) ─── */}
-              <button
-                className="w-full text-left hidden sm:block"
-                onClick={() => setExpandedId(isExpanded ? null : entry.userId)}
-              >
-                <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3.5rem_4rem_4rem_4rem_3.5rem] gap-2 items-center px-4 py-3">
-                  {/* Rank */}
-                  <div
-                    className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}
+                ))}
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1.5 text-muted-foreground"
+                    onClick={() => setShowAll(true)}
                   >
-                    #{entry.rank}
-                  </div>
-
-                  {/* Percentile */}
-                  <div className="text-center">
-                    <span className="text-[10px] font-medium text-muted-foreground">
-                      Top {entry.percentile}%
-                    </span>
-                  </div>
-
-                  {/* Name */}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-sm truncate">{entry.name}</span>
-                      {entry.username && (
-                        <span className="text-[10px] text-muted-foreground">@{entry.username}</span>
-                      )}
-                      {isMe && (
-                        <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>
-                      )}
-                      {entry.tierName && (
-                        <Badge variant="outline" className="text-[10px] h-4 shrink-0">{entry.tierName}</Badge>
-                      )}
-                    </div>
-                    {entry.charity && (
-                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-                        <Heart className="h-2.5 w-2.5 text-rose-400" />
-                        {entry.charity}
-                      </div>
-                    )}
-                    {/* Inline picks logo strip — always visible */}
-                    {entry.picks.length > 0 && (
-                      <PicksLogoStrip picks={entry.picks} />
-                    )}
-                  </div>
-
-                  {/* Teams remaining */}
-                  <div className="text-right">
-                    <span
-                      className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0
-                        ? "text-muted-foreground"
-                        : entry.teamsRemaining >= 4
-                          ? "text-green-400"
-                          : "text-amber-400"
-                        }`}
-                    >
-                      {entry.teamsRemaining}
-                      <span className="text-muted-foreground text-xs">/8</span>
-                    </span>
-                  </div>
-
-                  {/* Score */}
-                  <div className="text-right">
-                    <span className="font-mono font-semibold text-sm">{entry.currentScore}</span>
-                  </div>
-
-                  {/* PPR */}
-                  <div className="text-right">
-                    <span className="font-mono text-sm text-muted-foreground">+{entry.ppr}</span>
-                  </div>
-
-                  {/* TPS */}
-                  <div className="text-right">
-                    <span className="font-mono font-bold text-sm text-primary">{entry.tps}</span>
-                  </div>
-
-                  {/* Paid */}
-                  <div className="flex justify-center">
-                    {entry.isPaid ? (
-                      <div className="w-2 h-2 rounded-full bg-green-400" title="Paid" />
-                    ) : (
-                      <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
-                    )}
-                  </div>
+                    Show all {sorted.length} entries
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
                 </div>
-              </button>
+              </>
+            )
+          }
 
-              {/* Expanded row — team pills + totals */}
-              {isExpanded && entry.picks.length > 0 && (
-                <div className="border-t border-border/50 px-4 py-3 bg-muted/5">
-                  {/* Team pills strip */}
-                  <div className="flex flex-wrap gap-1.5 mb-3">
-                    {[...entry.picks]
-                      .sort((a, b) => {
-                        // Sort: alive first, then by remaining potential (seed * (6-wins)) desc
-                        if (a.eliminated !== b.eliminated) return a.eliminated ? 1 : -1
-                        const aPotential = a.eliminated ? 0 : a.seed * (6 - a.wins)
-                        const bPotential = b.eliminated ? 0 : b.seed * (6 - b.wins)
-                        return bPotential - aPotential
-                      })
-                      .map((pick) => (
-                        <TeamPill key={pick.teamId} pick={pick} />
-                      ))
-                    }
-                  </div>
-                  {/* Summary stats */}
-                  <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                    <span>Score: <strong className="text-foreground">{entry.currentScore}</strong></span>
-                    <span>Max Score: <strong className="text-foreground">{entry.tps}</strong></span>
-                    {entry.percentile !== undefined && (
-                      <span>Percentile: <strong className="text-foreground">Top {entry.percentile}%</strong></span>
-                    )}
-                  </div>
-                  {/* Detailed pick cards */}
-                  <details className="mt-2">
-                    <summary className="text-[10px] text-muted-foreground cursor-pointer hover:text-foreground">
-                      Show detailed view
-                    </summary>
-                    <div className="mt-2">
-                      <ExpandedPicksGrid picks={entry.picks} />
-                    </div>
-                  </details>
+          // Full list view
+          return (
+            <>
+              {sorted.map((entry) => (
+                <LeaderboardRow
+                  key={entry.userId}
+                  entry={entry}
+                  isMe={entry.userId === currentUserId}
+                  isExpanded={expandedId === entry.userId}
+                  rankStyle={rankStyle}
+                  onToggle={() =>
+                    setExpandedId(expandedId === entry.userId ? null : entry.userId)
+                  }
+                />
+              ))}
+              {showAll && sorted.length > 15 && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1.5 text-muted-foreground"
+                    onClick={() => setShowAll(false)}
+                  >
+                    Show condensed view
+                    <ChevronUp className="h-3 w-3" />
+                  </Button>
                 </div>
               )}
-            </div>
+            </>
           )
-        })}
+        })()}
       </div>
 
       {/* Footer */}
