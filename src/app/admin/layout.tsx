@@ -2,10 +2,11 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/navbar"
 import Link from "next/link"
-import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck } from "lucide-react"
+import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar } from "lucide-react"
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/seasons", label: "Seasons", icon: Calendar },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/sync", label: "ESPN Sync", icon: RefreshCw },
