@@ -2,9 +2,8 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
+import { Trophy, TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 import { prisma } from "@/lib/prisma"
 
 export default async function HomePage() {
@@ -31,7 +30,9 @@ export default async function HomePage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <Slipper8sLogo size={28} className="text-primary" />
+          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+            <Trophy className="h-3.5 w-3.5 text-primary-foreground" />
+          </div>
           <span className="font-bold text-lg tracking-tight">Slipper8s</span>
         </div>
         <div className="flex items-center gap-3">
@@ -58,7 +59,9 @@ export default async function HomePage() {
 
         {/* Logo mark */}
         <div className="flex justify-center mb-5">
-          <Slipper8sLogo size={72} className="text-primary" />
+          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg glow-blue">
+            <Trophy className="h-10 w-10 text-primary-foreground" />
+          </div>
         </div>
 
         {/* Brand name */}
@@ -112,12 +115,11 @@ export default async function HomePage() {
           {[
             {
               step: "1",
-              icon: Slipper8sLogo,
+              icon: Trophy,
               title: "Pick 8 teams",
               desc: "Choose any 8 teams from the tournament bracket. Play-in slots let you pick both teams — only the winner counts.",
               color: "text-primary",
               bg: "bg-primary/10",
-              isLogoIcon: true,
             },
             {
               step: "2",
@@ -126,7 +128,6 @@ export default async function HomePage() {
               desc: "In 2025, Florida (#1 seed) won the national championship (1 × 6 = 6 points) while McNeese (#12 seed) only won their first game (12 × 1 = 12 points). Note: wins in play-in games don't count for scoring.",
               color: "text-emerald-400",
               bg: "bg-emerald-400/10",
-              isLogoIcon: false,
             },
             {
               step: "3",
@@ -135,9 +136,8 @@ export default async function HomePage() {
               desc: "Track your picks in real time as the tournament unfolds. Live leaderboard shows who can still catch the leader.",
               color: "text-amber-400",
               bg: "bg-amber-400/10",
-              isLogoIcon: false,
             },
-          ].map(({ step, icon: Icon, title, desc, color, bg, isLogoIcon }) => (
+          ].map(({ step, icon: Icon, title, desc, color, bg }) => (
             <div
               key={title}
               className="bg-card border border-border rounded-2xl p-6 hover:border-primary/30 transition-colors relative"
@@ -146,11 +146,7 @@ export default async function HomePage() {
                 {step}
               </div>
               <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center mb-4`}>
-                {isLogoIcon ? (
-                  <Slipper8sLogo size={22} className={color} />
-                ) : (
-                  <Icon className={`h-5 w-5 ${color}`} />
-                )}
+                <Icon className={`h-5 w-5 ${color}`} />
               </div>
               <h3 className="font-semibold text-base mb-2">{title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{desc}</p>
