@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth"
 import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
+import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
 
@@ -13,6 +14,11 @@ async function getLeaderboard() {
 
   if (!seasonId) return []
 
+  // ── Cache-first: check cache before querying DB ────────────────────────
+  const cached = await getCachedLeaderboard(seasonId)
+  if (cached) return cached
+
+  // ── Cache miss: query DB, compute, cache result ────────────────────────
   const entries = await prisma.entry.findMany({
     where: {
       seasonId,
@@ -42,7 +48,12 @@ async function getLeaderboard() {
     orderBy: { createdAt: "asc" },
   }) as EntryWithRelations[]
 
-  return computeLeaderboardFromEntries(entries)
+  const leaderboard = computeLeaderboardFromEntries(entries)
+
+  // Store in cache for subsequent requests
+  await setCachedLeaderboard(seasonId, leaderboard)
+
+  return leaderboard
 }
 
 async function getUserLeagues(userId: string) {

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
+import { invalidateLeaderboardCache } from "@/lib/cache"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
 
 const ESPN_URL =
@@ -239,6 +240,16 @@ export async function syncTournamentData(): Promise<SyncResult> {
       }
     } catch (err) {
       result.errors.push(`Snapshot save failed: ${String(err)}`)
+    }
+
+    // ── Invalidate leaderboard cache (spec step 9) ──────────────────────
+    try {
+      const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+      if (settings?.currentSeasonId) {
+        await invalidateLeaderboardCache(settings.currentSeasonId)
+      }
+    } catch (err) {
+      result.errors.push(`Cache invalidation failed: ${String(err)}`)
     }
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkCacheHealth } from "@/lib/cache"
 
 export const dynamic = "force-dynamic"
 
@@ -182,7 +183,19 @@ export async function GET() {
       : "CRON_SECRET not set — cron jobs unprotected",
   })
 
-  // 9. User stats
+  // 9. Cache health
+  try {
+    const cacheHealth = await checkCacheHealth()
+    checks.push({
+      name: "Cache",
+      status: cacheHealth.type === "memory" ? "warning" : cacheHealth.status,
+      message: cacheHealth.message,
+    })
+  } catch {
+    checks.push({ name: "Cache", status: "error", message: "Failed to check cache" })
+  }
+
+  // 10. User stats
   try {
     const totalUsers = await prisma.user.count()
     const registeredUsers = await prisma.user.count({
