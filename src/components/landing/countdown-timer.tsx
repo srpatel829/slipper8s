@@ -82,7 +82,7 @@ export function CountdownTimer() {
       {/* Label below */}
       <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
         <Clock className="h-3.5 w-3.5 text-primary" />
-        Entry deadline: March 19 · 12:00pm ET
+        Entry deadline: Thursday, March 19 · 12:00pm ET
       </div>
     </div>
   )
