@@ -284,18 +284,6 @@ export function PicksForm({
         </Tabs>
       )}
 
-      {/* ── All teams view ── */}
-      {viewMode === "all" && (
-        <div>
-          <p className="text-xs text-muted-foreground mb-3">
-            All {teams.length} teams · sorted by seed
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-            {[...teams].sort((a, b) => a.seed - b.seed || a.region.localeCompare(b.region)).map(renderTeamCard)}
-          </div>
-        </div>
-      )}
-
       {/* ── By seed tier view ── */}
       {viewMode === "seed" && (
         <div className="space-y-5">

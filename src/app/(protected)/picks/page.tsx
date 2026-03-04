@@ -90,7 +90,7 @@ export default async function PicksPage({
         userId: session!.user.id,
         teamId: ep.teamId,
         playInSlotId: ep.playInSlotId,
-        charityPreference: null as string | null,
+        charityPreference: activeEntry.charityPreference ?? null,
         createdAt: ep.createdAt,
         updatedAt: ep.updatedAt,
         team: ep.team,

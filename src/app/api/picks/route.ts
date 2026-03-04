@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { picks, seasonId: requestSeasonId, leagueId, nickname } = body
+  const { picks, seasonId: requestSeasonId, leagueId, nickname, charityPreference } = body
 
   const validation = validatePicks(picks)
   if (validation) return NextResponse.json({ error: validation }, { status: 400 })
@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
         leagueId: leagueId ?? null,
         nickname: nickname ?? null,
         entryNumber,
+        charityPreference: charityPreference ?? null,
         draftInProgress: false,
       },
     })
@@ -151,7 +152,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { picks, entryId } = body
+  const { picks, entryId, charityPreference } = body
 
   const validation = validatePicks(picks)
   if (validation) return NextResponse.json({ error: validation }, { status: 400 })
@@ -166,8 +167,12 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Entry not found" }, { status: 404 })
   }
 
-  // Delete old picks and create new ones
+  // Delete old picks and create new ones, update charity preference
   await prisma.$transaction([
+    prisma.entry.update({
+      where: { id: entryId },
+      data: { charityPreference: charityPreference ?? null, draftInProgress: false },
+    }),
     prisma.entryPick.deleteMany({ where: { entryId } }),
     prisma.entryPick.createMany({
       data: picks.map((p: { teamId?: string; playInSlotId?: string }) => ({
