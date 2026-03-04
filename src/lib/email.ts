@@ -19,7 +19,7 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
 <body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:32px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#f97316;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
       <h1 style="color:#ffffff;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
       <p style="color:#a1a1aa;font-size:14px;margin:0;">Where sleeper picks become glass slippers</p>
     </div>
@@ -34,7 +34,7 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
         You can update your picks as many times as you want before the entry deadline.
       </p>
       <div style="text-align:center;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
           Make Your Picks
         </a>
       </div>
@@ -43,7 +43,7 @@ export async function sendWelcomeEmail(to: string, firstName: string) {
       <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 12px;">
         <strong style="color:#e4e4e7;">Playing with friends?</strong> Create a private league and share the invite code.
       </p>
-      <a href="${APP_URL}/leagues" style="color:#f97316;font-size:13px;text-decoration:none;font-weight:500;">
+      <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
         Create a Private League →
       </a>
     </div>
@@ -97,7 +97,7 @@ export async function sendEntryConfirmationEmail(
     </div>
     <div style="text-align:center;margin-bottom:24px;">
       <p style="color:#a1a1aa;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry deadline.</p>
-      <a href="${APP_URL}/picks" style="color:#f97316;font-size:13px;text-decoration:none;font-weight:500;">
+      <a href="${APP_URL}/picks" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
         Edit Your Picks →
       </a>
     </div>
@@ -142,7 +142,7 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
         Follow along on the leaderboard as the tournament unfolds. Your score updates automatically after every game.
       </p>
       <div style="text-align:center;">
-        <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+        <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
           View Leaderboard
         </a>
       </div>
@@ -188,7 +188,7 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
         Make sure your 8 teams are exactly how you want them. Once the deadline passes, no changes allowed.
       </p>
       <div style="text-align:center;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
           Review Your Picks
         </a>
       </div>
@@ -229,7 +229,7 @@ export async function sendFinalResultsEmail(
 <body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#f97316;line-height:48px;text-align:center;font-size:24px;">🏆</div>
+      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏆</div>
       <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">Tournament Complete!</h1>
       <p style="color:#a1a1aa;font-size:13px;margin:0;">Here's how you finished, ${firstName}</p>
     </div>
@@ -237,7 +237,7 @@ export async function sendFinalResultsEmail(
       <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:20px;">
         <div>
           <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
-          <p style="color:#f97316;font-size:28px;font-weight:700;margin:0;">#${rank}</p>
+          <p style="color:#00A9E0;font-size:28px;font-weight:700;margin:0;">#${rank}</p>
         </div>
         <div>
           <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Percentile</p>
@@ -251,7 +251,7 @@ export async function sendFinalResultsEmail(
       <p style="color:#71717a;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entries</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#f97316;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+      <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
         View Full Leaderboard
       </a>
     </div>
