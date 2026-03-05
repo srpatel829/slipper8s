@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { sendBracketAnnouncedEmail } from "@/lib/email"
 
 // GET /api/admin/seasons — list all seasons
 export async function GET() {
@@ -118,10 +119,61 @@ export async function PUT(request: Request) {
     })
   }
 
+  // ── Trigger bracket announced email when status changes to REGISTRATION ──
+  // This is a mandatory email — bypass notificationsEnabled flag
+  if (status === "REGISTRATION" && season.status !== "REGISTRATION") {
+    // Fire and forget — don't block the API response
+    sendBracketAnnouncedEmails(updated.entryDeadlineUtc).catch((err) => {
+      console.error("[admin/seasons] Bracket announced email error:", err)
+    })
+  }
+
   return NextResponse.json({
     id: updated.id,
     year: updated.year,
     status: updated.status,
     entryDeadlineUtc: updated.entryDeadlineUtc,
+  })
+}
+
+// ─── Helper: Send bracket announced emails to all registered users ──────────
+
+async function sendBracketAnnouncedEmails(deadline: Date | null) {
+  // Get all registered users (mandatory email — send to ALL regardless of notificationsEnabled)
+  const users = await prisma.user.findMany({
+    where: { registrationComplete: true },
+    select: { email: true, firstName: true },
+  })
+
+  // Format deadline for display
+  const deadlineStr = deadline
+    ? deadline.toLocaleString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "America/New_York",
+      }) + " ET"
+    : "TBD"
+
+  let sent = 0
+  let failed = 0
+
+  for (const user of users) {
+    if (!user.email || !user.firstName) continue
+    const result = await sendBracketAnnouncedEmail(user.email, user.firstName, deadlineStr)
+    if (result.success) sent++
+    else failed++
+  }
+
+  console.log(`[admin/seasons] Bracket announced emails: ${sent} sent, ${failed} failed, ${users.length} total users`)
+
+  // Create audit log
+  await prisma.auditLog.create({
+    data: {
+      adminId: "system",
+      action: `Bracket announced emails sent: ${sent} delivered, ${failed} failed out of ${users.length} users`,
+    },
   })
 }

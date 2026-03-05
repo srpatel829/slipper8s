@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
 import { invalidateLeaderboardCache } from "@/lib/cache"
 import { computeMaxPossibleScore } from "@/lib/max-possible-score"
+import { sendPlayInResolvedEmail } from "@/lib/email"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
 
@@ -202,6 +203,64 @@ export async function syncTournamentData(): Promise<SyncResult> {
               },
               update: { winnerId: winnerTeam.id },
             })
+          }
+
+          // ── Send play-in resolved emails (optional — respects notificationsEnabled) ──
+          if (updated.count > 0) {
+            try {
+              // Find the resolved play-in slot to get its ID
+              const resolvedSlot = await prisma.playInSlot.findFirst({
+                where: {
+                  OR: [
+                    { team1Id: team1.id, team2Id: team2.id },
+                    { team1Id: team2.id, team2Id: team1.id },
+                  ],
+                  winnerId: winnerTeam.id,
+                },
+                select: { id: true, seed: true, region: true },
+              })
+
+              if (resolvedSlot) {
+                // Find all entries that picked this play-in slot
+                const affectedPicks = await prisma.entryPick.findMany({
+                  where: { playInSlotId: resolvedSlot.id },
+                  select: {
+                    entry: {
+                      select: {
+                        user: {
+                          select: {
+                            email: true,
+                            firstName: true,
+                            notificationsEnabled: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                })
+
+                // Dedupe by email (user may have multiple entries with same play-in pick)
+                const notifiedEmails = new Set<string>()
+                for (const pick of affectedPicks) {
+                  const user = pick.entry.user
+                  if (!user.notificationsEnabled || !user.email || !user.firstName) continue
+                  if (notifiedEmails.has(user.email)) continue
+                  notifiedEmails.add(user.email)
+
+                  await sendPlayInResolvedEmail(
+                    user.email,
+                    user.firstName,
+                    winnerTeam.name,
+                    resolvedSlot.seed,
+                    resolvedSlot.region,
+                  )
+                }
+                console.log(`[espn] Sent play-in resolved emails to ${notifiedEmails.size} users for ${winnerTeam.name}`)
+              }
+            } catch (emailErr) {
+              // Don't fail the sync for email errors
+              console.error("[espn] Play-in resolved email error:", emailErr)
+            }
           }
         }
       } else if (round === 0 && !isCompleted) {
