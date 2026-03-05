@@ -44,7 +44,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const body = await request.json()
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+  }
   const year = body.year as number
   const entryDeadline = body.entryDeadline as string | null
   const setAsCurrent = body.setAsCurrent as boolean
@@ -88,7 +93,12 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const body = await request.json()
+  let body
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+  }
   const { seasonId, status, entryDeadline, setAsCurrent } = body
 
   if (!seasonId) {

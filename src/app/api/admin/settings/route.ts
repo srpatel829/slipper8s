@@ -30,7 +30,12 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }
 
-  const body = await req.json()
+  let body
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
+  }
   const { picksDeadline, payoutStructure, defaultCharities, maintenanceMode } = body
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

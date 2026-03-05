@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Trophy, AlertCircle } from "lucide-react"
+import { AlertCircle } from "lucide-react"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 import Link from "next/link"
 
 export default function AuthErrorPage({
@@ -9,11 +10,11 @@ export default function AuthErrorPage({
   searchParams: Promise<{ error?: string }>
 }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background bg-court p-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-2 text-2xl font-bold">
-            <Trophy className="h-7 w-7 text-orange-500" />
+            <Slipper8sLogo size={28} className="text-primary" />
             Slipper8s
           </div>
         </div>

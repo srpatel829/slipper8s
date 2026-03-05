@@ -2,7 +2,8 @@ import { signIn } from "@/lib/auth"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { Trophy, Zap, TrendingUp, Play } from "lucide-react"
+import { Zap, TrendingUp, Play, Target } from "lucide-react"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 import Link from "next/link"
 import { DevLoginForm } from "@/components/dev-login-form"
 
@@ -21,7 +22,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-blue">
-            <Trophy className="h-7 w-7 text-primary-foreground" />
+            <Slipper8sLogo size={32} className="text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Slipper8s</h1>
           <p className="text-muted-foreground text-sm mt-1">College Basketball Tournament Pool</p>
@@ -106,7 +107,7 @@ export default function LoginPage() {
         {/* Feature pills */}
         <div className="flex items-center justify-center gap-3 mt-6 flex-wrap">
           {[
-            { icon: Trophy, text: "Pick 8 teams" },
+            { icon: Target, text: "Pick 8 teams" },
             { icon: TrendingUp, text: "Seed x wins" },
             { icon: Zap, text: "Live scores" },
           ].map(({ icon: Icon, text }) => (

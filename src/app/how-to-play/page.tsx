@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Trophy, TrendingUp, Zap, ArrowRight, Play, HelpCircle, User } from "lucide-react"
+import { TrendingUp, Zap, ArrowRight, Play, HelpCircle, User } from "lucide-react"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 
 export const metadata = {
   title: "How to Play | Slipper8s",
@@ -13,9 +14,7 @@ export default function HowToPlayPage() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-5 max-w-4xl mx-auto">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-            <Trophy className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <Slipper8sLogo size={28} className="text-primary" />
           <span className="font-bold text-lg tracking-tight">Slipper8s</span>
         </Link>
         <Link href="/login">
@@ -30,7 +29,7 @@ export default function HowToPlayPage() {
         <section className="mb-16">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Trophy className="h-5 w-5 text-primary" />
+              <Slipper8sLogo size={20} className="text-primary" />
             </div>
             <h1 className="text-3xl font-bold tracking-tight">How to Play</h1>
           </div>

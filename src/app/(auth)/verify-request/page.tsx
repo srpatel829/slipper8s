@@ -1,15 +1,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Trophy, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
 export default function VerifyRequestPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background bg-court p-4">
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-2 text-2xl font-bold">
-            <Trophy className="h-7 w-7 text-orange-500" />
+            <Slipper8sLogo size={28} className="text-primary" />
             Slipper8s
           </div>
         </div>
@@ -17,7 +18,7 @@ export default function VerifyRequestPage() {
         <Card>
           <CardHeader className="text-center">
             <div className="flex justify-center mb-3">
-              <Mail className="h-10 w-10 text-orange-500" />
+              <Mail className="h-10 w-10 text-primary" />
             </div>
             <CardTitle>Check your email</CardTitle>
             <CardDescription>

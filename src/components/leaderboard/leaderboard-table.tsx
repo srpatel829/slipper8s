@@ -354,7 +354,7 @@ function StatusLegend() {
   )
 }
 
-export type DimensionTab = "global" | "state" | "country" | "gender" | "conference"
+export type DimensionTab = "global" | "state" | "country" | "gender" | "conference" | "league"
 
 interface LeagueInfo {
   id: string
@@ -384,6 +384,7 @@ function filterByDimension(
   data: LeaderboardEntry[],
   dim: DimensionTab,
   userProfile?: UserProfile | null,
+  leagueId?: string | null,
 ): LeaderboardEntry[] {
   if (dim === "global") return data
   if (dim === "state" && userProfile?.state) {
@@ -397,6 +398,9 @@ function filterByDimension(
   }
   if (dim === "conference" && userProfile?.conference) {
     return data.filter((e) => e.conference === userProfile.conference)
+  }
+  if (dim === "league" && leagueId) {
+    return data.filter((e) => e.leagueId === leagueId)
   }
   return data
 }
@@ -600,6 +604,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dimension, setDimension] = useState<DimensionTab>("global")
+  const [activeLeagueId, setActiveLeagueId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
 
   // Sync initialData → data when it changes in demo mode (timeline scrubbing)
@@ -637,7 +642,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
   }
 
   // Apply dimension filter, then re-rank, then sort
-  const filtered = dimension === "global" ? data : rerankFiltered(filterByDimension(data, dimension, userProfile))
+  const filtered = dimension === "global" ? data : rerankFiltered(filterByDimension(data, dimension, userProfile, activeLeagueId))
   const sorted = [...filtered].sort((a, b) => {
     const mult = sortDir === "asc" ? 1 : -1
     const aVal = a[sortKey] ?? 0
@@ -731,13 +736,21 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
               <button
                 key={league.id}
                 onClick={() => {
-                  // For now, league filtering just links to the leagues page
-                  // TODO: implement league-specific leaderboard data fetching
-                  window.location.href = "/leagues"
+                  setDimension("league")
+                  setActiveLeagueId(league.id)
                 }}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/60 whitespace-nowrap"
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                  dimension === "league" && activeLeagueId === league.id
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
               >
                 {league.name}
+                {dimension === "league" && activeLeagueId === league.id && (
+                  <span className="ml-1.5 text-[10px] opacity-60">
+                    ({filtered.length})
+                  </span>
+                )}
               </button>
             ))}
           </>

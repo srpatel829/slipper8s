@@ -2,7 +2,8 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Trophy, TrendingUp, Zap, Users, ArrowRight, Check } from "lucide-react"
+import { TrendingUp, Zap, Users, ArrowRight, Check, Target } from "lucide-react"
+import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
 import { EntryCounter } from "@/components/landing/entry-counter"
 import { prisma } from "@/lib/prisma"
@@ -39,9 +40,7 @@ export default async function HomePage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
-            <Trophy className="h-3.5 w-3.5 text-primary-foreground" />
-          </div>
+          <Slipper8sLogo size={24} className="text-primary" />
           <span className="font-bold text-lg tracking-tight">Slipper8s</span>
         </div>
         <div className="flex items-center gap-3">
@@ -69,7 +68,7 @@ export default async function HomePage() {
         {/* Logo mark */}
         <div className="flex justify-center mb-5">
           <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg glow-blue">
-            <Trophy className="h-10 w-10 text-primary-foreground" />
+            <Slipper8sLogo size={44} className="text-primary-foreground" />
           </div>
         </div>
 
@@ -129,7 +128,7 @@ export default async function HomePage() {
           {[
             {
               step: "1",
-              icon: Trophy,
+              icon: Target,
               title: "Pick 8 teams",
               desc: "Choose any 8 teams from the tournament bracket. Play-in slots let you pick both teams — only the winner counts.",
               color: "text-primary",
