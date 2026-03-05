@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail, AlertTriangle, Shuffle } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail, AlertTriangle, Shuffle, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HealthBoard } from "@/components/admin/health-board"
@@ -272,6 +272,7 @@ export default async function AdminDashboardPage() {
         {[
           { href: "/admin/seasons", icon: Calendar, label: "Seasons", desc: "Create and manage tournament seasons" },
           { href: "/admin/users", icon: Users, label: "Manage Users", desc: "Mark paid, change roles" },
+          { href: "/admin/entries", icon: ClipboardList, label: "Manage Entries", desc: "View picks, void or adjust entries" },
           { href: "/admin/content", icon: Settings, label: "Content Pages", desc: "Edit rules, prizes, info pages" },
           { href: "/admin/settings", icon: Trophy, label: "Pool Settings", desc: "Deadline, payouts, charities" },
           { href: "/admin/broadcast", icon: Mail, label: "Broadcast Email", desc: "Send email to all players" },

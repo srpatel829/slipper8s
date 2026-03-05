@@ -2,12 +2,13 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/navbar"
 import Link from "next/link"
-import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar, Mail, ScrollText } from "lucide-react"
+import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar, Mail, ScrollText, ClipboardList } from "lucide-react"
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/seasons", label: "Seasons", icon: Calendar },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/entries", label: "Entries", icon: ClipboardList },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/sync", label: "ESPN Sync", icon: RefreshCw },
   { href: "/admin/content", label: "Content", icon: FileText },
