@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail, AlertTriangle } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail, AlertTriangle, Shuffle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HealthBoard } from "@/components/admin/health-board"
@@ -8,7 +8,7 @@ import { HealthBoard } from "@/components/admin/health-board"
 export const dynamic = "force-dynamic"
 
 async function getStats() {
-  const [userCount, entryCount, teamCount, settings, recentAuditLogs] = await Promise.all([
+  const [userCount, entryCount, teamCount, settings, recentAuditLogs, playInSlots] = await Promise.all([
     prisma.user.count(),
     prisma.entry.count(),
     prisma.team.count({ where: { isPlayIn: false } }),
@@ -17,14 +17,23 @@ async function getStats() {
       orderBy: { createdAt: "desc" },
       take: 10,
     }),
+    prisma.playInSlot.findMany({
+      include: {
+        team1: { select: { name: true, shortName: true, seed: true } },
+        team2: { select: { name: true, shortName: true, seed: true } },
+        winner: { select: { name: true, shortName: true, seed: true } },
+        _count: { select: { entryPicks: true } },
+      },
+      orderBy: [{ region: "asc" }, { seed: "asc" }],
+    }),
   ])
   const paidCount = await prisma.user.count({ where: { isPaid: true } })
-  return { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs }
+  return { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots }
 }
 
 export default async function AdminDashboardPage() {
   const session = await auth()
-  const { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs } = await getStats()
+  const { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots } = await getStats()
 
   return (
     <div className="space-y-6">
@@ -197,6 +206,66 @@ export default async function AdminDashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Play-in resolution monitor */}
+      {playInSlots.length > 0 && (
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Shuffle className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Play-In Resolution Monitor</h3>
+            <span className="ml-auto text-[10px] font-medium px-2 py-0.5 rounded-full border border-border bg-muted/50">
+              {playInSlots.filter(s => s.winnerId).length}/{playInSlots.length} resolved
+            </span>
+          </div>
+          <div className="space-y-2">
+            {playInSlots.map((slot) => (
+              <div
+                key={slot.id}
+                className={`flex items-center gap-3 p-3 rounded-lg border text-xs ${
+                  slot.winnerId
+                    ? "border-green-500/30 bg-green-500/5"
+                    : "border-amber-500/30 bg-amber-500/5"
+                }`}
+              >
+                <div className="shrink-0 w-16 text-center">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">{slot.region}</span>
+                  <div className="text-xs font-bold">#{slot.seed} seed</div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-medium ${slot.winnerId === slot.team1Id ? "text-green-400" : slot.winnerId ? "text-red-400 line-through opacity-60" : ""}`}>
+                      {slot.team1.shortName}
+                    </span>
+                    <span className="text-muted-foreground">vs</span>
+                    <span className={`font-medium ${slot.winnerId === slot.team2Id ? "text-green-400" : slot.winnerId ? "text-red-400 line-through opacity-60" : ""}`}>
+                      {slot.team2.shortName}
+                    </span>
+                  </div>
+                  {slot.winner && (
+                    <div className="text-[10px] text-green-400 mt-0.5">
+                      Winner: {slot.winner.name}
+                    </div>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="text-muted-foreground">{slot._count.entryPicks} picks</div>
+                  {slot.winnerId ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-400 ml-auto mt-0.5" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-amber-400 ml-auto mt-0.5" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {playInSlots.every(s => s.winnerId) && (
+            <p className="text-[10px] text-green-400 font-medium mt-3 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              All play-in games resolved — entry picks have been auto-updated.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Quick nav cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
