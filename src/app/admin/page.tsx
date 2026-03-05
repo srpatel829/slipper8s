@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail } from "lucide-react"
+import { Users, Trophy, Settings, RefreshCw, CheckCircle2, Clock, BarChart3, Database, Calendar, Download, ScrollText, Mail, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { HealthBoard } from "@/components/admin/health-board"
@@ -37,6 +37,20 @@ export default async function AdminDashboardPage() {
           <span className="text-primary text-xs font-semibold">({session?.user?.role})</span>
         </p>
       </div>
+
+      {/* Maintenance mode banner */}
+      {settings?.maintenanceMode && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 flex items-center gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-400">Maintenance Mode is ON</p>
+            <p className="text-xs text-muted-foreground">All non-admin users are being redirected to the maintenance page.</p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="h-7 text-xs border-amber-500/30 hover:bg-amber-500/10">
+            <Link href="/admin/settings">Disable</Link>
+          </Button>
+        </div>
+      )}
 
       {/* Health Board — green/red status at a glance */}
       <HealthBoard />
@@ -139,9 +153,19 @@ export default async function AdminDashboardPage() {
                 <span className="text-amber-400 font-medium">Pending</span>
               )}
             </div>
-            <div className="flex items-center justify-between py-1.5">
+            <div className="flex items-center justify-between py-1.5 border-b border-border/50">
               <span className="text-muted-foreground">Daily Recap</span>
               <span className="text-muted-foreground/60 font-medium">Auto (per game day)</span>
+            </div>
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-muted-foreground">Final Results</span>
+              {settings?.finalResultsSentAt ? (
+                <span className="text-green-400 font-medium">
+                  Sent {new Date(settings.finalResultsSentAt).toLocaleDateString()}
+                </span>
+              ) : (
+                <span className="text-muted-foreground/60 font-medium">After tournament ends</span>
+              )}
             </div>
           </div>
         </div>
