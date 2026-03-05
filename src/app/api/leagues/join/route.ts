@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 // POST /api/leagues/join — join a league by invite code
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(request))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

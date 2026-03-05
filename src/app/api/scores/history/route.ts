@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEntryScoreHistory, getSeasonCheckpoints } from "@/lib/snapshots"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 /**
  * GET /api/scores/history — Score history for the chart/timeline feature
@@ -24,6 +25,9 @@ import { getEntryScoreHistory, getSeasonCheckpoints } from "@/lib/snapshots"
  * 5. Optimal 8 (Hindsight) — only after tournament completes
  */
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

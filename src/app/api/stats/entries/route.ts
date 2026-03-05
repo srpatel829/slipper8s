@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 /**
  * GET /api/stats/entries — Public endpoint for live entry count
@@ -8,7 +9,10 @@ import { prisma } from "@/lib/prisma"
  * Used by the landing page live counter.
  * No auth required — this is a public stat.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   try {
     const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
     const seasonId = settings?.currentSeasonId

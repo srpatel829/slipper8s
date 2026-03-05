@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isProfane } from "@/lib/profanity"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import crypto from "crypto"
 
 function generateInviteCode(): string {
@@ -9,7 +10,10 @@ function generateInviteCode(): string {
 }
 
 // GET /api/leagues — list leagues the current user is in (as admin or member)
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -44,7 +48,10 @@ export async function GET() {
 }
 
 // POST /api/leagues — create a new league
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(request))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
