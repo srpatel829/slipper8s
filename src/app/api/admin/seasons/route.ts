@@ -100,6 +100,20 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Season not found" }, { status: 404 })
   }
 
+  // Validate status if provided
+  const VALID_STATUSES = ["SETUP", "REGISTRATION", "LOCKED", "ACTIVE", "COMPLETE"]
+  if (status && !VALID_STATUSES.includes(status)) {
+    return NextResponse.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` }, { status: 400 })
+  }
+
+  // Validate entryDeadline if provided
+  if (entryDeadline !== undefined && entryDeadline !== null) {
+    const parsedDate = new Date(entryDeadline)
+    if (isNaN(parsedDate.getTime())) {
+      return NextResponse.json({ error: "Invalid entry deadline date" }, { status: 400 })
+    }
+  }
+
   const updateData: Record<string, unknown> = {}
   if (status) updateData.status = status
   if (entryDeadline !== undefined) {

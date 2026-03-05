@@ -88,6 +88,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "entryId required" }, { status: 400 })
   }
 
+  // Validate action
+  if (!action || !["void", "adjustScore"].includes(action)) {
+    return NextResponse.json({ error: "Invalid action. Must be 'void' or 'adjustScore'" }, { status: 400 })
+  }
+
   const entry = await prisma.entry.findUnique({
     where: { id: entryId },
     include: { user: { select: { firstName: true, lastName: true, email: true } } },

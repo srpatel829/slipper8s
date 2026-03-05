@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save, LogOut } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save, LogOut, Calendar, Phone } from "lucide-react"
 import { signOut } from "next-auth/react"
 import type { Gender } from "@/generated/prisma"
 
@@ -81,6 +82,10 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
   const [gender, setGender] = useState(user.gender ?? "")
   const [favoriteTeamId, setFavoriteTeamId] = useState(user.favoriteTeamId ?? "")
   const [notifications, setNotifications] = useState(user.notificationsEnabled)
+  const [dateOfBirth, setDateOfBirth] = useState(
+    user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split("T")[0] : ""
+  )
+  const [phone, setPhone] = useState(user.phone ?? "")
   const [saving, setSaving] = useState(false)
 
   const selectedTeam = teams.find(t => t.id === favoriteTeamId)
@@ -97,6 +102,8 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
           gender: gender || null,
           favoriteTeamId: favoriteTeamId && favoriteTeamId !== "none" ? favoriteTeamId : null,
           notificationsEnabled: notifications,
+          dateOfBirth: dateOfBirth || null,
+          phone: phone || null,
         }),
       })
       if (!res.ok) {
@@ -260,6 +267,48 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
               )}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* Additional info */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+        <h2 className="text-sm font-semibold flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          Additional Info
+          <span className="text-muted-foreground font-normal text-xs ml-1">(optional)</span>
+        </h2>
+
+        <div className="space-y-4">
+          {/* Date of Birth */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Date of Birth</Label>
+            <Input
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="h-10 bg-muted/50 border-border max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              May be required for future prize verification (age 18+)
+            </p>
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-1.5">
+            <Label className="text-sm flex items-center gap-1.5">
+              <Phone className="h-3 w-3" /> Phone Number
+            </Label>
+            <Input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 123-4567"
+              className="h-10 bg-muted/50 border-border max-w-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              For future score update notifications via text (coming soon)
+            </p>
+          </div>
         </div>
       </div>
 

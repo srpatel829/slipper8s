@@ -16,11 +16,41 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json()
-  const { country, state, gender, favoriteTeamId, notificationsEnabled } = body
+  const { country, state, gender, favoriteTeamId, notificationsEnabled, dateOfBirth, phone } = body
 
   // Validate gender if provided
   if (gender && !VALID_GENDERS.includes(gender)) {
     return NextResponse.json({ error: "Invalid gender value" }, { status: 400 })
+  }
+
+  // Validate string lengths to prevent abuse
+  if (country && typeof country === "string" && country.length > 100) {
+    return NextResponse.json({ error: "Country value too long" }, { status: 400 })
+  }
+  if (state && typeof state === "string" && state.length > 100) {
+    return NextResponse.json({ error: "State value too long" }, { status: 400 })
+  }
+
+  // Validate dateOfBirth if provided
+  if (dateOfBirth !== undefined && dateOfBirth !== null) {
+    const parsedDob = new Date(dateOfBirth)
+    if (isNaN(parsedDob.getTime())) {
+      return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 })
+    }
+    // Must be at least 13 years old
+    const thirteenYearsAgo = new Date()
+    thirteenYearsAgo.setFullYear(thirteenYearsAgo.getFullYear() - 13)
+    if (parsedDob > thirteenYearsAgo) {
+      return NextResponse.json({ error: "Must be at least 13 years old" }, { status: 400 })
+    }
+  }
+
+  // Validate phone if provided
+  if (phone !== undefined && phone !== null && phone !== "") {
+    const cleanPhone = phone.replace(/[\s\-\(\)\.]/g, "")
+    if (cleanPhone.length > 20 || !/^\+?\d{7,20}$/.test(cleanPhone)) {
+      return NextResponse.json({ error: "Invalid phone number" }, { status: 400 })
+    }
   }
 
   // Validate favoriteTeamId if provided
@@ -39,6 +69,8 @@ export async function PUT(request: Request) {
       gender: gender === "NO_RESPONSE" ? "NO_RESPONSE" as Gender : (gender ? gender as Gender : null),
       favoriteTeamId: favoriteTeamId === "none" ? null : (favoriteTeamId ?? null),
       notificationsEnabled: typeof notificationsEnabled === "boolean" ? notificationsEnabled : undefined,
+      ...(dateOfBirth !== undefined && { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null }),
+      ...(phone !== undefined && { phone: phone || null }),
     },
   })
 

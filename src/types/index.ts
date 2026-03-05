@@ -108,6 +108,7 @@ export interface LeaderboardEntry {
   state?: string | null
   gender?: string | null
   conference?: string | null
+  leagueId?: string | null
   picks: ResolvedPickSummary[]
 }
 

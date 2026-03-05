@@ -165,6 +165,9 @@ export async function POST(req: NextRequest) {
 
 // ─── PUT — Update picks for an existing entry ────────────────────────────────
 export async function PUT(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

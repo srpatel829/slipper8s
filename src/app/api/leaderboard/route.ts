@@ -62,6 +62,7 @@ export async function GET(req: NextRequest) {
       entryNumber: true,
       nickname: true,
       charityPreference: true,
+      leagueId: true,
       score: true,
       maxPossibleScore: true,
       expectedScore: true,
@@ -106,8 +107,7 @@ export async function GET(req: NextRequest) {
         leaderboard = leaderboard.filter((e) => (e.conference ?? "No Response") === dimensionValue)
         break
       case "private_league":
-        // Filter by league — need to check entry's league
-        // This requires the leagueId on each entry
+        leaderboard = leaderboard.filter((e) => e.leagueId === dimensionValue)
         break
     }
 
