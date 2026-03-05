@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 
 // ── Seed color helpers per spec (locked) ──────────────────────────────────────
@@ -64,14 +65,49 @@ const PILL_STATUS_CLASSES = {
 
 function TeamPill({ pick }: { pick: ResolvedPickSummary }) {
   const status = getTeamPillStatus(pick)
+  const pts = pick.seed * pick.wins
+  const regionLabel = pick.region ? `${pick.region} Region` : ""
+
   return (
-    <div
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${PILL_STATUS_CLASSES[status]}`}
-      title={`#${pick.seed} ${pick.name} · ${pick.region ?? ""} · ${pick.wins} wins · ${pick.eliminated ? "Eliminated" : "Alive"}`}
-    >
-      <span className="font-bold">#{pick.seed}</span>
-      <span className="truncate max-w-[4rem]">{pick.shortName}</span>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${PILL_STATUS_CLASSES[status]}`}
+        >
+          <span className="font-bold">#{pick.seed}</span>
+          <span className="truncate max-w-[4rem]">{pick.shortName}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-52 p-3" side="top" align="center">
+        <div className="space-y-2">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-bold">#{pick.seed} {pick.name}</span>
+          </div>
+          {regionLabel && (
+            <span className="text-[10px] text-muted-foreground">{regionLabel}</span>
+          )}
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs pt-1 border-t border-border/50">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Wins:</span>
+              <span className="font-medium">{pick.wins}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Pts:</span>
+              <span className="font-medium">{pts}</span>
+            </div>
+            <div className="flex justify-between col-span-2">
+              <span className="text-muted-foreground">Status:</span>
+              <span className={`font-medium ${pick.eliminated ? "text-red-400" : "text-green-400"}`}>
+                {pick.eliminated ? "Eliminated" : "Alive"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
 
