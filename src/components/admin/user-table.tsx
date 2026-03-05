@@ -5,7 +5,9 @@ import { toast } from "sonner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Pencil } from "lucide-react"
 import type { Role } from "@/generated/prisma"
 
 interface UserRow {
@@ -30,13 +32,15 @@ interface UserTableProps {
 export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDemoPatch }: UserTableProps) {
   const [users, setUsers] = useState(initialUsers)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [editingUsername, setEditingUsername] = useState<string | null>(null)
+  const [newUsername, setNewUsername] = useState("")
 
   // Sync initialUsers when they change in demo mode
   useEffect(() => {
     if (demoMode) setUsers(initialUsers)
   }, [demoMode, initialUsers])
 
-  async function patch(userId: string, data: { isPaid?: boolean; role?: Role }) {
+  async function patch(userId: string, data: { isPaid?: boolean; role?: Role; username?: string }) {
     if (demoMode && onDemoPatch) {
       onDemoPatch(userId, data)
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u))
@@ -61,6 +65,18 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
     } finally {
       setUpdating(null)
     }
+  }
+
+  function startEditUsername(userId: string, currentUsername: string) {
+    setEditingUsername(userId)
+    setNewUsername(currentUsername)
+  }
+
+  function saveUsername(userId: string) {
+    if (newUsername.trim()) {
+      patch(userId, { username: newUsername.trim() })
+    }
+    setEditingUsername(null)
   }
 
   const canChangeRoles = currentUserRole === "SUPERADMIN"
@@ -89,8 +105,44 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                   <div>
                     <p className="font-medium text-sm">{user.name ?? "—"}</p>
                     <div className="flex items-center gap-2">
-                      {user.username && (
-                        <span className="text-xs text-primary">@{user.username}</span>
+                      {editingUsername === user.id ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-primary">@</span>
+                          <input
+                            type="text"
+                            value={newUsername}
+                            onChange={(e) => setNewUsername(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") saveUsername(user.id)
+                              if (e.key === "Escape") setEditingUsername(null)
+                            }}
+                            className="text-xs bg-background border border-border rounded px-1.5 py-0.5 w-28 focus:outline-none focus:ring-1 focus:ring-primary"
+                            autoFocus
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 text-[10px] px-1.5"
+                            onClick={() => saveUsername(user.id)}
+                          >
+                            Save
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          {user.username && (
+                            <span className="text-xs text-primary">@{user.username}</span>
+                          )}
+                          {user.username && (
+                            <button
+                              onClick={() => startEditUsername(user.id, user.username ?? "")}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                              title="Rename username"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                          )}
+                        </>
                       )}
                       <span className="text-xs text-muted-foreground">{user.email}</span>
                     </div>
