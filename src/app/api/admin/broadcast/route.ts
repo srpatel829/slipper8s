@@ -53,11 +53,13 @@ export async function POST(req: NextRequest) {
     let failed = 0
     const errors: string[] = []
 
-    // Convert plain text to HTML paragraphs
+    // Convert plain text to HTML paragraphs (escape HTML to prevent XSS)
+    const escapeHtml = (str: string) =>
+      str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
     const messageHtml = message
       .split("\n")
       .filter((line: string) => line.trim())
-      .map((line: string) => `<p style="margin:0 0 12px;">${line}</p>`)
+      .map((line: string) => `<p style="margin:0 0 12px;">${escapeHtml(line)}</p>`)
       .join("")
 
     for (const user of users) {
