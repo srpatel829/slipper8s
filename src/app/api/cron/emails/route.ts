@@ -4,6 +4,7 @@ import {
   sendDeadlineReminderEmail,
   sendEntriesLockedEmail,
   sendDailyRecapEmail,
+  sendFinalResultsEmail,
 } from "@/lib/email"
 import { computePercentile } from "@/lib/scoring"
 import { ROUND_NAMES } from "@/lib/espn"
@@ -160,6 +161,14 @@ export async function GET(req: NextRequest) {
       await handleDailyRecap(now, settings.currentSeasonId, results)
     }
 
+    // ── 4. Final Results (when tournament/season is COMPLETED) ───────────
+    // Send once: mandatory email to all players with entries
+    if (hoursUntilDeadline <= 0 && !settings.finalResultsSentAt && settings.currentSeasonId) {
+      await handleFinalResults(now, settings.currentSeasonId, results)
+    } else if (settings.finalResultsSentAt) {
+      results.finalResults = { skipped: true, reason: "Already sent" }
+    }
+
     return NextResponse.json({
       success: true,
       results,
@@ -312,4 +321,87 @@ async function handleDailyRecap(
 
   results.dailyRecap = { sent, failed, skippedOptOut, totalEntries, roundLabel }
   console.log(`[cron/emails] Daily recap for ${roundLabel}: ${sent} sent, ${failed} failed, ${skippedOptOut} opted out`)
+}
+
+// ─── Final Results Handler ────────────────────────────────────────────────
+
+async function handleFinalResults(
+  now: Date,
+  seasonId: string,
+  results: Record<string, unknown>,
+) {
+  // Check if the season is COMPLETED
+  const season = await prisma.season.findUnique({
+    where: { id: seasonId },
+    select: { status: true },
+  })
+
+  if (season?.status !== "COMPLETED") {
+    results.finalResults = { skipped: true, reason: `Season is ${season?.status ?? "unknown"}, not COMPLETED` }
+    return
+  }
+
+  console.log("[cron/emails] Sending final results emails...")
+
+  // Get all entries with scores, ranked (mandatory email — bypass notificationsEnabled)
+  const entries = await prisma.entry.findMany({
+    where: { seasonId, draftInProgress: false },
+    include: {
+      user: {
+        select: { email: true, firstName: true },
+      },
+    },
+    orderBy: { score: "desc" },
+  })
+
+  const sortedEntries = [...entries].sort((a, b) => {
+    const scoreA = a.score ?? 0
+    const scoreB = b.score ?? 0
+    return scoreB - scoreA
+  })
+
+  const totalEntries = sortedEntries.length
+
+  if (totalEntries === 0) {
+    results.finalResults = { skipped: true, reason: "No entries found" }
+    return
+  }
+
+  // Dedupe by email — send one email per user with their best entry
+  const sentEmails = new Set<string>()
+  let sent = 0
+  let failed = 0
+
+  for (let i = 0; i < sortedEntries.length; i++) {
+    const entry = sortedEntries[i]
+    const user = entry.user
+    if (!user.email || !user.firstName) continue
+    if (sentEmails.has(user.email)) continue
+    sentEmails.add(user.email)
+
+    const rank = i + 1
+    const percentile = computePercentile(rank, totalEntries)
+    const score = entry.score ?? 0
+
+    const result = await sendFinalResultsEmail(
+      user.email,
+      user.firstName,
+      rank,
+      percentile,
+      score,
+      totalEntries,
+    )
+
+    if (result.success) sent++
+    else failed++
+  }
+
+  // Mark as sent
+  await prisma.appSettings.update({
+    where: { id: "main" },
+    data: { finalResultsSentAt: now },
+  })
+
+  results.finalResults = { sent, failed, totalEntries }
+  console.log(`[cron/emails] Final results: ${sent} sent, ${failed} failed, ${totalEntries} entries`)
 }
