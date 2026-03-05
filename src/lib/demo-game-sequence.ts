@@ -11,6 +11,7 @@
 import type { DemoTeam, DemoUser } from "@/lib/demo-data"
 import type { LeaderboardEntry, LiveGameData, ResolvedPickSummary } from "@/types"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2025"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -230,6 +231,12 @@ export function computeLeaderboardAtGame(
     // Compute bracket-aware PPR (accounts for teams sharing bracket paths)
     const { totalPPR: ppr } = computeBracketAwarePPR(userPicks, bracketInfoMap)
 
+    // Compute expected score from Silver Bulletin probabilities
+    // Pre-tournament (gameIndex < 0): use raw pre-tournament probabilities
+    // During tournament: use conditional probabilities based on current state
+    const preTournament = gameIndex < 0
+    const expectedScore = calculateEntryExpectedScore(userPicks, teamState, preTournament)
+
     return {
       entryId: user.id, // use userId as entryId in demo
       userId: user.id,
@@ -242,6 +249,7 @@ export function computeLeaderboardAtGame(
       ppr,
       tps: currentScore + ppr,
       teamsRemaining,
+      expectedScore,
       picks,
     }
   })
