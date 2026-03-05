@@ -8,7 +8,7 @@ import { HealthBoard } from "@/components/admin/health-board"
 export const dynamic = "force-dynamic"
 
 async function getStats() {
-  const [userCount, entryCount, teamCount, settings, recentAuditLogs, playInSlots] = await Promise.all([
+  const [userCount, entryCount, teamCount, settings, recentAuditLogs, playInSlots, gamesCompleted, totalGames] = await Promise.all([
     prisma.user.count(),
     prisma.entry.count(),
     prisma.team.count({ where: { isPlayIn: false } }),
@@ -26,14 +26,19 @@ async function getStats() {
       },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
+    prisma.tournamentGame.count({ where: { isComplete: true } }),
+    prisma.tournamentGame.count(),
   ])
   const paidCount = await prisma.user.count({ where: { isPaid: true } })
-  return { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots }
+  const currentSeason = settings?.currentSeasonId
+    ? await prisma.season.findUnique({ where: { id: settings.currentSeasonId }, select: { year: true, status: true } })
+    : null
+  return { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots, gamesCompleted, totalGames, currentSeason }
 }
 
 export default async function AdminDashboardPage() {
   const session = await auth()
-  const { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots } = await getStats()
+  const { userCount, entryCount, teamCount, paidCount, settings, recentAuditLogs, playInSlots, gamesCompleted, totalGames, currentSeason } = await getStats()
 
   return (
     <div className="space-y-6">
@@ -63,6 +68,31 @@ export default async function AdminDashboardPage() {
 
       {/* Health Board — green/red status at a glance */}
       <HealthBoard />
+
+      {/* Current season banner */}
+      {currentSeason && (
+        <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Season {currentSeason.year}</h3>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-primary/10 text-primary border-primary/30">
+                  {currentSeason.status}
+                </span>
+              </div>
+              {totalGames > 0 && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {gamesCompleted}/{totalGames} games completed
+                </p>
+              )}
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="h-7 text-xs">
+            <Link href="/admin/seasons">Manage</Link>
+          </Button>
+        </div>
+      )}
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
