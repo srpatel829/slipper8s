@@ -107,6 +107,7 @@ export interface LeaderboardEntry {
   country?: string | null
   state?: string | null
   gender?: string | null
+  conference?: string | null
   picks: ResolvedPickSummary[]
 }
 

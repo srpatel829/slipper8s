@@ -47,6 +47,7 @@ async function getLeaderboard() {
           country: true,
           state: true,
           gender: true,
+          favoriteTeam: { select: { conference: true } },
         },
       },
       entryPicks: {
@@ -84,9 +85,18 @@ async function getUserLeagues(userId: string) {
 async function getUserProfile(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { country: true, state: true, gender: true },
+    select: {
+      country: true,
+      state: true,
+      gender: true,
+      favoriteTeam: { select: { conference: true } },
+    },
   })
-  return user
+  // Flatten conference from favoriteTeam for the dimension tabs
+  return user ? {
+    ...user,
+    conference: user.favoriteTeam?.conference ?? null,
+  } : null
 }
 
 export default async function LeaderboardPage() {

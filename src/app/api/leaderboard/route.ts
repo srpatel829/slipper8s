@@ -98,8 +98,7 @@ export async function GET(req: NextRequest) {
         leaderboard = leaderboard.filter((e) => (e.gender ?? "No Response") === dimensionValue)
         break
       case "conference":
-        // Conference filtering requires team data — handled separately
-        // For now, return global (TODO: add conference to LeaderboardEntry)
+        leaderboard = leaderboard.filter((e) => (e.conference ?? "No Response") === dimensionValue)
         break
       case "private_league":
         // Filter by league — need to check entry's league

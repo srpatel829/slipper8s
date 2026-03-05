@@ -360,9 +360,7 @@ function filterByDimension(
     return data.filter((e) => e.gender === userProfile.gender)
   }
   if (dim === "conference" && userProfile?.conference) {
-    // Conference filtering would need conference data on LeaderboardEntry
-    // For now, return all data — will be enhanced when conference data flows through
-    return data
+    return data.filter((e) => e.conference === userProfile.conference)
   }
   return data
 }

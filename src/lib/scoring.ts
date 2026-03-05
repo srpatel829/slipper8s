@@ -29,6 +29,7 @@ export type EntryWithRelations = {
     country: string | null
     state: string | null
     gender: string | null
+    favoriteTeam?: { conference: string | null } | null
   }
   entryPicks: EntryPickWithRelations[]
 }
@@ -192,6 +193,7 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     country: entry.user.country ?? null,
     state: entry.user.state ?? null,
     gender: entry.user.gender ?? null,
+    conference: entry.user.favoriteTeam?.conference ?? null,
     currentScore,
     ppr,
     tps: currentScore + ppr,
@@ -267,6 +269,7 @@ function computeUserScore(user: LegacyUserWithPicks): Omit<LeaderboardEntry, "ra
     country: user.country ?? null,
     state: user.state ?? null,
     gender: user.gender ?? null,
+    conference: null, // Legacy mode doesn't have conference data
     currentScore,
     ppr,
     tps: currentScore + ppr,
