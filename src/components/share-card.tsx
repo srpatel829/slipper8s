@@ -38,7 +38,8 @@ export function ShareCard({
   if (teamsAlive != null) params.set("alive", String(teamsAlive))
   if (totalEntries != null) params.set("total", String(totalEntries))
 
-  const imageUrl = `${appUrl}/api/og?${params.toString()}`
+  const imageUrl = `${appUrl}/api/og/share?${params.toString()}`
+  const ogImageUrl = `${appUrl}/api/og?${params.toString()}`
   const shareUrl = appUrl
 
   async function handleCopyLink() {
