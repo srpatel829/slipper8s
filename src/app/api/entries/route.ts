@@ -20,6 +20,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "seasonId required" }, { status: 400 })
   }
 
+  // Check season status — only allow new entries during REGISTRATION
+  const season = await prisma.season.findUnique({ where: { id: seasonId }, select: { status: true } })
+  if (!season) {
+    return NextResponse.json({ error: "Season not found" }, { status: 404 })
+  }
+  if (season.status !== "REGISTRATION" && season.status !== "SETUP") {
+    return NextResponse.json({ error: "Entries are not open for this season" }, { status: 400 })
+  }
+
   // Determine next entry number
   const existingCount = await prisma.entry.count({
     where: { userId: session.user.id, seasonId },
