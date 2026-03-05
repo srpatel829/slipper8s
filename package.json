@@ -10,7 +10,9 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "load-test": "npx tsx scripts/load-test.ts",
+    "load-test:prod": "npx tsx scripts/load-test.ts https://slipper8s.vercel.app 1000"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
