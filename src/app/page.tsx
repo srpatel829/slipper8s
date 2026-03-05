@@ -15,6 +15,14 @@ export default async function HomePage() {
     session = await auth()
     const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
     deadline = settings?.picksDeadline?.toISOString() ?? null
+
+    // Maintenance mode check — redirect non-admin visitors to maintenance page
+    if (settings?.maintenanceMode) {
+      const role = (session?.user as { role?: string } | undefined)?.role
+      if (role !== "ADMIN" && role !== "SUPERADMIN") {
+        redirect("/maintenance")
+      }
+    }
   } catch {
     // No-op: renders landing page without auth/db
   }

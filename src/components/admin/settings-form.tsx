@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Plus, Trash2 } from "lucide-react"
+import { Switch } from "@/components/ui/switch"
+import { Plus, Trash2, AlertTriangle } from "lucide-react"
 
 interface Payout {
   place: number
@@ -24,11 +25,12 @@ interface SettingsFormProps {
   initialDeadline: string | null
   initialPayouts: Payout[]
   initialCharities: Charity[]
+  initialMaintenanceMode?: boolean
   demoMode?: boolean
   onDemoSave?: (deadline: string | null, payouts: Payout[], charities: Charity[]) => void
 }
 
-export function SettingsForm({ initialDeadline, initialPayouts, initialCharities, demoMode, onDemoSave }: SettingsFormProps) {
+export function SettingsForm({ initialDeadline, initialPayouts, initialCharities, initialMaintenanceMode, demoMode, onDemoSave }: SettingsFormProps) {
   const [deadline, setDeadline] = useState(
     initialDeadline ? new Date(initialDeadline).toISOString().slice(0, 16) : ""
   )
@@ -45,6 +47,8 @@ export function SettingsForm({ initialDeadline, initialPayouts, initialCharities
   const [charities, setCharities] = useState<Charity[]>(
     initialCharities.length > 0 ? initialCharities : [{ name: "", url: "" }]
   )
+  const [maintenanceMode, setMaintenanceMode] = useState(initialMaintenanceMode ?? false)
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false)
   const [saving, setSaving] = useState(false)
 
   async function handleSave() {
@@ -78,8 +82,68 @@ export function SettingsForm({ initialDeadline, initialPayouts, initialCharities
     }
   }
 
+  async function handleMaintenanceToggle(enabled: boolean) {
+    if (demoMode) {
+      setMaintenanceMode(enabled)
+      toast.success(enabled ? "Maintenance mode enabled (demo)" : "Maintenance mode disabled (demo)")
+      return
+    }
+    setTogglingMaintenance(true)
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          picksDeadline: deadline ? new Date(deadline).toISOString() : null,
+          payoutStructure: payouts.filter((p) => p.label),
+          defaultCharities: charities.filter((c) => c.name),
+          maintenanceMode: enabled,
+        }),
+      })
+      if (!res.ok) {
+        toast.error("Failed to toggle maintenance mode")
+        return
+      }
+      setMaintenanceMode(enabled)
+      toast.success(enabled ? "Maintenance mode ON — users see maintenance page" : "Maintenance mode OFF — site is live")
+    } finally {
+      setTogglingMaintenance(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
+      {/* Maintenance Mode */}
+      <Card className={maintenanceMode ? "border-amber-500/50" : ""}>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className={`h-4 w-4 ${maintenanceMode ? "text-amber-400" : "text-muted-foreground"}`} />
+            Maintenance Mode
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm">
+                {maintenanceMode ? (
+                  <span className="text-amber-400 font-medium">Site is in maintenance mode</span>
+                ) : (
+                  <span className="text-muted-foreground">Site is live and accessible</span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                When enabled, all non-admin users are redirected to the maintenance page. Admin panel remains accessible.
+              </p>
+            </div>
+            <Switch
+              checked={maintenanceMode}
+              onCheckedChange={handleMaintenanceToggle}
+              disabled={togglingMaintenance}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Deadline */}
       <Card>
         <CardHeader><CardTitle className="text-base">Picks Deadline</CardTitle></CardHeader>

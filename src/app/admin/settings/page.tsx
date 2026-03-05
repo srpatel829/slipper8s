@@ -26,6 +26,7 @@ export default async function AdminSettingsPage() {
         initialDeadline={settings.picksDeadline?.toISOString() ?? null}
         initialPayouts={settings.payoutStructure as Array<{ place: number; label: string; amount: string }>}
         initialCharities={settings.defaultCharities as Array<{ name: string; url?: string }>}
+        initialMaintenanceMode={settings.maintenanceMode}
       />
     </div>
   )

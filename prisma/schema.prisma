@@ -317,6 +317,7 @@ model AppSettings {
   payoutStructure         Json      @default("[]")
   defaultCharities        Json      @default("[]")
   currentSeasonId         String?
+  maintenanceMode         Boolean   @default(false) // When true, redirects all non-admin users to /maintenance
   deadlineReminderSentAt  DateTime? // Tracks when 24h deadline reminder was last sent
   entriesLockedSentAt     DateTime? // Tracks when entries-locked email was last sent
   updatedAt               DateTime  @updatedAt

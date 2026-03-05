@@ -17,6 +17,15 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   try {
     const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+
+    // Maintenance mode check — redirect non-admin users to maintenance page
+    if (settings?.maintenanceMode) {
+      const role = session.user.role
+      if (role !== "ADMIN" && role !== "SUPERADMIN") {
+        redirect("/maintenance")
+      }
+    }
+
     if (settings?.currentSeasonId) {
       const season = await prisma.season.findUnique({
         where: { id: settings.currentSeasonId },

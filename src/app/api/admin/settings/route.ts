@@ -31,22 +31,40 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { picksDeadline, payoutStructure, defaultCharities } = body
+  const { picksDeadline, payoutStructure, defaultCharities, maintenanceMode } = body
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: any = {
+    picksDeadline: picksDeadline ? new Date(picksDeadline) : null,
+    payoutStructure: payoutStructure ?? [],
+    defaultCharities: defaultCharities ?? [],
+  }
+
+  // Only update maintenanceMode if explicitly passed (separate toggle from other settings)
+  if (maintenanceMode !== undefined) {
+    updateData.maintenanceMode = Boolean(maintenanceMode)
+  }
 
   const updated = await prisma.appSettings.upsert({
     where: { id: "main" },
     create: {
       id: "main",
-      picksDeadline: picksDeadline ? new Date(picksDeadline) : null,
-      payoutStructure: payoutStructure ?? [],
-      defaultCharities: defaultCharities ?? [],
+      ...updateData,
     },
-    update: {
-      picksDeadline: picksDeadline ? new Date(picksDeadline) : null,
-      payoutStructure: payoutStructure ?? [],
-      defaultCharities: defaultCharities ?? [],
-    },
+    update: updateData,
   })
+
+  // Audit log for maintenance mode changes
+  if (maintenanceMode !== undefined) {
+    await prisma.auditLog.create({
+      data: {
+        adminId: session.user.id!,
+        action: maintenanceMode
+          ? "Enabled maintenance mode — users redirected to /maintenance"
+          : "Disabled maintenance mode — site is live",
+      },
+    })
+  }
 
   return NextResponse.json(updated)
 }
