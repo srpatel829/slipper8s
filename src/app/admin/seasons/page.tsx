@@ -90,7 +90,22 @@ export default function SeasonsPage() {
     }
   }
 
+  const STATUS_WARNINGS: Record<string, string> = {
+    REGISTRATION: "This will send bracket announced emails to all registered users. Entries will be open for player submissions.",
+    LOCKED: "This will lock all entries. Players will no longer be able to submit or edit picks.",
+    ACTIVE: "This marks the tournament as in progress. ESPN sync will begin polling for game results.",
+    COMPLETED: "This will trigger final results emails to all players. This action should only be taken after the championship game is final.",
+  }
+
   async function handleStatusChange(seasonId: string, newStatus: string) {
+    const warning = STATUS_WARNINGS[newStatus]
+    if (warning) {
+      const confirmed = window.confirm(
+        `Change season status to "${STATUS_LABELS[newStatus]?.label ?? newStatus}"?\n\n${warning}\n\nAre you sure?`
+      )
+      if (!confirmed) return
+    }
+
     try {
       const res = await fetch("/api/admin/seasons", {
         method: "PUT",
