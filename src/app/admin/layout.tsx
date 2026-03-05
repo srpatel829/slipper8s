@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { Navbar } from "@/components/layout/navbar"
 import Link from "next/link"
-import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar, Mail, ScrollText, ClipboardList, Trophy } from "lucide-react"
+import { LayoutDashboard, Users, Settings, RefreshCw, FileText, ShieldCheck, Calendar, Mail, ScrollText, ClipboardList, Trophy, Shirt } from "lucide-react"
 
 const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const adminLinks = [
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/entries", label: "Entries", icon: ClipboardList },
   { href: "/admin/leagues", label: "Leagues", icon: Trophy },
+  { href: "/admin/teams", label: "Conferences", icon: Shirt },
   { href: "/admin/settings", label: "Settings", icon: Settings },
   { href: "/admin/sync", label: "ESPN Sync", icon: RefreshCw },
   { href: "/admin/content", label: "Content", icon: FileText },
