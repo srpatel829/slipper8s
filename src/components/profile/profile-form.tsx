@@ -13,7 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save } from "lucide-react"
+import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save, LogOut } from "lucide-react"
+import { signOut } from "next-auth/react"
 import type { Gender } from "@/generated/prisma"
 
 const US_STATES = [
@@ -303,6 +304,26 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
       <div className="text-[11px] text-muted-foreground space-y-1 pt-4 border-t border-border">
         <p>Account created: {new Date(user.createdAt).toLocaleDateString()}</p>
         <p>Payment status: {user.isPaid ? "Paid" : "Unpaid"}</p>
+      </div>
+
+      {/* Sign out */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">Sign out</p>
+            <p className="text-xs text-muted-foreground">
+              Sign out of your Slipper8s account on this device.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            onClick={() => signOut({ callbackUrl: "/" })}
+          >
+            <LogOut className="h-4 w-4" />
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   )
