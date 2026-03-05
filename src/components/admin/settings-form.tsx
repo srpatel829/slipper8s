@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { Plus, Trash2, AlertTriangle } from "lucide-react"
+import { Plus, Trash2, AlertTriangle, Database, Loader2 } from "lucide-react"
 
 interface Payout {
   place: number
@@ -50,6 +50,7 @@ export function SettingsForm({ initialDeadline, initialPayouts, initialCharities
   const [maintenanceMode, setMaintenanceMode] = useState(initialMaintenanceMode ?? false)
   const [togglingMaintenance, setTogglingMaintenance] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [clearingCache, setClearingCache] = useState(false)
 
   async function handleSave() {
     if (demoMode && onDemoSave) {
@@ -261,6 +262,57 @@ export function SettingsForm({ initialDeadline, initialPayouts, initialCharities
           >
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add charity
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Cache Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Database className="h-4 w-4 text-muted-foreground" />
+            Leaderboard Cache
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Force clear leaderboard cache for the current season. Use if leaderboard data appears stale.
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Cache automatically refreshes when game results update scores.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 gap-1.5"
+              disabled={clearingCache || demoMode}
+              onClick={async () => {
+                setClearingCache(true)
+                try {
+                  const res = await fetch("/api/admin/cache", { method: "POST" })
+                  if (res.ok) {
+                    toast.success("Leaderboard cache cleared")
+                  } else {
+                    const data = await res.json()
+                    toast.error(data.error ?? "Failed to clear cache")
+                  }
+                } catch {
+                  toast.error("Something went wrong")
+                } finally {
+                  setClearingCache(false)
+                }
+              }}
+            >
+              {clearingCache ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Database className="h-3.5 w-3.5" />
+              )}
+              Clear Cache
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

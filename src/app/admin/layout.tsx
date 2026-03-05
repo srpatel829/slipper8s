@@ -26,8 +26,31 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar session={session} />
+
+      {/* Mobile admin nav — horizontal scroll */}
+      <div className="md:hidden border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-30">
+        <div className="flex items-center gap-1 px-3 py-2 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-1 shrink-0 mr-2">
+            <ShieldCheck className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+              Admin
+            </span>
+          </div>
+          {adminLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors whitespace-nowrap shrink-0"
+            >
+              <link.icon className="h-3 w-3 flex-shrink-0" />
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      </div>
+
       <div className="flex flex-1 container mx-auto px-4 py-6 gap-6">
-        {/* Sidebar */}
+        {/* Desktop sidebar */}
         <aside className="hidden md:flex flex-col gap-0.5 w-48 flex-shrink-0">
           <div className="flex items-center gap-2 mb-3 px-2">
             <ShieldCheck className="h-3.5 w-3.5 text-primary" />
