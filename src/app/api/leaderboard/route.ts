@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 /**
  * GET /api/leaderboard — Serve leaderboard data
@@ -20,6 +21,10 @@ import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
  *   ?value=<dimension_value> (e.g. "USA", "SEC", league_id)
  */
 export async function GET(req: NextRequest) {
+  // Rate limit: 100 req/min per IP
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 

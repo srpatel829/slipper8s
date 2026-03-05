@@ -3,8 +3,12 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isProfane } from "@/lib/profanity"
 import { sendWelcomeEmail } from "@/lib/email"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimit(getClientIp(request))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })

@@ -2,10 +2,14 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import type { Gender } from "@/generated/prisma"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 const VALID_GENDERS: Gender[] = ["MALE", "FEMALE", "OTHER", "NO_RESPONSE"]
 
 export async function PUT(request: Request) {
+  const rateLimitResponse = rateLimit(getClientIp(request))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 })

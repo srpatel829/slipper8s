@@ -3,9 +3,13 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { sendEntryConfirmationEmail } from "@/lib/email"
 import { invalidateLeaderboardCache } from "@/lib/cache"
+import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 // ─── GET — Fetch user's entries + picks for current season ────────────────────
 export async function GET(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -57,6 +61,9 @@ export async function GET(req: NextRequest) {
 
 // ─── POST — Create a new entry with 8 picks ──────────────────────────────────
 export async function POST(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -224,6 +231,9 @@ export async function PUT(req: NextRequest) {
 
 // ─── DELETE — Remove an entry entirely ────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
   const session = await auth()
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
