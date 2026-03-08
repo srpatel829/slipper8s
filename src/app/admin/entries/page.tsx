@@ -42,11 +42,11 @@ interface EntryData {
 
 const PAGE_SIZE = 20
 
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "bg-red-500/20 text-red-400 border-red-500/30"
+function getSeedColorClasses(seed: number): string {
+  if (seed <= 4) return "bg-sky-800/20 text-sky-300 border-sky-800/30"
   if (seed <= 8) return "bg-orange-500/20 text-orange-400 border-orange-500/30"
-  if (seed <= 12) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-  return "bg-green-500/20 text-green-400 border-green-500/30"
+  if (seed <= 12) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+  return "bg-amber-800/20 text-amber-600 border-amber-800/30"
 }
 
 export default function AdminEntriesPage() {
@@ -255,7 +255,7 @@ export default function AdminEntriesPage() {
                         <div className="flex flex-wrap gap-1.5">
                           {entry.entryPicks.map((pick) => {
                             if (pick.team) {
-                              const color = getSeedColor(pick.team.seed)
+                              const color = getSeedColorClasses(pick.team.seed)
                               return (
                                 <span
                                   key={pick.id}

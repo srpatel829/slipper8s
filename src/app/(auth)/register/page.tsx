@@ -15,19 +15,13 @@ import {
 } from "@/components/ui/select"
 import { Check, X, Loader2, Heart } from "lucide-react"
 import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { getSeedColor } from "@/lib/colors"
 
 interface TeamOption {
   id: string
   name: string
   seed: number
   conference: string | null
-}
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "#C0392B"
-  if (seed <= 8) return "#E67E22"
-  if (seed <= 12) return "#D4AC0D"
-  return "#27AE60"
 }
 
 const US_STATES = [

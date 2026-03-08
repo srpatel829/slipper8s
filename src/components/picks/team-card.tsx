@@ -1,6 +1,7 @@
 import type { Team } from "@/generated/prisma"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getSeedColor, REGION_COLORS, REGION_ABBREV } from "@/lib/colors"
 
 interface TeamCardProps {
   team: Team
@@ -8,30 +9,6 @@ interface TeamCardProps {
   onToggle: () => void
   disabled: boolean
   matchupInfo?: string  // e.g. "vs #16 American · Max 96pts" — shown pre-tournament in demo
-}
-
-// ── Spec-locked seed colors ─────────────────────────────────────────────────
-// Seeds 1-4: Red #C0392B | Seeds 5-8: Orange #E67E22
-// Seeds 9-12: Gold #D4AC0D | Seeds 13-16: Green #27AE60
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "#C0392B"
-  if (seed <= 8) return "#E67E22"
-  if (seed <= 12) return "#D4AC0D"
-  return "#27AE60"
-}
-
-// ── Region badge abbreviations & colors ─────────────────────────────────────
-
-const REGION_ABBREV: Record<string, string> = {
-  South: "S", West: "W", East: "E", Midwest: "MW",
-}
-
-const REGION_COLORS: Record<string, string> = {
-  South: "#C0392B",    // Red
-  West: "#2E86C1",     // Blue
-  East: "#27AE60",     // Green
-  Midwest: "#8E44AD",  // Purple
 }
 
 export function TeamCard({ team, selected, onToggle, disabled, matchupInfo }: TeamCardProps) {

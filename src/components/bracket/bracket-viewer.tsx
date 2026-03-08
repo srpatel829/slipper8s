@@ -53,21 +53,7 @@ interface BracketViewerProps {
   userPickTeamIds: string[]
 }
 
-// ─── Spec seed colors ─────────────────────────────────────────────────────────
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "#C0392B"
-  if (seed <= 8) return "#E67E22"
-  if (seed <= 12) return "#D4AC0D"
-  return "#27AE60"
-}
-
-const REGION_COLORS: Record<string, string> = {
-  South: "#C0392B",
-  West: "#2E86C1",
-  East: "#27AE60",
-  Midwest: "#8E44AD",
-}
+import { getSeedColor, REGION_COLORS } from "@/lib/colors"
 
 const ROUND_NAMES: Record<number, string> = {
   1: "Round of 64",

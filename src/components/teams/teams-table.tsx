@@ -6,8 +6,8 @@
  * Per spec:
  *   Default sort: % Selected (high to low)
  *   Columns: Logo/Seed/Region | Team | Picked (count) | Picked (%) | Status | Wins | Games Left | Score | Max Score | Expected
- *   Spec seed colors: 1-4 Red, 5-8 Orange, 9-12 Gold, 13-16 Green
- *   Region colors: South=Red, West=Blue, East=Green, Midwest=Purple
+ *   Spec seed colors: 1-4 Navy, 5-8 Orange, 9-12 Cyan, 13-16 Brown
+ *   Region colors: South=Magenta, West=Blue, East=Teal, Midwest=Purple
  */
 
 import { useState } from "react"
@@ -37,41 +37,7 @@ interface TeamsTableProps {
 type SortKey = "seed" | "name" | "region" | "pickerCount" | "pickerPct" | "wins" | "gamesLeft" | "score" | "maxScore"
 type SortDir = "asc" | "desc"
 
-// ─── Spec-locked seed colors ──────────────────────────────────────────────────
-
-const SEED_COLOR: Record<string, string> = {
-  "1-4": "#C0392B",   // Red
-  "5-8": "#E67E22",   // Orange
-  "9-12": "#D4AC0D",  // Gold
-  "13-16": "#27AE60", // Green
-}
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return SEED_COLOR["1-4"]
-  if (seed <= 8) return SEED_COLOR["5-8"]
-  if (seed <= 12) return SEED_COLOR["9-12"]
-  return SEED_COLOR["13-16"]
-}
-
-function getSeedTierLabel(seed: number): string {
-  if (seed <= 4) return "Chalk"
-  if (seed <= 8) return "Dark Horses"
-  if (seed <= 12) return "Sleepers"
-  return "Bracket Busters"
-}
-
-// ─── Region colors ────────────────────────────────────────────────────────────
-
-const REGION_ABBREV: Record<string, string> = {
-  East: "E", West: "W", South: "S", Midwest: "MW",
-}
-
-const REGION_COLORS: Record<string, string> = {
-  South: "#C0392B",
-  West: "#2E86C1",
-  East: "#27AE60",
-  Midwest: "#8E44AD",
-}
+import { getSeedColor, getSeedTierLabel, SEED_TIER_COLORS, REGION_COLORS, REGION_ABBREV } from "@/lib/colors"
 
 // ─── Stats helpers ────────────────────────────────────────────────────────────
 
@@ -142,10 +108,10 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
       {/* Legend */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border/50 bg-muted/20 flex-wrap">
         {([
-          { label: "Chalk (1-4)", color: SEED_COLOR["1-4"] },
-          { label: "Dark Horses (5-8)", color: SEED_COLOR["5-8"] },
-          { label: "Sleepers (9-12)", color: SEED_COLOR["9-12"] },
-          { label: "Bracket Busters (13-16)", color: SEED_COLOR["13-16"] },
+          { label: "Chalk (1-4)", color: SEED_TIER_COLORS["1-4"] },
+          { label: "Dark Horses (5-8)", color: SEED_TIER_COLORS["5-8"] },
+          { label: "Sleepers (9-12)", color: SEED_TIER_COLORS["9-12"] },
+          { label: "Bracket Busters (13-16)", color: SEED_TIER_COLORS["13-16"] },
         ]).map(tier => (
           <div key={tier.label} className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tier.color }} />

@@ -6,42 +6,9 @@ import { Button } from "@/components/ui/button"
 import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
+import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
 
-// ── Seed color helpers per spec (locked) ──────────────────────────────────────
-// Seeds 1-4: Red #C0392B | Seeds 5-8: Orange #E67E22
-// Seeds 9-12: Gold #D4AC0D | Seeds 13-16: Green #27AE60
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "#C0392B"
-  if (seed <= 8) return "#E67E22"
-  if (seed <= 12) return "#D4AC0D"
-  return "#27AE60"
-}
-
-function getSeedTier(seed: number): "chalk" | "darkHorse" | "sleeper" | "buster" {
-  if (seed <= 4) return "chalk"
-  if (seed <= 8) return "darkHorse"
-  if (seed <= 12) return "sleeper"
-  return "buster"
-}
-
-// ── Region badge helpers ──────────────────────────────────────────────────────
-
-const REGION_ABBREV: Record<string, string> = {
-  South: "S", West: "W", East: "E", Midwest: "MW",
-}
-
-const REGION_COLORS: Record<string, string> = {
-  South: "#C0392B",    // Red
-  West: "#2E86C1",     // Blue
-  East: "#27AE60",     // Green
-  Midwest: "#8E44AD",  // Purple
-}
-
-// ── Team pill status colors per spec ─────────────────────────────────────────
-// Green = won most recent round, still alive
-// Yellow = still alive, has not played in most recent round yet
-// Red = eliminated
+// ── Team pill status ─────────────────────────────────────────────────────────
 
 function getTeamPillStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red" {
   if (pick.eliminated) return "red"
@@ -49,11 +16,7 @@ function getTeamPillStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red
   return "yellow"
 }
 
-const STATUS_BORDER_COLORS = {
-  green: "#27AE60",
-  yellow: "#D4AC0D",
-  red: "#C0392B",
-}
+const STATUS_BORDER_COLORS = STATUS_COLORS
 
 const PILL_STATUS_CLASSES = {
   green: "bg-green-500/20 border-green-500/40 text-green-300",

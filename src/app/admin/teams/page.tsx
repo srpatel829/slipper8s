@@ -33,11 +33,11 @@ interface TeamData {
   wins: number
 }
 
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "bg-red-500/20 text-red-400 border-red-500/30"
+function getSeedColorClasses(seed: number): string {
+  if (seed <= 4) return "bg-sky-800/20 text-sky-300 border-sky-800/30"
   if (seed <= 8) return "bg-orange-500/20 text-orange-400 border-orange-500/30"
-  if (seed <= 12) return "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-  return "bg-green-500/20 text-green-400 border-green-500/30"
+  if (seed <= 12) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
+  return "bg-amber-800/20 text-amber-600 border-amber-800/30"
 }
 
 export default function AdminTeamsPage() {
@@ -178,7 +178,7 @@ export default function AdminTeamsPage() {
                     {confTeams
                       .sort((a, b) => a.seed - b.seed || a.name.localeCompare(b.name))
                       .map((team) => {
-                        const seedColor = getSeedColor(team.seed)
+                        const seedColor = getSeedColorClasses(team.seed)
                         const hasChange = team.id in changes
                         const currentConf = hasChange ? changes[team.id] : (team.conference ?? "")
 

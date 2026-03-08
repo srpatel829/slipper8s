@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save, LogOut, Calendar, Phone } from "lucide-react"
 import { signOut } from "next-auth/react"
 import type { Gender } from "@/generated/prisma"
+import { getSeedColor } from "@/lib/colors"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -66,13 +67,6 @@ interface TeamOption {
 interface ProfileFormProps {
   user: ProfileUser
   teams: TeamOption[]
-}
-
-function getSeedColor(seed: number): string {
-  if (seed <= 4) return "#C0392B"
-  if (seed <= 8) return "#E67E22"
-  if (seed <= 12) return "#D4AC0D"
-  return "#27AE60"
 }
 
 export function ProfileForm({ user, teams }: ProfileFormProps) {
