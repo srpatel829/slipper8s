@@ -108,10 +108,8 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
 
         {/* Right side */}
         <div className="flex items-center gap-2 shrink-0">
-          {/* Theme toggle — desktop only */}
-          <div className="hidden md:flex">
-            <ThemeToggle />
-          </div>
+          {/* Theme toggle — all screen sizes */}
+          <ThemeToggle />
 
           {/* Demo link (desktop) — hide when already in demo */}
           {!demoMode && (

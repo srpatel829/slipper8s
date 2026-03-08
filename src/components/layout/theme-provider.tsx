@@ -1,11 +1,9 @@
 "use client"
 
 /**
- * ThemeProvider — manages dark/light mode and orange/blue accent theme.
- *
- * Persists to localStorage. Applies classes to <html>:
- *   - `.dark` or nothing for mode
- *   - `.accent-blue` or nothing for accent (orange is the default, no class needed)
+ * ThemeProvider — manages dark/light mode.
+ * ONE color scheme only per spec — no accent variants.
+ * Default: light mode. Persists to localStorage.
  */
 
 import {
@@ -17,20 +15,13 @@ import {
   type ReactNode,
 } from "react"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 export type ThemeMode = "dark" | "light"
-export type ThemeAccent = "orange" | "blue"
 
 interface ThemeContextValue {
   mode: ThemeMode
-  accent: ThemeAccent
   setMode: (mode: ThemeMode) => void
-  setAccent: (accent: ThemeAccent) => void
   toggleMode: () => void
 }
-
-// ─── Context ──────────────────────────────────────────────────────────────────
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
@@ -40,25 +31,22 @@ export function useTheme(): ThemeContextValue {
   return ctx
 }
 
-// ─── Provider ─────────────────────────────────────────────────────────────────
-
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>("dark")
-  const [accent, setAccentState] = useState<ThemeAccent>("orange")
+  const [mode, setModeState] = useState<ThemeMode>("light")
 
   // Load from localStorage on mount
   useEffect(() => {
     try {
-      const savedMode = localStorage.getItem("theme-mode") as ThemeMode | null
-      const savedAccent = localStorage.getItem("theme-accent") as ThemeAccent | null
-      if (savedMode === "light" || savedMode === "dark") setModeState(savedMode)
-      if (savedAccent === "blue" || savedAccent === "orange") setAccentState(savedAccent)
+      const saved = localStorage.getItem("theme-mode") as ThemeMode | null
+      if (saved === "light" || saved === "dark") {
+        setModeState(saved)
+      }
     } catch {
-      // localStorage not available (SSR guard)
+      // SSR guard
     }
   }, [])
 
-  // Apply classes to <html> whenever mode/accent changes
+  // Apply class to <html>
   useEffect(() => {
     const html = document.documentElement
     if (mode === "dark") {
@@ -66,21 +54,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } else {
       html.classList.remove("dark")
     }
-    if (accent === "blue") {
-      html.classList.add("accent-blue")
-    } else {
-      html.classList.remove("accent-blue")
-    }
-  }, [mode, accent])
+  }, [mode])
 
   const setMode = useCallback((newMode: ThemeMode) => {
     setModeState(newMode)
     try { localStorage.setItem("theme-mode", newMode) } catch { /* */ }
-  }, [])
-
-  const setAccent = useCallback((newAccent: ThemeAccent) => {
-    setAccentState(newAccent)
-    try { localStorage.setItem("theme-accent", newAccent) } catch { /* */ }
   }, [])
 
   const toggleMode = useCallback(() => {
@@ -88,7 +66,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [mode, setMode])
 
   return (
-    <ThemeContext.Provider value={{ mode, accent, setMode, setAccent, toggleMode }}>
+    <ThemeContext.Provider value={{ mode, setMode, toggleMode }}>
       {children}
     </ThemeContext.Provider>
   )
