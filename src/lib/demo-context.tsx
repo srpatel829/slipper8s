@@ -57,11 +57,6 @@ interface DemoContextValue {
   setSelectedYear: (year: number) => void
   availableTournaments: Array<{ year: number; label: string }>
 
-  // User Sets
-  selectedUserSetKey: string
-  setSelectedUserSetKey: (key: string) => void
-  availableUserSets: Array<{ key: string; label: string }>
-
   // Timeline
   gameIndex: number
   totalGames: number
@@ -141,15 +136,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   const roundBoundaries = useMemo(() => getRoundBoundaries(gameSequence), [gameSequence])
   const totalGames = gameSequence.length
 
-  // ── User sets ──
-  const [selectedUserSetKey, setSelectedUserSetKeyRaw] = useState("real_2025")
-  const availableUserSets = useMemo(() => {
-    return Object.entries(DEMO_USER_SETS).map(([key, config]) => ({ key, label: config.label }))
-  }, [])
-  const activeUserSet = useMemo(() => {
-    const set = DEMO_USER_SETS[selectedUserSetKey as keyof typeof DEMO_USER_SETS]
-    return set ? set.users : DEMO_USER_SETS.real_2025.users
-  }, [selectedUserSetKey])
+  // ── User set (always real 2025 data) ──
+  const activeUserSet = useMemo(() => DEMO_USER_SETS.real_2025.users, [])
 
   // ── Timeline state ──
   const [gameIndex, setGameIndexRaw] = useState(-1)
@@ -381,9 +369,6 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     selectedYear,
     setSelectedYear,
     availableTournaments,
-    selectedUserSetKey,
-    setSelectedUserSetKey: setSelectedUserSetKeyRaw,
-    availableUserSets,
     gameIndex,
     totalGames,
     setGameIndex,

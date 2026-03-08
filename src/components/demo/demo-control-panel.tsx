@@ -48,9 +48,6 @@ export function DemoControlPanel() {
     selectedYear,
     setSelectedYear,
     availableTournaments,
-    selectedUserSetKey,
-    setSelectedUserSetKey,
-    availableUserSets,
     gameIndex,
     totalGames,
     setGameIndex,
@@ -129,25 +126,6 @@ export function DemoControlPanel() {
                     {availableTournaments.map(t => (
                       <SelectItem key={t.year} value={String(t.year)} className="text-xs">
                         {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* User Set selector */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Select
-                  value={selectedUserSetKey}
-                  onValueChange={setSelectedUserSetKey}
-                >
-                  <SelectTrigger className="h-7 w-40 text-xs border-border/40 bg-background/30 text-primary">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableUserSets.map(set => (
-                      <SelectItem key={set.key} value={set.key} className="text-xs">
-                        {set.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
