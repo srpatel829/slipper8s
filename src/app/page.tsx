@@ -2,8 +2,7 @@ import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, Zap, Users, ArrowRight, Check, Target } from "lucide-react"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { TrendingUp, Zap, Users, ArrowRight, Check, Target, Trophy } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
 import { EntryCounter } from "@/components/landing/entry-counter"
 import { prisma } from "@/lib/prisma"
@@ -40,7 +39,7 @@ export default async function HomePage() {
       {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
-          <Slipper8sLogo size={24} className="text-primary" />
+          <Trophy className="h-6 w-6 text-primary" />
           <span className="font-bold text-lg tracking-tight">Slipper8s</span>
         </div>
         <div className="flex items-center gap-3">
@@ -68,7 +67,7 @@ export default async function HomePage() {
         {/* Logo mark */}
         <div className="flex justify-center mb-5">
           <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center shadow-lg glow-blue">
-            <Slipper8sLogo size={44} className="text-primary-foreground" />
+            <Trophy className="h-11 w-11 text-primary-foreground" />
           </div>
         </div>
 

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail } from "lucide-react"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { Mail, Trophy } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 
@@ -10,7 +9,7 @@ export default function VerifyRequestPage() {
       <div className="w-full max-w-sm">
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-2 text-2xl font-bold">
-            <Slipper8sLogo size={28} className="text-primary" />
+            <Trophy className="h-7 w-7 text-primary" />
             Slipper8s
           </div>
         </div>

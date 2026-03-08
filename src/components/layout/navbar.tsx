@@ -16,11 +16,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import {
   Menu, BarChart3, Target, Zap, Play, Settings,
-  Users, User, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch
+  Users, User, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch, Trophy
 } from "lucide-react"
 import type { Session } from "next-auth"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
 
 interface NavbarProps {
   session: Session | null
@@ -65,7 +64,7 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
       <div className="container mx-auto flex h-14 items-center justify-between px-4 gap-4">
         {/* Logo */}
         <Link href={user ? prefixHref("/leaderboard") : "/"} className="flex items-center gap-2 shrink-0">
-          <Slipper8sLogo size={24} className="text-primary" />
+          <Trophy className="h-6 w-6 text-primary" />
           <span className="font-bold text-base tracking-tight">Slipper8s</span>
           {demoMode && (
             <Badge variant="outline" className="text-[10px] h-4 border-primary/40 text-primary">
@@ -210,7 +209,7 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
             </SheetTrigger>
             <SheetContent side="right" className="w-64 p-4">
               <div className="flex items-center gap-2 mb-6">
-                <Slipper8sLogo size={20} className="text-primary" />
+                <Trophy className="h-5 w-5 text-primary" />
                 <span className="font-bold">Slipper8s</span>
                 {demoMode && (
                   <Badge variant="outline" className="text-[10px] h-4 border-primary/40 text-primary">

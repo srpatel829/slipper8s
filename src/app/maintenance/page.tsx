@@ -1,5 +1,4 @@
-import { Wrench } from "lucide-react"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { Wrench, Trophy } from "lucide-react"
 import Link from "next/link"
 
 export const metadata = {
@@ -25,7 +24,7 @@ export default function MaintenancePage() {
             <Wrench className="h-8 w-8 text-amber-400" />
           </div>
           <div className="flex items-center gap-2 mb-2">
-            <Slipper8sLogo size={20} className="text-primary" />
+            <Trophy className="h-5 w-5 text-primary" />
             <span className="font-bold text-lg tracking-tight">Slipper8s</span>
           </div>
         </div>

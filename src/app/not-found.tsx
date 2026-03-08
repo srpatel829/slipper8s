@@ -1,7 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, BarChart3 } from "lucide-react"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { ArrowLeft, BarChart3, Trophy } from "lucide-react"
 
 export default function NotFound() {
   return (
@@ -16,7 +15,7 @@ export default function NotFound() {
 
       <div className="relative z-10 max-w-md">
         <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-6">
-          <Slipper8sLogo size={32} className="text-primary" />
+          <Trophy className="h-8 w-8 text-primary" />
         </div>
 
         <h1 className="text-6xl font-extrabold text-primary mb-2">404</h1>

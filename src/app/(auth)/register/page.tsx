@@ -13,8 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Check, X, Loader2, Heart } from "lucide-react"
-import { Slipper8sLogo } from "@/components/logo/slipper8s-logo"
+import { Check, X, Loader2, Heart, Trophy } from "lucide-react"
 import { getSeedColor } from "@/lib/colors"
 
 interface TeamOption {
@@ -184,7 +183,7 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-blue">
-            <Slipper8sLogo size={32} className="text-primary-foreground" />
+            <Trophy className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Complete Your Profile</h1>
           <p className="text-muted-foreground text-sm mt-1">Set up your Slipper8s account</p>
