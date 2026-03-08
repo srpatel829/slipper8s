@@ -50,7 +50,10 @@ export function DemoControlPanel() {
     availableTournaments,
     gameIndex,
     totalGames,
-    setGameIndex,
+    checkpointIndex,
+    totalCheckpoints,
+    setCheckpointIndex,
+    checkpoints,
     stepForward,
     stepBack,
     jumpToNextRound,
@@ -63,26 +66,21 @@ export function DemoControlPanel() {
     setPersona,
     availablePersonas,
     currentGameInfo,
-    roundBoundaries,
   } = useDemoContext()
 
   const pathname = usePathname()
   const [expanded, setExpanded] = useState(true)
 
-  const progress = totalGames > 0 ? ((gameIndex + 1) / totalGames) * 100 : 0
+  const progress = totalCheckpoints > 1 ? (checkpointIndex / (totalCheckpoints - 1)) * 100 : 0
 
-  // Current round label
-  const currentRoundLabel = (() => {
-    if (gameIndex < 0) return "Pre-Tournament"
-    const last = [...roundBoundaries].reverse().find(b => b.gameIndex <= gameIndex)
-    return last?.roundLabel ?? "Tournament"
-  })()
+  // Current checkpoint label
+  const currentRoundLabel = checkpoints[checkpointIndex]?.label ?? "Pre-Tournament"
 
   // Show picks hint when on picks page and tournament has started
   const showPicksHint = gameIndex >= 0 && pathname === "/demo/picks"
 
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setGameIndex(parseInt(e.target.value))
+    setCheckpointIndex(parseInt(e.target.value))
   }
 
   return (
@@ -207,9 +205,9 @@ export function DemoControlPanel() {
                 </Tooltip>
               )}
 
-              {/* Game counter */}
+              {/* Checkpoint counter */}
               <span className="ml-auto text-xs text-muted-foreground shrink-0">
-                {gameIndex >= 0 ? gameIndex + 1 : 0} / {totalGames} games
+                {checkpointIndex} / {totalCheckpoints - 1}
               </span>
             </div>
 
@@ -223,7 +221,7 @@ export function DemoControlPanel() {
                     size="icon"
                     className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                     onClick={jumpToPrevRound}
-                    disabled={gameIndex <= 0}
+                    disabled={checkpointIndex <= 0}
                   >
                     <ChevronsLeft className="h-3.5 w-3.5" />
                   </Button>
@@ -237,7 +235,7 @@ export function DemoControlPanel() {
                 size="icon"
                 className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                 onClick={stepBack}
-                disabled={gameIndex < 0}
+                disabled={checkpointIndex <= 0}
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
@@ -261,7 +259,7 @@ export function DemoControlPanel() {
                 size="icon"
                 className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                 onClick={stepForward}
-                disabled={gameIndex >= totalGames - 1}
+                disabled={checkpointIndex >= totalCheckpoints - 1}
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </Button>
@@ -274,7 +272,7 @@ export function DemoControlPanel() {
                     size="icon"
                     className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
                     onClick={jumpToNextRound}
-                    disabled={gameIndex >= totalGames - 1}
+                    disabled={checkpointIndex >= totalCheckpoints - 1}
                   >
                     <ChevronsRight className="h-3.5 w-3.5" />
                   </Button>
@@ -291,9 +289,9 @@ export function DemoControlPanel() {
                 />
                 <input
                   type="range"
-                  min={-1}
-                  max={totalGames - 1}
-                  value={gameIndex}
+                  min={0}
+                  max={totalCheckpoints - 1}
+                  value={checkpointIndex}
                   onChange={handleSliderChange}
                   className="w-full h-1 appearance-none bg-white/10 rounded-full cursor-pointer
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4

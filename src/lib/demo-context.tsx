@@ -31,8 +31,10 @@ import {
   computeGamesAsLiveData,
   computeTeamsForPicks,
   getRoundBoundaries,
+  getDayCheckpoints,
   type DemoGameEvent,
   type RoundBoundary,
+  type DayCheckpoint,
 } from "@/lib/demo-game-sequence"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -57,10 +59,14 @@ interface DemoContextValue {
   setSelectedYear: (year: number) => void
   availableTournaments: Array<{ year: number; label: string }>
 
-  // Timeline
+  // Timeline (checkpoint-based: 11 positions)
   gameIndex: number
   totalGames: number
   setGameIndex: (idx: number) => void
+  checkpointIndex: number
+  totalCheckpoints: number
+  setCheckpointIndex: (idx: number) => void
+  checkpoints: DayCheckpoint[]
   stepForward: () => void
   stepBack: () => void
   jumpToNextRound: () => void
@@ -134,7 +140,9 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     [tournamentData]
   )
   const roundBoundaries = useMemo(() => getRoundBoundaries(gameSequence), [gameSequence])
+  const checkpoints = useMemo(() => getDayCheckpoints(gameSequence), [gameSequence])
   const totalGames = gameSequence.length
+  const totalCheckpoints = checkpoints.length
 
   // ── User set (always real 2025 data) ──
   const activeUserSet = useMemo(() => DEMO_USER_SETS.real_2025.users, [])
@@ -246,43 +254,65 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     (idx: number) => setGameIndexRaw(Math.max(-1, Math.min(totalGames - 1, idx))),
     [totalGames]
   )
-  const stepForward = useCallback(() => setGameIndex(gameIndex + 1), [gameIndex, setGameIndex])
-  const stepBack = useCallback(() => setGameIndex(gameIndex - 1), [gameIndex, setGameIndex])
+
+  // Derive checkpointIndex from current gameIndex
+  const checkpointIndex = useMemo(() => {
+    for (let i = checkpoints.length - 1; i >= 0; i--) {
+      if (gameIndex >= checkpoints[i].lastGameIndex) return i
+    }
+    return 0
+  }, [gameIndex, checkpoints])
+
+  // Set gameIndex from checkpoint position
+  const setCheckpointIndex = useCallback((cpIdx: number) => {
+    const clamped = Math.max(0, Math.min(totalCheckpoints - 1, cpIdx))
+    const cp = checkpoints[clamped]
+    if (cp) setGameIndexRaw(cp.lastGameIndex)
+  }, [checkpoints, totalCheckpoints])
+
+  // Step forward/back move between checkpoints
+  const stepForward = useCallback(() => {
+    setCheckpointIndex(checkpointIndex + 1)
+  }, [checkpointIndex, setCheckpointIndex])
+
+  const stepBack = useCallback(() => {
+    setCheckpointIndex(checkpointIndex - 1)
+  }, [checkpointIndex, setCheckpointIndex])
+
   const togglePlay = useCallback(() => setIsPlaying(p => !p), [])
 
   const jumpToNextRound = useCallback(() => {
-    const next = roundBoundaries.find(b => b.gameIndex > gameIndex)
-    if (next) setGameIndex(next.gameIndex)
-    else setGameIndex(totalGames - 1)
-  }, [gameIndex, roundBoundaries, setGameIndex, totalGames])
+    // Jump forward by 2 checkpoints (skip to next round)
+    setCheckpointIndex(checkpointIndex + 2)
+  }, [checkpointIndex, setCheckpointIndex])
 
   const jumpToPrevRound = useCallback(() => {
-    const prev = [...roundBoundaries].reverse().find(b => b.gameIndex <= gameIndex - 1)
-    if (prev) setGameIndex(prev.gameIndex - 1)
-    else setGameIndex(-1)
-  }, [gameIndex, roundBoundaries, setGameIndex])
+    // Jump back by 2 checkpoints (skip to prev round)
+    setCheckpointIndex(checkpointIndex - 2)
+  }, [checkpointIndex, setCheckpointIndex])
 
-  // ── Auto-advance ──
+  // ── Auto-advance (checkpoint by checkpoint) ──
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const checkpointIndexRef = useRef(checkpointIndex)
+  checkpointIndexRef.current = checkpointIndex
 
   useEffect(() => {
     if (playIntervalRef.current) clearInterval(playIntervalRef.current)
     if (isPlaying) {
       playIntervalRef.current = setInterval(() => {
-        setGameIndexRaw(prev => {
-          const next = prev + 1
-          if (next >= totalGames) {
-            setIsPlaying(false)
-            return totalGames - 1
-          }
-          return next
-        })
+        const nextCp = checkpointIndexRef.current + 1
+        if (nextCp >= totalCheckpoints) {
+          setIsPlaying(false)
+          return
+        }
+        const cp = checkpoints[nextCp]
+        if (cp) setGameIndexRaw(cp.lastGameIndex)
       }, playSpeed)
     }
     return () => {
       if (playIntervalRef.current) clearInterval(playIntervalRef.current)
     }
-  }, [isPlaying, playSpeed, totalGames])
+  }, [isPlaying, playSpeed, totalCheckpoints, checkpoints])
 
   // ── Picks methods ──
   const setDemoUserPicks = useCallback((userId: string, picks: string[]) => {
@@ -372,6 +402,10 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     gameIndex,
     totalGames,
     setGameIndex,
+    checkpointIndex,
+    totalCheckpoints,
+    setCheckpointIndex,
+    checkpoints,
     stepForward,
     stepBack,
     jumpToNextRound,

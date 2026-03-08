@@ -398,6 +398,97 @@ export function getRoundBoundaries(games: DemoGameEvent[]): RoundBoundary[] {
   return boundaries
 }
 
+// ─── Day Checkpoints ────────────────────────────────────────────────────────
+
+export interface DayCheckpoint {
+  /** 0-based checkpoint index */
+  index: number
+  /** Human-readable label */
+  label: string
+  /** Short label for compact display */
+  shortLabel: string
+  /** The gameIndex of the LAST game in this checkpoint (-1 for pre-tournament) */
+  lastGameIndex: number
+}
+
+/**
+ * 11 checkpoint positions: Pre-tournament + 10 end-of-day checkpoints.
+ * Each day in the tournament has half the games split across 2 days,
+ * except Final Four (1 day) and Championship (1 day).
+ *
+ * For 2025: 32 R64 games split 16/16, 16 R32 split 8/8, 8 S16 split 4/4,
+ * 4 E8 split 2/2, 2 F4 in 1 day, 1 Championship in 1 day.
+ */
+export function getDayCheckpoints(games: DemoGameEvent[]): DayCheckpoint[] {
+  // Group games by round
+  const gamesByRound = new Map<number, DemoGameEvent[]>()
+  for (const g of games) {
+    const list = gamesByRound.get(g.round) ?? []
+    list.push(g)
+    gamesByRound.set(g.round, list)
+  }
+
+  const checkpoints: DayCheckpoint[] = [
+    { index: 0, label: "Pre-Tournament", shortLabel: "Pre", lastGameIndex: -1 },
+  ]
+
+  // Rounds 1-4 split into 2 days each
+  const roundDayConfig: Array<{ round: number; labelDay1: string; labelDay2: string; shortDay1: string; shortDay2: string }> = [
+    { round: 1, labelDay1: "Round of 64 Day 1", labelDay2: "Round of 64 Day 2", shortDay1: "R64 D1", shortDay2: "R64 D2" },
+    { round: 2, labelDay1: "Round of 32 Day 1", labelDay2: "Round of 32 Day 2", shortDay1: "R32 D1", shortDay2: "R32 D2" },
+    { round: 3, labelDay1: "Sweet 16 Day 1", labelDay2: "Sweet 16 Day 2", shortDay1: "S16 D1", shortDay2: "S16 D2" },
+    { round: 4, labelDay1: "Elite 8 Day 1", labelDay2: "Elite 8 Day 2", shortDay1: "E8 D1", shortDay2: "E8 D2" },
+  ]
+
+  for (const cfg of roundDayConfig) {
+    const roundGames = gamesByRound.get(cfg.round) ?? []
+    const half = Math.ceil(roundGames.length / 2)
+    const day1Games = roundGames.slice(0, half)
+    const day2Games = roundGames.slice(half)
+
+    if (day1Games.length > 0) {
+      checkpoints.push({
+        index: checkpoints.length,
+        label: cfg.labelDay1,
+        shortLabel: cfg.shortDay1,
+        lastGameIndex: day1Games[day1Games.length - 1].gameIndex,
+      })
+    }
+    if (day2Games.length > 0) {
+      checkpoints.push({
+        index: checkpoints.length,
+        label: cfg.labelDay2,
+        shortLabel: cfg.shortDay2,
+        lastGameIndex: day2Games[day2Games.length - 1].gameIndex,
+      })
+    }
+  }
+
+  // F4 = 1 day
+  const f4Games = gamesByRound.get(5) ?? []
+  if (f4Games.length > 0) {
+    checkpoints.push({
+      index: checkpoints.length,
+      label: "Final Four",
+      shortLabel: "F4",
+      lastGameIndex: f4Games[f4Games.length - 1].gameIndex,
+    })
+  }
+
+  // Championship = 1 day
+  const champGames = gamesByRound.get(6) ?? []
+  if (champGames.length > 0) {
+    checkpoints.push({
+      index: checkpoints.length,
+      label: "Championship",
+      shortLabel: "Champ",
+      lastGameIndex: champGames[champGames.length - 1].gameIndex,
+    })
+  }
+
+  return checkpoints
+}
+
 // ─── R64 Matchup Map ─────────────────────────────────────────────────────────
 
 /**
