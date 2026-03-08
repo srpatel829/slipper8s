@@ -14,7 +14,8 @@ export default async function HomePage() {
   try {
     session = await auth()
     const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
-    deadline = settings?.picksDeadline?.toISOString() ?? null
+    // Fallback: March 19, 2026 at 12:00pm ET (UTC-4 during EDT)
+    deadline = settings?.picksDeadline?.toISOString() ?? "2026-03-19T16:00:00.000Z"
 
     // Maintenance mode check — redirect non-admin visitors to maintenance page
     if (settings?.maintenanceMode) {

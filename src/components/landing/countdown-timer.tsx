@@ -30,23 +30,28 @@ interface CountdownTimerProps {
   compact?: boolean
 }
 
+// Fallback deadline: March 19, 2026 at 12:00pm ET (UTC-4 during EDT)
+const FALLBACK_DEADLINE = "2026-03-19T16:00:00.000Z"
+
 export function CountdownTimer({ deadline: deadlineProp, compact }: CountdownTimerProps) {
   const [deadlineStr, setDeadlineStr] = useState<string | null>(deadlineProp ?? null)
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null)
   const [mounted, setMounted] = useState(false)
 
-  // If no deadline prop, fetch from API
+  // If no deadline prop, fetch from API; use fallback if API fails or returns nothing
   useEffect(() => {
-    if (deadlineProp !== undefined) {
+    if (deadlineProp !== undefined && deadlineProp !== null) {
       setDeadlineStr(deadlineProp)
       return
     }
     fetch("/api/settings")
       .then((r) => r.json())
       .then((data) => {
-        if (data.picksDeadline) setDeadlineStr(data.picksDeadline)
+        setDeadlineStr(data.picksDeadline ?? FALLBACK_DEADLINE)
       })
-      .catch(() => {})
+      .catch(() => {
+        setDeadlineStr(FALLBACK_DEADLINE)
+      })
   }, [deadlineProp])
 
   useEffect(() => {
