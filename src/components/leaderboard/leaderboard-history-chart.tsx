@@ -178,45 +178,36 @@ export function LeaderboardHistoryChart({
     ? history[0].entries.map(e => e.userId)
     : []
 
-  // Initialize hidden users to anyone not in the top 64 of the current/last snapshot
-  // We use useState with a function initializer to only do this once per mount/history change.
-  // We'll re-calculate if the userIds list fundamentally changes.
-  const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(() => {
-    // Find the most relevant snapshot (the current one or the last one available)
+  // Default: show only Leader, Median, and You (highlighted user)
+  // Per spec: default lines are Optimal 8 (Rolling), Leader, You, Median
+  const getDefaultHidden = useCallback(() => {
     const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
     const anchorSnap = history[anchorSnapIndex]
-
     if (!anchorSnap) return new Set<string>()
 
-    // Sort entries by rank/score taking the top 64
-    // (They should already be sorted by rank in the snapshot computation)
-    const top64Ids = new Set(anchorSnap.entries.slice(0, 64).map(e => e.userId))
+    const sorted = [...anchorSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
+    const leaderId = sorted[0]?.userId
+    const medianIdx = Math.floor(sorted.length / 2)
+    const medianId = sorted[medianIdx]?.userId
 
-    // Hide everyone not in the top 64
-    const initialHidden = new Set<string>()
-    for (const entry of anchorSnap.entries) {
-      if (!top64Ids.has(entry.userId)) {
-        initialHidden.add(entry.userId)
-      }
+    const showIds = new Set<string>()
+    if (leaderId) showIds.add(leaderId)
+    if (medianId) showIds.add(medianId)
+    if (highlightUserId) showIds.add(highlightUserId)
+
+    const hidden = new Set<string>()
+    for (const uid of userIds) {
+      if (!showIds.has(uid)) hidden.add(uid)
     }
-    return initialHidden
-  })
+    return hidden
+  }, [history, gameIndex, highlightUserId, userIds])
 
-  // Re-run the top-64 selection if the total participants changes (e.g. changing user sets)
+  const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(getDefaultHidden)
+
+  // Re-run default selection if history changes
   useEffect(() => {
-    const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
-    const anchorSnap = history[anchorSnapIndex]
-    if (!anchorSnap) return
-
-    const top64Ids = new Set(anchorSnap.entries.slice(0, 64).map(e => e.userId))
-    const initialHidden = new Set<string>()
-    for (const entry of anchorSnap.entries) {
-      if (!top64Ids.has(entry.userId)) {
-        initialHidden.add(entry.userId)
-      }
-    }
-    setHiddenUserIds(initialHidden)
-  }, [history]) // Dependency on history means it changes when the user set changes
+    setHiddenUserIds(getDefaultHidden())
+  }, [history]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter userIds for chart lines based on explicit toggles
   const chartVisibleUserIds = useMemo(() => {
@@ -233,7 +224,7 @@ export function LeaderboardHistoryChart({
     })
   }, [searchQuery, userIds, userNames])
 
-  // Build flat chart data — one point per game
+  // Build flat chart data — one point per game, including Optimal 8 (Rolling)
   const chartData = history.map((snap, i) => {
     const point: Record<string, number | string> = {
       gameIndex: i,
@@ -242,15 +233,44 @@ export function LeaderboardHistoryChart({
     for (const entry of snap.entries) {
       point[`${entry.userId}_score`] = entry.currentScore
     }
+    // Optimal 8 Rolling = best possible score from top 8 (seed × wins) at this snapshot
+    // Compute from all picks across all entries — find unique teams and their current scores
+    const teamScores = new Map<string, number>()
+    for (const entry of snap.entries) {
+      for (const pick of entry.picks) {
+        if (pick.seed > 0 && !pick.isPlayIn) {
+          const teamScore = pick.seed * pick.wins
+          teamScores.set(pick.teamId, teamScore)
+        }
+      }
+    }
+    const sorted = [...teamScores.values()].sort((a, b) => b - a)
+    point.optimal8Rolling = sorted.slice(0, 8).reduce((sum, v) => sum + v, 0)
     return point
   })
 
-  // Assign colors (highlighted user always gets orange)
+  // Identify leader and median at current snapshot
+  const { leaderId, medianId } = useMemo(() => {
+    const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
+    const anchorSnap = history[anchorSnapIndex]
+    if (!anchorSnap) return { leaderId: null, medianId: null }
+    const sorted = [...anchorSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
+    return {
+      leaderId: sorted[0]?.userId ?? null,
+      medianId: sorted[Math.floor(sorted.length / 2)]?.userId ?? null,
+    }
+  }, [history, gameIndex])
+
+  // Assign colors (highlighted user = orange, leader = blue, median = slate, others cycle)
   const colorMap: Record<string, string> = {}
-  let paletteIdx = 1
+  let paletteIdx = 3 // skip orange, blue, slate
   for (const uid of userIds) {
     if (uid === highlightUserId) {
-      colorMap[uid] = PALETTE[0]
+      colorMap[uid] = PALETTE[0] // orange
+    } else if (uid === leaderId) {
+      colorMap[uid] = PALETTE[1] // blue
+    } else if (uid === medianId) {
+      colorMap[uid] = "#94a3b8" // slate for median
     } else {
       colorMap[uid] = PALETTE[paletteIdx % PALETTE.length]
       paletteIdx++
@@ -361,6 +381,8 @@ export function LeaderboardHistoryChart({
     const snap = history[label ?? 0]
     const isProjZone = (label ?? 0) > effectiveIndex
 
+    // Optimal 8 Rolling entry
+    const optEntry = payload.find(p => p.dataKey === "optimal8Rolling")
     // Score entries for the actual zone
     const scoreEntries = payload.filter(p => p.dataKey?.endsWith("_score"))
     // Trajectory entries for the projection zone
@@ -371,14 +393,21 @@ export function LeaderboardHistoryChart({
         <p className="font-semibold mb-1.5 text-muted-foreground">
           {isProjZone ? "Optimal Trajectory" : (snap?.gameLabel ?? `Game ${label}`)}
         </p>
+        {optEntry && optEntry.value != null && (
+          <div className="flex justify-between gap-3">
+            <span style={{ color: "#22d3ee" }}>Optimal 8 (Rolling)</span>
+            <span className="font-mono font-bold">{optEntry.value}</span>
+          </div>
+        )}
         {!isProjZone && scoreEntries.length > 0
           ? [...scoreEntries]
             .sort((a, b) => b.value - a.value)
             .map(p => {
               const uid = p.dataKey.replace("_score", "")
+              const label = uid === leaderId ? " (leader)" : uid === medianId ? " (median)" : ""
               return (
                 <div key={uid} className="flex justify-between gap-3">
-                  <span style={{ color: p.color }}>{userNames[uid] ?? uid}</span>
+                  <span style={{ color: p.color }}>{userNames[uid] ?? uid}{label}</span>
                   <span className="font-mono font-bold">{p.value}</span>
                 </div>
               )
@@ -599,6 +628,22 @@ export function LeaderboardHistoryChart({
               />
             )}
 
+            {/* Optimal 8 (Rolling) — dashed cyan line */}
+            <Line
+              type="monotone"
+              dataKey="optimal8Rolling"
+              stroke="#22d3ee"
+              strokeWidth={2}
+              strokeDasharray="6 3"
+              dot={false}
+              connectNulls
+              name="optimal8Rolling"
+              data={chartData.map((d, i) => ({
+                gameIndex: d.gameIndex,
+                optimal8Rolling: i <= effectiveIndex ? (d.optimal8Rolling as number) : null,
+              }))}
+            />
+
             {/* Solid score lines — visible from 0 → effectiveIndex */}
             {chartVisibleUserIds.map(uid => {
               const isHighlighted = uid === highlightUserId
@@ -711,12 +756,22 @@ export function LeaderboardHistoryChart({
                   you
                 </Badge>
               )}
+              {uid === leaderId && uid !== highlightUserId && (
+                <span className="ml-1 text-[9px] text-muted-foreground">(leader)</span>
+              )}
+              {uid === medianId && uid !== highlightUserId && uid !== leaderId && (
+                <span className="ml-1 text-[9px] text-muted-foreground">(median)</span>
+              )}
             </span>
           </div>
         ))}
         <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border/40">
+          <div className="h-0 w-5 border-t-2 border-dashed" style={{ borderColor: "#22d3ee" }} />
+          <span className="text-xs text-muted-foreground">Optimal 8 (Rolling)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
           <div className="h-0 w-5 border-t border-dashed border-muted-foreground/40" />
-          <span className="text-xs text-muted-foreground">Optimal trajectory</span>
+          <span className="text-xs text-muted-foreground">Max trajectory</span>
         </div>
       </div>
     </div >
