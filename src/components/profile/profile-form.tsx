@@ -346,7 +346,6 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
       {/* Account info */}
       <div className="text-[11px] text-muted-foreground space-y-1 pt-4 border-t border-border">
         <p>Account created: {new Date(user.createdAt).toLocaleDateString()}</p>
-        <p>Payment status: {user.isPaid ? "Paid" : "Unpaid"}</p>
       </div>
 
       {/* Sign out */}

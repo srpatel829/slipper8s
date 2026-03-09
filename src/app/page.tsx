@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { TrendingUp, Zap, Users, ArrowRight, Check, Target, Trophy } from "lucide-react"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
 import { EntryCounter } from "@/components/landing/entry-counter"
+import { ThemeToggle } from "@/components/layout/theme-toggle"
 import { prisma } from "@/lib/prisma"
 
 export default async function HomePage() {
@@ -14,8 +15,8 @@ export default async function HomePage() {
   try {
     session = await auth()
     const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
-    // Fallback: March 19, 2026 at 12:00pm ET (UTC-4 during EDT)
-    deadline = settings?.picksDeadline?.toISOString() ?? "2026-03-19T16:00:00.000Z"
+    // Fallback: March 19, 2026 at 12:15pm ET (UTC-4 during EDT)
+    deadline = settings?.picksDeadline?.toISOString() ?? "2026-03-19T16:15:00.000Z"
 
     // Maintenance mode check — redirect non-admin visitors to maintenance page
     if (settings?.maintenanceMode) {
@@ -54,6 +55,7 @@ export default async function HomePage() {
               FAQ
             </Button>
           </Link>
+          <ThemeToggle />
           <Link href="/login">
             <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1">
               Sign in <ArrowRight className="h-3.5 w-3.5" />

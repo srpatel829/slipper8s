@@ -189,11 +189,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
       { place: 3, label: "3rd Place", amount: "$50" },
       { place: 4, label: "4th Place", amount: "$25" },
     ],
-    defaultCharities: [
-      { name: "St. Jude Children's Hospital" },
-      { name: "Red Cross" },
-      { name: "Habitat for Humanity" },
-    ],
+    defaultCharities: [],
   })
 
   // ── Year change resets everything ──

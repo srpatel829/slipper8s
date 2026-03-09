@@ -2,12 +2,12 @@
 
 /**
  * QuickPickGenerator — generates 8 picks using intelligent strategies.
+ * Note: 1-seeds are excluded from all strategies.
  *
  * Strategies:
- *  - Chalk        : Seeds 1 & 2 from each region (safe favorites)
+ *  - Random       : 2 random teams per region
  *  - Balanced Mix : One team from each seed tier, spread across regions
  *  - Cinderella   : Seeds 8-12, high upset potential, spread across regions
- *  - Random       : 2 random teams per region
  */
 
 import { useState } from "react"
@@ -20,7 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Sparkles, Crown, Shuffle, Star, Zap } from "lucide-react"
+import { Sparkles, Shuffle, Star, Zap } from "lucide-react"
 import type { SelectedPick } from "@/components/picks/picks-form"
 
 // ─── Team shape from computeTeamsForPicks ────────────────────────────────────
@@ -68,18 +68,18 @@ function seededSample<T>(arr: T[], n: number, seed: number): T[] {
   return result
 }
 
-/** Pick 2 teams from a region matching a seed filter, prefer alive */
+/** Pick teams from a region matching a seed filter, prefer alive. Never picks 1-seeds. */
 function pickFromRegion(
   regionTeams: Team[],
   count: number,
   seedFilter: (seed: number) => boolean,
   fallbackAll = true
 ): string[] {
-  const filtered = regionTeams.filter(t => !t.eliminated && seedFilter(t.seed))
+  const filtered = regionTeams.filter(t => !t.eliminated && t.seed !== 1 && seedFilter(t.seed))
   const picks = seededSample(filtered, count, regionTeams.reduce((s, t) => s + t.seed, 0))
   if (picks.length < count && fallbackAll) {
     const used = new Set(picks.map(t => t.id))
-    const rest = regionTeams.filter(t => !t.eliminated && !used.has(t.id))
+    const rest = regionTeams.filter(t => !t.eliminated && t.seed !== 1 && !used.has(t.id))
     picks.push(...seededSample(rest, count - picks.length, 42))
   }
   return picks.map(t => t.id)
@@ -87,16 +87,18 @@ function pickFromRegion(
 
 const STRATEGIES: Strategy[] = [
   {
-    id: "chalk",
-    label: "Chalk",
-    description: "Seeds 1 & 2 from each region — favorites to go far",
-    icon: <Crown className="h-4 w-4" />,
-    color: "text-yellow-400",
+    id: "random",
+    label: "Random",
+    description: "2 random teams per region — let the bracket gods decide",
+    icon: <Shuffle className="h-4 w-4" />,
+    color: "text-green-400",
     generate(teams) {
       const ids: string[] = []
+      const seed = Date.now() % 9999
       for (const region of REGIONS) {
-        const rt = teams.filter(t => t.region === region)
-        ids.push(...pickFromRegion(rt, 2, s => s <= 2))
+        const rt = teams.filter(t => t.region === region && !t.eliminated && t.seed !== 1)
+        const picked = seededSample(rt, 2, seed + region.charCodeAt(0))
+        ids.push(...picked.map(t => t.id))
       }
       return ids.slice(0, 8)
     },
@@ -104,12 +106,12 @@ const STRATEGIES: Strategy[] = [
   {
     id: "balanced",
     label: "Balanced Mix",
-    description: "One team per seed tier (1-4, 5-8, 9-12, 13-16) × 2 regions",
+    description: "One team per seed tier (2-4, 5-8, 9-12, 13-16) × 2 regions",
     icon: <Star className="h-4 w-4" />,
     color: "text-blue-400",
     generate(teams) {
       const tiers = [
-        [1, 4],
+        [2, 4],
         [5, 8],
         [9, 12],
         [13, 16],
@@ -138,23 +140,6 @@ const STRATEGIES: Strategy[] = [
         ids.push(...pickFromRegion(rt, 1, s => s >= 4 && s <= 7))
       }
       return [...new Set(ids)].slice(0, 8)
-    },
-  },
-  {
-    id: "random",
-    label: "Random",
-    description: "2 random teams per region — let the bracket gods decide",
-    icon: <Shuffle className="h-4 w-4" />,
-    color: "text-green-400",
-    generate(teams) {
-      const ids: string[] = []
-      const seed = Date.now() % 9999
-      for (const region of REGIONS) {
-        const rt = teams.filter(t => t.region === region && !t.eliminated)
-        const picked = seededSample(rt, 2, seed + region.charCodeAt(0))
-        ids.push(...picked.map(t => t.id))
-      }
-      return ids.slice(0, 8)
     },
   },
 ]

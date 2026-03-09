@@ -30,8 +30,8 @@ interface CountdownTimerProps {
   compact?: boolean
 }
 
-// Fallback deadline: March 19, 2026 at 12:00pm ET (UTC-4 during EDT)
-const FALLBACK_DEADLINE = "2026-03-19T16:00:00.000Z"
+// Fallback deadline: March 19, 2026 at 12:15pm ET (UTC-4 during EDT)
+const FALLBACK_DEADLINE = "2026-03-19T16:15:00.000Z"
 
 export function CountdownTimer({ deadline: deadlineProp, compact }: CountdownTimerProps) {
   const [deadlineStr, setDeadlineStr] = useState<string | null>(deadlineProp ?? null)

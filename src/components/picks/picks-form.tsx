@@ -343,14 +343,12 @@ export function PicksForm({
             <span className="text-muted-foreground font-normal ml-1">(optional)</span>
           </Label>
         </div>
-        {defaultCharities.length > 0 && (
-          <p className="text-xs text-muted-foreground">
-            Suggested: {defaultCharities.map((c) => c.name).join(", ")}
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Charities should be 501(c)(3) organizations.
+        </p>
         <Input
           id="charity"
-          placeholder="e.g. Red Cross, Local Food Bank"
+          placeholder="e.g. a 501(c)(3) organization"
           value={charity}
           onChange={(e) => setCharity(e.target.value)}
           disabled={deadlinePassed}
