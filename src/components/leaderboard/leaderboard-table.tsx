@@ -7,7 +7,7 @@ import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
-import { getPrimaryArchetypeEmoji } from "@/lib/archetypes"
+import { getPrimaryArchetypeEmoji, ARCHETYPE_LEGEND } from "@/lib/archetypes"
 import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
 
 // ── Team pill status ─────────────────────────────────────────────────────────
@@ -339,25 +339,32 @@ function StatusLegend() {
 
 // ── Archetype emoji legend ───────────────────────────────────────────────────
 
-const ARCHETYPE_LEGEND = [
-  { emoji: "\u{1F460}", label: "Cinderella Chaser" },   // 👠
-  { emoji: "\u{1F3AF}", label: "Sweet Spotter" },        // 🎯
-  { emoji: "\u{1F9E0}", label: "The Strategist" },       // 🧠
-  { emoji: "\u{1F525}", label: "Chaos Agent" },           // 🔥
-  { emoji: "\u{1F5FA}\uFE0F", label: "Regional Purist" }, // 🗺️
-  { emoji: "\u{270F}\uFE0F", label: "Chalk Artist" },     // ✏️
-  { emoji: "\u{1F504}", label: "The Contrarian" },         // 🔄
-]
+function ArchetypeLegendItem({ emoji, label, description }: { emoji: string; label: string; description: string }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
+          <span>{emoji}</span>
+          <span>{label}</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent side="top" className="w-56 p-3 text-xs" sideOffset={4}>
+        <div className="flex items-center gap-1.5 font-semibold mb-1">
+          <span className="text-sm">{emoji}</span>
+          <span>{label}</span>
+        </div>
+        <p className="text-muted-foreground leading-relaxed">{description}</p>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 function ArchetypeLegend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
       <span className="font-semibold uppercase tracking-wider mr-1">Archetypes:</span>
       {ARCHETYPE_LEGEND.map(a => (
-        <span key={a.label} className="flex items-center gap-1">
-          <span>{a.emoji}</span>
-          <span>{a.label}</span>
-        </span>
+        <ArchetypeLegendItem key={a.key} emoji={a.emoji} label={a.label} description={a.description} />
       ))}
     </div>
   )
