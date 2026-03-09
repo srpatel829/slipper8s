@@ -171,7 +171,7 @@ function BracketMatchupCell({
   return (
     <div className={cn(
       "border border-border/40 rounded-md overflow-hidden bg-card/30",
-      "min-w-[120px]",
+      "min-w-[100px] sm:min-w-[120px]",
     )}>
       <BracketTeamCell
         team={matchup.topTeam}
@@ -281,10 +281,9 @@ function RegionBracket({
       {/* Bracket tree */}
       <div
         className="overflow-x-auto overflow-y-hidden pb-2"
-        style={{ maxHeight: 400 }}
       >
         <div
-          className="flex gap-3 min-w-fit"
+          className="flex gap-1.5 sm:gap-3 min-w-fit"
           style={{
             transform: `scale(${zoomLevel})`,
             transformOrigin: "top left",
@@ -352,7 +351,7 @@ export function BracketView({
   disabled,
   activeRegion,
 }: BracketViewProps) {
-  const [zoomLevel, setZoomLevel] = useState(0.95)
+  const [zoomLevel, setZoomLevel] = useState(typeof window !== "undefined" && window.innerWidth < 640 ? 0.8 : 0.95)
 
   return (
     <div className="space-y-2">
