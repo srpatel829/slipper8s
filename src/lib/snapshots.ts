@@ -177,7 +177,7 @@ export async function checkAndCreateCheckpoint(gameId: string): Promise<{
  * Create CheckpointDimensionSnapshot records for all dimensions.
  * Captures the leader, median, and entry count for each dimension at this point in time.
  */
-async function createDimensionSnapshots(checkpointId: string, seasonId: string): Promise<void> {
+export async function createDimensionSnapshots(checkpointId: string, seasonId: string): Promise<void> {
   // Get all entries with their scores and user profile data
   const entries = await prisma.entry.findMany({
     where: {
