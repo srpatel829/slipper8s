@@ -30,6 +30,7 @@ import {
   computeLeaderboardAtGame,
   computeGamesAsLiveData,
   computeTeamsForPicks,
+  computeStateAtGame,
   getRoundBoundaries,
   getDayCheckpoints,
   type DemoGameEvent,
@@ -102,6 +103,10 @@ interface DemoContextValue {
   roundBoundaries: RoundBoundary[]
   currentGameInfo: DemoGameEvent | null
   leaderboardHistory: HistorySnapshot[]
+
+  // Precomputed chart data
+  optimal8RollingScores: number[]
+  optimal8FinalScores: number[]
 
   // Fake session for Navbar
   session: {
@@ -389,6 +394,53 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     return history
   }, [tournamentData.teams, demoUsers, gameSequence, demoUserPicks])
 
+  // ── Optimal 8 Rolling scores (one per game) ──
+  const optimal8RollingScores = useMemo(() => {
+    return leaderboardHistory.map(snap => {
+      const teamScores = new Map<string, number>()
+      for (const entry of snap.entries) {
+        for (const pick of entry.picks) {
+          if (pick.seed > 0 && !pick.isPlayIn) {
+            const score = pick.seed * pick.wins
+            const existing = teamScores.get(pick.teamId) ?? 0
+            if (score > existing) teamScores.set(pick.teamId, score)
+          }
+        }
+      }
+      const top8 = [...teamScores.values()].sort((a, b) => b - a).slice(0, 8)
+      return top8.reduce((s, v) => s + v, 0)
+    })
+  }, [leaderboardHistory])
+
+  // ── Optimal 8 Final (hindsight) — fixed team IDs scored at each game ──
+  const optimal8FinalData = useMemo(() => {
+    if (gameSequence.length === 0) return { teamIds: [] as string[], seedMap: {} as Record<string, number> }
+    const finalState = computeStateAtGame(gameSequence, gameSequence.length - 1)
+    const scored = tournamentData.teams
+      .filter(t => !t.isPlayIn)
+      .map(t => {
+        const state = finalState.get(t.id) ?? { wins: 0, eliminated: false }
+        return { id: t.id, seed: t.seed, score: t.seed * state.wins }
+      })
+      .sort((a, b) => b.score - a.score || a.seed - b.seed)
+      .slice(0, 8)
+    const seedMap: Record<string, number> = {}
+    for (const t of scored) seedMap[t.id] = t.seed
+    return { teamIds: scored.map(t => t.id), seedMap }
+  }, [tournamentData.teams, gameSequence])
+
+  const optimal8FinalScores = useMemo(() => {
+    if (!optimal8FinalData.teamIds.length || gameSequence.length === 0) return []
+    return gameSequence.map((_, i) => {
+      const state = computeStateAtGame(gameSequence, i)
+      return optimal8FinalData.teamIds.reduce((sum, teamId) => {
+        const seed = optimal8FinalData.seedMap[teamId] ?? 0
+        const wins = state.get(teamId)?.wins ?? 0
+        return sum + seed * wins
+      }, 0)
+    })
+  }, [optimal8FinalData, gameSequence])
+
   // ── Fake session ──
   const [sessionExpires] = useState(() => new Date(Date.now() + 86400000).toISOString())
   const session = useMemo(() => ({
@@ -442,6 +494,8 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     roundBoundaries,
     currentGameInfo,
     leaderboardHistory,
+    optimal8RollingScores,
+    optimal8FinalScores,
     session,
   }
 

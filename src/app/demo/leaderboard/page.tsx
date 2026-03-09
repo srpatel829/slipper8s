@@ -30,6 +30,8 @@ export default function DemoLeaderboardPage() {
     gameSequence,
     teamsData,
     selectedYear,
+    optimal8RollingScores,
+    optimal8FinalScores,
   } = useDemoContext()
 
   const [chartExpanded, setChartExpanded] = useState(true)
@@ -201,6 +203,8 @@ export default function DemoLeaderboardPage() {
               highlightUserId={currentPersona.userId}
               userNames={userNames}
               gameSequence={gameSequence}
+              optimal8RollingScores={optimal8RollingScores}
+              optimal8FinalScores={optimal8FinalScores}
             />
           </CardContent>
         )}

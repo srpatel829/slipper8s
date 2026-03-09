@@ -1,452 +1,483 @@
 "use client"
 
 /**
- * LeaderboardHistoryChart
+ * LeaderboardHistoryChart — Score history chart for the leaderboard.
  *
- * Interactive recharts line chart showing leaderboard score history game-by-game.
+ * Follows the approved chart-test design:
+ * - 5 default lines: Optimal 8 Rolling, Optimal 8 Final, Leader, Median, You
+ * - Solid lines = actual scores, dashed lines = projected trajectory
+ * - 63 minor X-axis ticks, 10 major checkpoint labels
+ * - No horizontal gridlines, vertical gridlines at checkpoints only
+ * - "NOW" marker at current game
+ * - Player filter dropdown with Benchmarks/Players sections
  *
- * Features:
- * - Solid lines from 0 → gameIndex showing actual scores (auto-tracks timeline)
- * - Dashed optimal trajectory lines from gameIndex → end:
- *     Starts at naive TPS (all alive picks win everything, ignoring bracket conflicts).
- *     Steps DOWN each time two of a user's picks are scheduled to conflict.
- *     Ends at bracket-aware TPS at the rightmost point.
- * - Y-axis mode toggle: Max TPS (shows full upside) vs Max Score (zooms in on race)
- * - Play button: animates score history from 0 → current gameIndex
- * - Highlighted line for the current user/persona
- * - Round boundary reference lines
- * - Draggable cursor for tooltip exploration (does NOT mask data)
+ * Leader and Median use "Current" mode: trace how today's leader/median
+ * scored throughout the tournament (single player line, not composite).
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react"
-import { useTheme } from "@/components/layout/theme-provider"
+import { useState, useMemo } from "react"
 import {
   LineChart,
   Line,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  ReferenceLine,
-  ReferenceArea,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Check, ChevronDown } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Play, Pause, Search, Filter, Check } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { Button } from "@/components/ui/button"
 import type { HistorySnapshot } from "@/types"
 import type { RoundBoundary, DemoGameEvent } from "@/lib/demo-game-sequence"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOURNAMENT STRUCTURE — 63 games across 10 sessions
+// ═══════════════════════════════════════════════════════════════════════════════
 
-interface LeaderboardHistoryChartProps {
-  /** Full precomputed history from DemoContext */
-  history: HistorySnapshot[]
-  /** Current demo position — data auto-displays up to this */
-  gameIndex: number
-  /** Total games count */
-  totalGames: number
-  /** Round boundary markers */
-  roundBoundaries: RoundBoundary[]
-  /** Highlighted user's userId */
-  highlightUserId?: string
-  /** User names (userId → name) */
-  userNames: Record<string, string>
-  /** Full game sequence for trajectory computation */
-  gameSequence?: DemoGameEvent[]
-}
-
-// ─── Color palette ────────────────────────────────────────────────────────────
-
-const PALETTE = [
-  "#f97316", // orange (primary — reserved for highlighted user)
-  "#60a5fa", // blue
-  "#34d399", // green
-  "#f472b6", // pink
-  "#a78bfa", // purple
-  "#fbbf24", // yellow
-  "#2dd4bf", // teal
-  "#fb923c", // orange-light
-  "#818cf8", // indigo
-  "#4ade80", // lime
-  "#e879f9", // fuchsia
-  "#94a3b8", // slate
+const SESSION_CHECKPOINTS = [
+  { label: "R64 D1", shortLabel: "R64", gameIndex: 15 },
+  { label: "R64 D2", shortLabel: "R64", gameIndex: 31 },
+  { label: "R32 D1", shortLabel: "R32", gameIndex: 39 },
+  { label: "R32 D2", shortLabel: "R32", gameIndex: 47 },
+  { label: "S16 D1", shortLabel: "S16", gameIndex: 51 },
+  { label: "S16 D2", shortLabel: "S16", gameIndex: 55 },
+  { label: "E8 D1",  shortLabel: "E8",  gameIndex: 57 },
+  { label: "E8 D2",  shortLabel: "E8",  gameIndex: 59 },
+  { label: "F4",     shortLabel: "F4",  gameIndex: 61 },
+  { label: "Champ",  shortLabel: "CH",  gameIndex: 62 },
 ]
 
-// ─── Trajectory computation ───────────────────────────────────────────────────
+const TOTAL_GAMES = 63
+const checkpointGameSet = new Set(SESSION_CHECKPOINTS.map(c => c.gameIndex))
+const checkpointLabelMap = new Map(SESSION_CHECKPOINTS.map(c => [c.gameIndex, c.shortLabel]))
 
-function computeOptimalTrajectories(
-  history: HistorySnapshot[],
-  gameIndex: number,
-  gameSequence: DemoGameEvent[],
+// ═══════════════════════════════════════════════════════════════════════════════
+// COLORS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const COLOR_OPTIMAL_ROLLING = "#00A9E0"  // brand blue
+const COLOR_OPTIMAL_FINAL = "#f97316"    // orange
+const COLOR_LEADER = "#22c55e"           // green
+const COLOR_MEDIAN = "#a78bfa"           // purple
+const COLOR_YOU = "#facc15"              // yellow
+
+const OTHER_PLAYER_PALETTE = [
+  "#f472b6", "#2dd4bf", "#fb923c", "#818cf8", "#4ade80", "#e879f9", "#94a3b8",
+]
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface LeaderboardHistoryChartProps {
+  history: HistorySnapshot[]
+  gameIndex: number
   totalGames: number
-): Record<string, (number | null)[]> {
-  if (!history.length || gameIndex < 0) return {}
-
-  const anchorIndex = Math.min(gameIndex, history.length - 1)
-  const anchorSnapshot = history[anchorIndex]
-  if (!anchorSnapshot) return {}
-
-  const result: Record<string, (number | null)[]> = {}
-
-  for (const entry of anchorSnapshot.entries) {
-    const uid = entry.userId
-    const trajectory: (number | null)[] = new Array(totalGames).fill(null)
-
-    // 1. Compute optimal future wins using bracket-aware PPR engine
-    const teamInfoMap = new Map<string, TeamBracketInfo>()
-    for (const pick of entry.picks) {
-      if (!pick.isPlayIn) {
-        teamInfoMap.set(pick.teamId, {
-          seed: pick.seed,
-          region: pick.region || "",
-          wins: pick.wins,
-          eliminated: pick.eliminated
-        })
-      }
-    }
-
-    const { perTeam } = computeBracketAwarePPR(entry.picks.map(p => p.teamId), teamInfoMap)
-
-    // Map of Round -> Array of points to add
-    const pointsByRound = new Map<number, number[]>()
-    for (const pick of entry.picks) {
-      if (pick.eliminated || pick.isPlayIn || pick.seed === 0) continue
-      const ppr = perTeam.get(pick.teamId) || 0
-      const additionalWins = ppr / pick.seed
-      for (let r = pick.wins + 1; r <= pick.wins + additionalWins; r++) {
-        const pts = pointsByRound.get(r) || []
-        pts.push(pick.seed)
-        pointsByRound.set(r, pts)
-      }
-    }
-
-    let currentScore = entry.currentScore
-    if (gameIndex < totalGames) {
-      trajectory[gameIndex] = currentScore
-    }
-
-    const assignedByRound = new Map<number, number>()
-
-    for (let i = gameIndex + 1; i < totalGames; i++) {
-      const game = gameSequence[i]
-      if (game) {
-        const round = game.round
-        const pts = pointsByRound.get(round) || []
-        const assignedIdx = assignedByRound.get(round) || 0
-
-        if (assignedIdx < pts.length) {
-          currentScore += pts[assignedIdx]
-          assignedByRound.set(round, assignedIdx + 1)
-        }
-      }
-      trajectory[i] = currentScore
-    }
-
-    result[uid] = trajectory
-  }
-
-  return result
+  roundBoundaries: RoundBoundary[]
+  highlightUserId?: string
+  userNames: Record<string, string>
+  gameSequence?: DemoGameEvent[]
+  optimal8RollingScores: number[]
+  optimal8FinalScores: number[]
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+interface LineDef {
+  id: string
+  label: string
+  color: string
+  isDefault: boolean
+  isBenchmark: boolean
+  dataKey: string
+  projDataKey: string
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUSTOM X-AXIS TICK
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CustomXTick(props: any) {
+  const { x, y, payload } = props as {
+    x?: number
+    y?: number
+    payload?: { value: number }
+  }
+  if (x == null || y == null || !payload) return null
+  const game = payload.value
+  const isMajor = checkpointGameSet.has(game)
+
+  if (!isMajor) {
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <line x1={0} y1={0} x2={0} y2={3} stroke="currentColor" strokeOpacity={0.15} />
+      </g>
+    )
+  }
+
+  const label = checkpointLabelMap.get(game) ?? ""
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <line x1={0} y1={0} x2={0} y2={8} stroke="currentColor" strokeOpacity={0.5} />
+      <text
+        x={0}
+        y={20}
+        textAnchor="middle"
+        fill="currentColor"
+        fillOpacity={0.6}
+        fontSize={9}
+        fontWeight={500}
+      >
+        {label}
+      </text>
+    </g>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CUSTOM TOOLTIP
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function ChartTooltip({ active, payload, label, visibleLines, currentGame, history }: {
+  active?: boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload?: any[]
+  label?: number
+  visibleLines: LineDef[]
+  currentGame: number
+  history: HistorySnapshot[]
+}) {
+  if (!active || !payload || payload.length === 0) return null
+
+  const gameIdx = label ?? 0
+  const isPast = gameIdx <= currentGame
+
+  // Find round label from history
+  const snap = history[gameIdx]
+  const roundLabel = snap?.roundLabel ?? ""
+
+  return (
+    <div className="bg-popover border border-border/60 rounded-lg shadow-lg text-xs p-3 min-w-[200px]">
+      <div className="font-semibold mb-1.5 text-foreground flex items-center gap-2">
+        <span>Game {gameIdx + 1}</span>
+        {roundLabel && <span className="text-muted-foreground font-normal">{roundLabel}</span>}
+        {!isPast && <span className="text-[10px] text-muted-foreground italic font-normal">(projected)</span>}
+      </div>
+      {visibleLines.map(line => {
+        const actualEntry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.dataKey && p.value != null)
+        const projEntry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.projDataKey && p.value != null)
+        const entry = actualEntry ?? projEntry
+        if (!entry) return null
+        const isProjected = !actualEntry && !!projEntry
+        return (
+          <div key={line.id} className="flex items-center justify-between gap-4 py-0.5">
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-3 h-0.5 inline-block rounded-full"
+                style={{
+                  backgroundColor: line.color,
+                  opacity: isProjected ? 0.5 : 1,
+                }}
+              />
+              <span className={`${isProjected ? "text-muted-foreground/60 italic" : "text-muted-foreground"}`}>
+                {line.label}
+              </span>
+            </div>
+            <span className={`font-mono font-semibold ${isProjected ? "text-muted-foreground" : "text-foreground"}`}>
+              {Math.round(entry.value)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PLAYER FILTER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function PlayerFilter({ allLines, visibleIds, onToggle }: {
+  allLines: LineDef[]
+  visibleIds: Set<string>
+  onToggle: (id: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  const benchmarkLines = allLines.filter(l => l.isBenchmark)
+  const playerLines = allLines.filter(l => !l.isBenchmark)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
+          Players ({visibleIds.size})
+          <ChevronDown className="h-3.5 w-3.5" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-0" align="end">
+        <div className="max-h-72 overflow-y-auto">
+          <div className="px-3 pt-2 pb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Benchmarks</span>
+          </div>
+          {benchmarkLines.map(line => (
+            <button
+              key={line.id}
+              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+              onClick={() => onToggle(line.id)}
+            >
+              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                visibleIds.has(line.id) ? "bg-primary border-primary" : "border-border"
+              }`}>
+                {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
+              </div>
+              <span className="w-3 h-0.5 rounded-full shrink-0" style={{ backgroundColor: line.color }} />
+              <span className="text-xs">{line.label}</span>
+            </button>
+          ))}
+          <div className="border-t border-border/50 my-1" />
+          <div className="px-3 pt-1 pb-1">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Players</span>
+          </div>
+          {playerLines.map(line => (
+            <button
+              key={line.id}
+              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+              onClick={() => onToggle(line.id)}
+            >
+              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                visibleIds.has(line.id) ? "bg-primary border-primary" : "border-border"
+              }`}>
+                {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
+              </div>
+              <span className="w-3 h-0.5 rounded-full shrink-0" style={{ backgroundColor: line.color }} />
+              <span className="text-xs">{line.label}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export function LeaderboardHistoryChart({
   history,
   gameIndex,
   totalGames,
-  roundBoundaries,
   highlightUserId,
   userNames,
-  gameSequence = [],
+  optimal8RollingScores,
+  optimal8FinalScores,
 }: LeaderboardHistoryChartProps) {
-  const { mode } = useTheme()
-  const isDark = mode === "dark"
-  const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"
-  const tickFill = isDark ? "#94a3b8" : "#64748b"
-  const refLineStroke = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)"
-  const futureZoneFill = isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.03)"
-  const refLabelFill = isDark ? "#64748b" : "#94a3b8"
 
-  const [chartCursor, setChartCursor] = useState(gameIndex)
-  const [isDragging, setIsDragging] = useState(false)
-  const [animateIndex, setAnimateIndex] = useState<number | null>(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const chartRef = useRef<HTMLDivElement>(null)
-  const animIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // Keep chartCursor ≤ gameIndex (for tooltip exploration)
-  const clampedCursor = Math.min(Math.max(chartCursor, 0), gameIndex)
-
-  // Extract all unique userIds from the first snapshot (or last if first is empty)
-  const userIds = history.length > 0
-    ? history[0].entries.map(e => e.userId)
-    : []
-
-  // Default: show 6 lines — Leader, Runner-Up, You, Median, Last, + one mid-pack
-  // Plus Optimal 8 (Rolling) which is always visible (not in hidden system)
-  const getDefaultHidden = useCallback(() => {
-    const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
-    const anchorSnap = history[anchorSnapIndex]
-    if (!anchorSnap) return new Set<string>()
-
-    const sorted = [...anchorSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
-    const leaderId = sorted[0]?.userId
-    const runnerUpId = sorted[1]?.userId
-    const medianIdx = Math.floor(sorted.length / 2)
-    const medianId = sorted[medianIdx]?.userId
-    const lastId = sorted[sorted.length - 1]?.userId
-    // Mid-pack: halfway between leader and median
-    const midIdx = Math.floor(medianIdx / 2)
-    const midPackId = sorted[midIdx]?.userId
-
-    const showIds = new Set<string>()
-    if (leaderId) showIds.add(leaderId)
-    if (runnerUpId) showIds.add(runnerUpId)
-    if (medianId) showIds.add(medianId)
-    if (lastId) showIds.add(lastId)
-    if (midPackId) showIds.add(midPackId)
-    if (highlightUserId) showIds.add(highlightUserId)
-
-    const hidden = new Set<string>()
-    for (const uid of userIds) {
-      if (!showIds.has(uid)) hidden.add(uid)
+  // ── Build line definitions and chart data ──
+  const { allLines, chartData } = useMemo(() => {
+    if (history.length === 0) {
+      return { allLines: [] as LineDef[], chartData: [] as Record<string, number | null>[] }
     }
-    return hidden
-  }, [history, gameIndex, highlightUserId, userIds])
 
-  const [hiddenUserIds, setHiddenUserIds] = useState<Set<string>>(getDefaultHidden)
+    const effectiveIdx = Math.max(0, Math.min(gameIndex, history.length - 1))
+    const currentSnap = history[effectiveIdx]
 
-  // Re-run default selection if history changes
-  useEffect(() => {
-    setHiddenUserIds(getDefaultHidden())
-  }, [history]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Identify leader and median at current gameIndex ("Current" mode)
+    const sortedEntries = [...currentSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
+    const leaderUserId = sortedEntries[0]?.userId
+    const medianIdx = Math.floor(sortedEntries.length / 2)
+    const medianUserId = sortedEntries[medianIdx]?.userId
 
-  // Filter userIds for chart lines based on explicit toggles
-  const chartVisibleUserIds = useMemo(() => {
-    return userIds.filter(uid => !hiddenUserIds.has(uid))
-  }, [userIds, hiddenUserIds])
+    // Helper: get a player's score at each game
+    const playerScoresArray = (userId: string): number[] => {
+      return history.map(snap => {
+        const entry = snap.entries.find(e => e.userId === userId)
+        return entry?.currentScore ?? 0
+      })
+    }
 
-  // Filter userIds inside the dropdown menu based on search query
-  const dropdownFilteredUserIds = useMemo(() => {
-    if (!searchQuery.trim()) return userIds
-    const lowerQ = searchQuery.toLowerCase()
-    return userIds.filter(uid => {
-      const name = userNames[uid] ?? uid
-      return name.toLowerCase().includes(lowerQ)
+    // Build score arrays for default lines
+    const leaderScores = leaderUserId ? playerScoresArray(leaderUserId) : []
+    const medianScores = medianUserId ? playerScoresArray(medianUserId) : []
+    const youScores = highlightUserId ? playerScoresArray(highlightUserId) : []
+
+    // Build LineDef array with dedup
+    const lines: LineDef[] = []
+
+    // Benchmarks (always available)
+    lines.push({
+      id: "optimal_rolling", label: "Optimal 8 (Rolling)",
+      color: COLOR_OPTIMAL_ROLLING, isDefault: true, isBenchmark: true,
+      dataKey: "optimal_rolling", projDataKey: "optimal_rolling_proj",
     })
-  }, [searchQuery, userIds, userNames])
+    lines.push({
+      id: "optimal_final", label: "Optimal 8 (Final)",
+      color: COLOR_OPTIMAL_FINAL, isDefault: true, isBenchmark: true,
+      dataKey: "optimal_final", projDataKey: "optimal_final_proj",
+    })
 
-  // Build flat chart data — one point per game, including Optimal 8 (Rolling)
-  const chartData = history.map((snap, i) => {
-    const point: Record<string, number | string> = {
-      gameIndex: i,
-      label: snap.roundLabel,
+    // Track which userIds are already assigned a named role
+    const assignedRoles = new Set<string>()
+
+    // Leader
+    if (leaderUserId && leaderUserId !== highlightUserId) {
+      const leaderName = userNames[leaderUserId] ?? leaderUserId
+      lines.push({
+        id: `leader_${leaderUserId}`, label: `Leader (${leaderName})`,
+        color: COLOR_LEADER, isDefault: true, isBenchmark: false,
+        dataKey: "leader", projDataKey: "leader_proj",
+      })
+      assignedRoles.add(leaderUserId)
     }
-    for (const entry of snap.entries) {
-      point[`${entry.userId}_score`] = entry.currentScore
+
+    // Median (skip if same as leader or "you")
+    if (medianUserId && medianUserId !== highlightUserId && medianUserId !== leaderUserId) {
+      const medianName = userNames[medianUserId] ?? medianUserId
+      lines.push({
+        id: `median_${medianUserId}`, label: `Median (${medianName})`,
+        color: COLOR_MEDIAN, isDefault: true, isBenchmark: false,
+        dataKey: "median", projDataKey: "median_proj",
+      })
+      assignedRoles.add(medianUserId)
     }
-    // Optimal 8 Rolling = best possible score from top 8 (seed × wins) at this snapshot
-    // Compute from all picks across all entries — find unique teams and their current scores
-    const teamScores = new Map<string, number>()
-    for (const entry of snap.entries) {
-      for (const pick of entry.picks) {
-        if (pick.seed > 0 && !pick.isPlayIn) {
-          const teamScore = pick.seed * pick.wins
-          teamScores.set(pick.teamId, teamScore)
-        }
+
+    // You
+    if (highlightUserId) {
+      const youName = userNames[highlightUserId] ?? highlightUserId
+      // If you ARE the leader or median, reflect that in the label
+      let youLabel = `You (${youName})`
+      if (highlightUserId === leaderUserId) youLabel = `You / Leader (${youName})`
+      else if (highlightUserId === medianUserId) youLabel = `You / Median (${youName})`
+      lines.push({
+        id: `you_${highlightUserId}`, label: youLabel,
+        color: COLOR_YOU, isDefault: true, isBenchmark: false,
+        dataKey: "you", projDataKey: "you_proj",
+      })
+      assignedRoles.add(highlightUserId)
+    }
+
+    // Other players (non-default, hidden by default, sorted alphabetically)
+    const allUserIds = [...new Set(history[0]?.entries.map(e => e.userId) ?? [])]
+    const specialIds = new Set([leaderUserId, medianUserId, highlightUserId].filter(Boolean) as string[])
+    const otherPlayers = allUserIds
+      .filter(uid => !specialIds.has(uid))
+      .sort((a, b) => (userNames[a] ?? a).localeCompare(userNames[b] ?? b))
+
+    let colorIdx = 0
+    for (const uid of otherPlayers) {
+      const name = userNames[uid] ?? uid
+      lines.push({
+        id: uid, label: name,
+        color: OTHER_PLAYER_PALETTE[colorIdx % OTHER_PLAYER_PALETTE.length],
+        isDefault: false, isBenchmark: false,
+        dataKey: uid, projDataKey: `${uid}_proj`,
+      })
+      colorIdx++
+    }
+
+    // Build merged chart data (actual + projected split at gameIndex)
+    const data: Record<string, number | null>[] = history.map((snap, g) => {
+      const point: Record<string, number | null> = { game: g }
+      const isActual = g <= gameIndex
+      const isProjected = g >= gameIndex
+
+      // Optimal 8 Rolling
+      point["optimal_rolling"] = isActual ? (optimal8RollingScores[g] ?? 0) : null
+      point["optimal_rolling_proj"] = isProjected ? (optimal8RollingScores[g] ?? 0) : null
+
+      // Optimal 8 Final
+      point["optimal_final"] = isActual ? (optimal8FinalScores[g] ?? 0) : null
+      point["optimal_final_proj"] = isProjected ? (optimal8FinalScores[g] ?? 0) : null
+
+      // Leader
+      if (leaderScores.length) {
+        point["leader"] = isActual ? leaderScores[g] : null
+        point["leader_proj"] = isProjected ? leaderScores[g] : null
+      }
+
+      // Median
+      if (medianScores.length && medianUserId !== leaderUserId && medianUserId !== highlightUserId) {
+        point["median"] = isActual ? medianScores[g] : null
+        point["median_proj"] = isProjected ? medianScores[g] : null
+      }
+
+      // You
+      if (youScores.length) {
+        point["you"] = isActual ? youScores[g] : null
+        point["you_proj"] = isProjected ? youScores[g] : null
+      }
+
+      // Other players
+      for (const uid of otherPlayers) {
+        const entry = snap.entries.find(e => e.userId === uid)
+        const score = entry?.currentScore ?? 0
+        point[uid] = isActual ? score : null
+        point[`${uid}_proj`] = isProjected ? score : null
+      }
+
+      return point
+    })
+
+    return { allLines: lines, chartData: data }
+  }, [history, gameIndex, highlightUserId, userNames, optimal8RollingScores, optimal8FinalScores])
+
+  // ── Visible line state ──
+  const [visibleIds, setVisibleIds] = useState<Set<string>>(() =>
+    new Set(allLines.filter(l => l.isDefault).map(l => l.id))
+  )
+
+  // Re-sync defaults when allLines changes (e.g. leader/median identity changes on timeline scrub)
+  const prevDefaultIdsRef = useMemo(() => {
+    return new Set(allLines.filter(l => l.isDefault).map(l => l.id))
+  }, [allLines])
+
+  // Keep visible set in sync: show all defaults, preserve user toggles for non-defaults
+  const effectiveVisibleIds = useMemo(() => {
+    const result = new Set<string>()
+    for (const line of allLines) {
+      if (line.isDefault) {
+        // Always show defaults
+        result.add(line.id)
+      } else if (visibleIds.has(line.id)) {
+        // Preserve user-toggled players
+        result.add(line.id)
       }
     }
-    const sorted = [...teamScores.values()].sort((a, b) => b - a)
-    point.optimal8Rolling = sorted.slice(0, 8).reduce((sum, v) => sum + v, 0)
-    return point
-  })
+    return result
+  }, [allLines, visibleIds, prevDefaultIdsRef])
 
-  // Identify leader and median at current snapshot
-  const { leaderId, medianId } = useMemo(() => {
-    const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
-    const anchorSnap = history[anchorSnapIndex]
-    if (!anchorSnap) return { leaderId: null, medianId: null }
-    const sorted = [...anchorSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
-    return {
-      leaderId: sorted[0]?.userId ?? null,
-      medianId: sorted[Math.floor(sorted.length / 2)]?.userId ?? null,
-    }
-  }, [history, gameIndex])
+  const visibleLines = useMemo(
+    () => allLines.filter(l => effectiveVisibleIds.has(l.id)),
+    [allLines, effectiveVisibleIds]
+  )
 
-  // Assign colors (highlighted user = orange, leader = blue, median = slate, others cycle)
-  const colorMap: Record<string, string> = {}
-  let paletteIdx = 3 // skip orange, blue, slate
-  for (const uid of userIds) {
-    if (uid === highlightUserId) {
-      colorMap[uid] = PALETTE[0] // orange
-    } else if (uid === leaderId) {
-      colorMap[uid] = PALETTE[1] // blue
-    } else if (uid === medianId) {
-      colorMap[uid] = "#94a3b8" // slate for median
-    } else {
-      colorMap[uid] = PALETTE[paletteIdx % PALETTE.length]
-      paletteIdx++
-    }
+  const handleToggle = (id: string) => {
+    setVisibleIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
-  // ── Optimal trajectory computation ────────────────────────────────────────
-  const trajectories = useMemo(() => {
-    if (!gameSequence.length || gameIndex < 0) return {}
-    return computeOptimalTrajectories(history, gameIndex, gameSequence, totalGames)
-  }, [history, gameIndex, gameSequence, totalGames])
-
-  // ── Y-axis domain ─────────────────────────────────────────────────────────
-  const anchorIndex = gameIndex >= 0 ? Math.min(gameIndex, history.length - 1) : 0
-  const anchorSnapshot = history[anchorIndex]
-
-  const yAxisMax = useMemo(() => {
-    if (!anchorSnapshot) return 100
-    // Max hypothetical score across ALL users at the end of trajectory to keep limits stable
-    let maxVal = 1
-    for (const entry of anchorSnapshot.entries) {
-      const traj = trajectories[entry.userId]
-      if (traj && gameIndex >= 0 && traj[totalGames - 1] !== null) {
-        maxVal = Math.max(maxVal, traj[totalGames - 1] as number)
-      } else {
-        maxVal = Math.max(maxVal, entry.tps)
+  // ── Y-axis max ──
+  const yMax = useMemo(() => {
+    let max = 0
+    for (const point of chartData) {
+      for (const line of visibleLines) {
+        const v1 = point[line.dataKey]
+        const v2 = point[line.projDataKey]
+        if (typeof v1 === "number" && v1 > max) max = v1
+        if (typeof v2 === "number" && v2 > max) max = v2
       }
     }
-    return Math.ceil(maxVal * 1.1)
-  }, [anchorSnapshot, trajectories, gameIndex, totalGames])
+    return Math.ceil(max / 10) * 10 + 5
+  }, [chartData, visibleLines])
 
-  // ── Play/pause animation ───────────────────────────────────────────────────
-  const stopAnimation = useCallback(() => {
-    if (animIntervalRef.current) {
-      clearInterval(animIntervalRef.current)
-      animIntervalRef.current = null
-    }
-    setAnimateIndex(null)
-  }, [])
-
-  const handlePlayPause = useCallback(() => {
-    if (animateIndex !== null) {
-      // Currently playing — pause
-      stopAnimation()
-    } else {
-      // Start playing from 0
-      setAnimateIndex(0)
-      animIntervalRef.current = setInterval(() => {
-        setAnimateIndex(prev => {
-          if (prev === null || prev >= gameIndex) {
-            if (animIntervalRef.current) clearInterval(animIntervalRef.current)
-            animIntervalRef.current = null
-            return null // done
-          }
-          return prev + 1
-        })
-      }, 150)
-    }
-  }, [animateIndex, gameIndex, stopAnimation])
-
-  // Stop animation when gameIndex changes (timeline scrubbed)
-  useEffect(() => {
-    stopAnimation()
-  }, [gameIndex]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Cleanup on unmount
-  useEffect(() => () => {
-    if (animIntervalRef.current) clearInterval(animIntervalRef.current)
-  }, [])
-
-  // Effective index for solid lines (animated or real)
-  const effectiveIndex = animateIndex !== null ? animateIndex : gameIndex
-
-  // ── Drag handling (tooltip exploration only — doesn't mask data) ───────────
-
-  function getGameIndexFromMouseX(e: React.MouseEvent<HTMLDivElement>): number {
-    if (!chartRef.current) return clampedCursor
-    const rect = chartRef.current.getBoundingClientRect()
-    const leftMargin = 60
-    const rightMargin = 20
-    const usableWidth = rect.width - leftMargin - rightMargin
-    const x = e.clientX - rect.left - leftMargin
-    const fraction = Math.max(0, Math.min(1, x / usableWidth))
-    return Math.round(fraction * (totalGames - 1))
-  }
-
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    setIsDragging(true)
-    const idx = getGameIndexFromMouseX(e)
-    setChartCursor(Math.min(idx, gameIndex))
-  }, [gameIndex, totalGames]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging) return
-    const idx = getGameIndexFromMouseX(e)
-    setChartCursor(Math.min(idx, gameIndex))
-  }, [isDragging, gameIndex, totalGames]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleMouseUp = useCallback(() => setIsDragging(false), [])
-
-  // Custom tooltip — shows both Score and TPS
-  const CustomTooltip = ({ active, payload, label }: {
-    active?: boolean
-    payload?: Array<{ name: string; value: number; color: string; dataKey: string }>
-    label?: number
-  }) => {
-    if (!active || !payload?.length) return null
-    const snap = history[label ?? 0]
-    const isProjZone = (label ?? 0) > effectiveIndex
-
-    // Optimal 8 Rolling entry
-    const optEntry = payload.find(p => p.dataKey === "optimal8Rolling")
-    // Score entries for the actual zone
-    const scoreEntries = payload.filter(p => p.dataKey?.endsWith("_score"))
-    // Trajectory entries for the projection zone
-    const trajEntries = payload.filter(p => p.dataKey?.endsWith("_traj"))
-
-    return (
-      <div className="bg-popover border border-border/60 rounded-lg px-3 py-2 shadow-lg text-xs max-w-[220px]">
-        <p className="font-semibold mb-1.5 text-muted-foreground">
-          {isProjZone ? "Optimal Trajectory" : (snap?.gameLabel ?? `Game ${label}`)}
-        </p>
-        {optEntry && optEntry.value != null && (
-          <div className="flex justify-between gap-3">
-            <span style={{ color: "#22d3ee" }}>Optimal 8 (Rolling)</span>
-            <span className="font-mono font-bold">{optEntry.value}</span>
-          </div>
-        )}
-        {!isProjZone && scoreEntries.length > 0
-          ? [...scoreEntries]
-            .sort((a, b) => b.value - a.value)
-            .map(p => {
-              const uid = p.dataKey.replace("_score", "")
-              const label = uid === leaderId ? " (leader)" : uid === medianId ? " (median)" : ""
-              return (
-                <div key={uid} className="flex justify-between gap-3">
-                  <span style={{ color: p.color }}>{userNames[uid] ?? uid}{label}</span>
-                  <span className="font-mono font-bold">{p.value}</span>
-                </div>
-              )
-            })
-          : [...trajEntries]
-            .filter(p => p.value !== null && p.value !== undefined)
-            .sort((a, b) => b.value - a.value)
-            .map(p => {
-              const uid = p.dataKey.replace("_traj", "")
-              return (
-                <div key={uid} className="flex justify-between gap-3">
-                  <span style={{ color: p.color }}>{userNames[uid] ?? uid}</span>
-                  <span className="font-mono font-bold text-muted-foreground">{Math.round(p.value)}</span>
-                </div>
-              )
-            })
-        }
-      </div>
-    )
-  }
-
-  if (history.length === 0) {
+  // ── Empty state ──
+  if (history.length === 0 || gameIndex < 0) {
     return (
       <div className="flex items-center justify-center h-48 text-muted-foreground text-sm">
         Advance the timeline to see score history
@@ -454,343 +485,148 @@ export function LeaderboardHistoryChart({
     )
   }
 
+  const actualTotalGames = Math.min(totalGames, TOTAL_GAMES)
+  const isComplete = gameIndex >= actualTotalGames - 1
+
   return (
     <div className="space-y-3">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-xs text-muted-foreground">
-          Solid = actual scores · Dashed = optimal trajectory
-          {gameIndex >= 0 && (
-            <span className="text-muted-foreground/60"> · Drag to explore</span>
-          )}
-        </p>
-        <div className="flex items-center gap-2 shrink-0">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs px-2.5 bg-background shadow-sm border-border/50">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                Players
-                {hiddenUserIds.size > 0 && (
-                  <Badge variant="secondary" className="px-1 text-[9px] rounded h-4 ml-1 flex items-center bg-muted/80">
-                    {userIds.length - hiddenUserIds.size}
-                  </Badge>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-0" align="end">
-              <div className="p-2 border-b border-border/30 bg-muted/10">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Find player..."
-                    className="h-8 pl-8 text-xs bg-background/50 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-none"
-                  />
-                </div>
-              </div>
-              <div className="max-h-[240px] overflow-y-auto p-1 py-1.5 flex flex-col gap-0.5">
-                <div className="px-2 py-1 flex justify-between items-center text-[10px] font-medium text-muted-foreground border-b border-border/20 mb-1">
-                  <span className="uppercase tracking-wider">Show:</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setHiddenUserIds(new Set())} className="hover:text-foreground hover:underline transition-all">All</button>
-                    <button onClick={() => setHiddenUserIds(new Set(userIds))} className="hover:text-foreground hover:underline transition-all">None</button>
-                  </div>
-                </div>
-                {dropdownFilteredUserIds.length === 0 && (
-                  <p className="p-4 text-center text-xs text-muted-foreground">No players found.</p>
-                )}
-                {dropdownFilteredUserIds.map((uid) => {
-                  const isVisible = !hiddenUserIds.has(uid)
-                  const toggle = () => {
-                    const next = new Set(hiddenUserIds)
-                    if (isVisible) next.add(uid)
-                    else next.delete(uid)
-                    setHiddenUserIds(next)
-                  }
-                  return (
-                    <button
-                      key={uid}
-                      onClick={toggle}
-                      className="flex items-center gap-2.5 w-full px-2 py-1.5 text-xs hover:bg-muted/50 rounded-md text-left transition-colors group"
-                    >
-                      <div className={cn(
-                        "w-4 h-4 rounded-[4px] border flex items-center justify-center shrink-0 transition-colors duration-150",
-                        isVisible
-                          ? "bg-primary border-primary text-primary-foreground shadow-sm shadow-primary/20"
-                          : "border-border/60 bg-muted/10 group-hover:bg-muted/30 group-hover:border-border"
-                      )}>
-                        {isVisible && <Check className="h-3 w-3" strokeWidth={3} />}
-                      </div>
-                      <div
-                        className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm border border-black/10 dark:border-white/10"
-                        style={{ backgroundColor: colorMap[uid] }}
-                      />
-                      <span className="truncate">{userNames[uid] ?? uid}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
-          {/* Play/pause button */}
-          {gameIndex > 0 && (
-            <button
-              className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-              onClick={handlePlayPause}
-              title={animateIndex !== null ? "Pause animation" : "Play score history"}
-            >
-              {animateIndex !== null
-                ? <Pause className="h-3 w-3" />
-                : <Play className="h-3 w-3" />
-              }
-            </button>
-          )}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div /> {/* Spacer — title is in the Card header above */}
+        <PlayerFilter allLines={allLines} visibleIds={effectiveVisibleIds} onToggle={handleToggle} />
+      </div>
+
+      {/* Legend */}
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+          {visibleLines.map(line => (
+            <div key={line.id} className="flex items-center gap-1.5">
+              <span
+                className="w-4 h-0.5 rounded-full inline-block"
+                style={{ backgroundColor: line.color }}
+              />
+              <span className="text-muted-foreground">{line.label}</span>
+            </div>
+          ))}
         </div>
+        {/* Line style legend */}
+        {!isComplete && (
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 rounded-full inline-block bg-foreground/40" />
+              <span>Solid = actual score</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0 inline-block border-t border-dashed border-foreground/40" />
+              <span>Dashed = projected</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
-      <div
-        ref={chartRef}
-        className="select-none"
-        style={{ cursor: isDragging ? "ew-resize" : "col-resize" }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+      <div className="bg-card border border-border rounded-xl p-2 sm:p-4">
+        <ResponsiveContainer width="100%" height={340}>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 30, left: 5 }}>
 
-            <XAxis
-              dataKey="gameIndex"
-              type="number"
-              domain={[0, totalGames - 1]}
-              tickCount={7}
-              tick={{ fontSize: 10, fill: tickFill }}
-              tickFormatter={(v: number) => {
-                const boundary = roundBoundaries.find(b => b.gameIndex === v)
-                return boundary ? boundary.roundLabel.split(" ")[0] : ""
-              }}
-            />
-
-            <YAxis
-              tick={{ fontSize: 10, fill: tickFill }}
-              width={36}
-              domain={[0, yAxisMax]}
-            />
-
-            <Tooltip content={<CustomTooltip />} />
-
-            {/* Round boundary reference lines */}
-            {roundBoundaries.map(b => (
+            {/* Vertical gridlines at major checkpoints ONLY */}
+            {SESSION_CHECKPOINTS.map(cp => (
               <ReferenceLine
-                key={b.gameIndex}
-                x={b.gameIndex}
-                stroke={refLineStroke}
-                strokeDasharray="4 2"
-                label={{
-                  value: b.roundLabel.split(" ")[0],
-                  position: "insideTopRight",
-                  fill: refLabelFill,
-                  fontSize: 9,
-                }}
+                key={cp.gameIndex}
+                x={cp.gameIndex}
+                stroke="currentColor"
+                strokeOpacity={0.1}
+                strokeDasharray="3 3"
               />
             ))}
 
-            {/* Future zone shading (beyond current effectiveIndex) */}
-            {effectiveIndex >= 0 && effectiveIndex < totalGames - 1 && (
-              <ReferenceArea
-                x1={effectiveIndex}
-                x2={totalGames - 1}
-                fill={futureZoneFill}
-                stroke="none"
-              />
-            )}
-
-            {/* Timeline position marker (primary visual anchor) */}
-            {gameIndex >= 0 && (
+            {/* "NOW" marker at current game (only if mid-tournament) */}
+            {!isComplete && (
               <ReferenceLine
                 x={gameIndex}
-                stroke="#f97316"
-                strokeWidth={2}
-                strokeDasharray="none"
+                stroke={COLOR_OPTIMAL_ROLLING}
+                strokeOpacity={0.4}
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
                 label={{
-                  value: "▼",
+                  value: "NOW",
                   position: "top",
-                  fill: "#f97316",
-                  fontSize: 10,
+                  fill: COLOR_OPTIMAL_ROLLING,
+                  fontSize: 9,
+                  fontWeight: 600,
                 }}
               />
             )}
 
-            {/* Animation playhead (when animating, show where we are) */}
-            {animateIndex !== null && animateIndex !== gameIndex && (
-              <ReferenceLine
-                x={animateIndex ?? undefined}
-                stroke="#a78bfa"
-                strokeWidth={1.5}
-                strokeDasharray="4 2"
-              />
-            )}
-
-            {/* Exploration cursor (subtle secondary indicator) */}
-            {gameIndex >= 0 && clampedCursor !== gameIndex && animateIndex === null && (
-              <ReferenceLine
-                x={clampedCursor}
-                stroke="#94a3b8"
-                strokeWidth={1}
-                strokeDasharray="3 3"
-              />
-            )}
-
-            {/* Optimal 8 (Rolling) — dashed cyan line */}
-            <Line
-              type="monotone"
-              dataKey="optimal8Rolling"
-              stroke="#22d3ee"
-              strokeWidth={2}
-              strokeDasharray="6 3"
-              dot={false}
-              connectNulls
-              name="optimal8Rolling"
-              data={chartData.map((d, i) => ({
-                gameIndex: d.gameIndex,
-                optimal8Rolling: i <= effectiveIndex ? (d.optimal8Rolling as number) : null,
-              }))}
+            <XAxis
+              dataKey="game"
+              type="number"
+              domain={[0, actualTotalGames - 1]}
+              ticks={Array.from({ length: actualTotalGames }, (_, i) => i)}
+              tick={<CustomXTick />}
+              tickLine={false}
+              axisLine={{ strokeOpacity: 0.2 }}
+              interval={0}
             />
 
-            {/* Solid score lines — visible from 0 → effectiveIndex */}
-            {chartVisibleUserIds.map(uid => {
-              const isHighlighted = uid === highlightUserId
-              const color = colorMap[uid]
-              const scoreKey = `${uid}_score`
-              return (
-                <Line
-                  key={`score-${uid}`}
-                  type="monotone"
-                  dataKey={scoreKey}
-                  stroke={color}
-                  strokeWidth={isHighlighted ? 2.5 : 1}
-                  dot={false}
-                  strokeOpacity={isHighlighted ? 1 : 0.55}
-                  strokeDasharray={undefined}
-                  connectNulls
-                  activeDot={{ r: isHighlighted ? 5 : 3, fill: color }}
-                  name={uid}
-                  data={chartData.map((d, i) => ({
-                    gameIndex: d.gameIndex,
-                    [scoreKey]: i <= effectiveIndex ? (d[scoreKey] as number) : null,
-                  }))}
+            <YAxis
+              domain={[0, yMax]}
+              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.4 }}
+              tickLine={false}
+              axisLine={false}
+              width={30}
+            />
+
+            <Tooltip
+              content={
+                <ChartTooltip
+                  visibleLines={visibleLines}
+                  currentGame={gameIndex}
+                  history={history}
                 />
-              )
-            })}
+              }
+              cursor={{ stroke: "currentColor", strokeOpacity: 0.1 }}
+            />
 
-            {/* Dashed optimal trajectory lines — from gameIndex onward */}
-            {/* Only shown when we have trajectory data (gameSequence provided) */}
-            {gameIndex >= 0 && chartVisibleUserIds.map(uid => {
-              const isHighlighted = uid === highlightUserId
-              const color = colorMap[uid]
-              const trajKey = `${uid}_traj`
-              const traj = trajectories[uid]
-              if (!traj) return null
+            {/* === ACTUAL SCORES (solid lines) === */}
+            {visibleLines.map(line => (
+              <Line
+                key={`actual-${line.id}`}
+                type="monotone"
+                dataKey={line.dataKey}
+                stroke={line.color}
+                strokeWidth={line.isDefault ? 2 : 1.5}
+                dot={false}
+                activeDot={{ r: 3, strokeWidth: 0 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            ))}
 
-              return (
-                <Line
-                  key={`traj-${uid}`}
-                  type="stepAfter"
-                  dataKey={trajKey}
-                  stroke={color}
-                  strokeWidth={isHighlighted ? 2.5 : 1.5}
-                  strokeDasharray="4 4"
-                  opacity={isHighlighted ? 0.8 : animateIndex !== null ? 0.15 : 0.3}
-                  dot={false}
-                  activeDot={false}
-                  name={`traj-${uid}`}
-                  legendType="none"
-                  data={chartData.map((d, i) => {
-                    const base = { gameIndex: d.gameIndex }
-                    if (i < gameIndex) return { ...base, [trajKey]: null }
-                    const val = traj[i]
-                    return { ...base, [trajKey]: val !== null && val !== undefined ? val : null }
-                  })}
-                />
-              )
-            })}
-
-            {/* Fallback flat lines when no gameSequence provided */}
-            {gameIndex >= 0 && !gameSequence.length && chartVisibleUserIds.map(uid => {
-              const isHighlighted = uid === highlightUserId
-              const color = colorMap[uid]
-              const trajKey = `${uid}_traj`
-              const flatTps = anchorSnapshot?.entries.find(e => e.userId === uid)?.tps ?? 0
-
-              return (
-                <Line
-                  key={`traj-${uid}`}
-                  type="monotone"
-                  dataKey={trajKey}
-                  stroke={color}
-                  strokeWidth={isHighlighted ? 2 : 0.8}
-                  strokeOpacity={isHighlighted ? 0.7 : 0.25}
-                  strokeDasharray="6 3"
-                  dot={false}
-                  connectNulls
-                  name={`traj-flat-${uid}`}
-                  legendType="none"
-                  data={chartData.map((d, i) => {
-                    const base = { gameIndex: d.gameIndex }
-                    if (i < gameIndex) return { ...base, [trajKey]: null }
-                    if (i === gameIndex) return { ...base, [trajKey]: flatTps }
-                    return { ...base, [trajKey]: flatTps }
-                  })}
-                />
-              )
-            })}
+            {/* === PROJECTED TRAJECTORIES (dashed lines) === */}
+            {!isComplete && visibleLines.map(line => (
+              <Line
+                key={`proj-${line.id}`}
+                type="monotone"
+                dataKey={line.projDataKey}
+                stroke={line.color}
+                strokeWidth={line.isDefault ? 1.5 : 1}
+                strokeDasharray="6 3"
+                strokeOpacity={0.5}
+                dot={false}
+                activeDot={{ r: 2, strokeWidth: 0 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 px-1">
-        {chartVisibleUserIds.map(uid => (
-          <div key={uid} className="flex items-center gap-1.5">
-            <div
-              className="h-2 w-5 rounded-full"
-              style={{
-                backgroundColor: colorMap[uid],
-                opacity: uid === highlightUserId ? 1 : 0.6,
-              }}
-            />
-            <span
-              className="text-xs"
-              style={{ color: colorMap[uid], opacity: uid === highlightUserId ? 1 : 0.7 }}
-            >
-              {userNames[uid] ?? uid}
-              {uid === highlightUserId && (
-                <Badge className="ml-1 h-3.5 px-1 text-[9px] bg-primary/20 text-primary border-0">
-                  you
-                </Badge>
-              )}
-              {uid === leaderId && uid !== highlightUserId && (
-                <span className="ml-1 text-[9px] text-muted-foreground">(leader)</span>
-              )}
-              {uid === medianId && uid !== highlightUserId && uid !== leaderId && (
-                <span className="ml-1 text-[9px] text-muted-foreground">(median)</span>
-              )}
-            </span>
-          </div>
-        ))}
-        <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-border/40">
-          <div className="h-0 w-5 border-t-2 border-dashed" style={{ borderColor: "#22d3ee" }} />
-          <span className="text-xs text-muted-foreground">Optimal 8 (Rolling)</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="h-0 w-5 border-t border-dashed border-muted-foreground/40" />
-          <span className="text-xs text-muted-foreground">Max trajectory</span>
-        </div>
+      {/* Debug info */}
+      <div className="text-xs text-muted-foreground">
+        {actualTotalGames} games | {SESSION_CHECKPOINTS.length} checkpoints | Game {gameIndex + 1} of {actualTotalGames} | {visibleLines.length} lines visible
       </div>
-    </div >
+    </div>
   )
 }

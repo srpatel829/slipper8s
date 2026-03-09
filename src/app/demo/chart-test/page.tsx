@@ -368,12 +368,13 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
 const checkpointGameSet = new Set(CHECKPOINTS.map(c => c.gameIndex))
 const checkpointLabelMap = new Map(CHECKPOINTS.map(c => [c.gameIndex, c.shortLabel]))
 
-function CustomXTick({ x, y, payload, visibleTicksCount }: {
-  x?: number
-  y?: number
-  payload?: { value: number }
-  visibleTicksCount?: number
-}) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function CustomXTick(props: any) {
+  const { x, y, payload } = props as {
+    x?: number
+    y?: number
+    payload?: { value: number }
+  }
   if (x == null || y == null || !payload) return null
   const game = payload.value
   const isMajor = checkpointGameSet.has(game)
@@ -516,7 +517,7 @@ export default function ChartTestPage() {
                 type="number"
                 domain={[0, TOTAL_GAMES - 1]}
                 ticks={Array.from({ length: TOTAL_GAMES }, (_, i) => i)}
-                tick={CustomXTick as unknown as React.ComponentType}
+                tick={<CustomXTick />}
                 tickLine={false}
                 axisLine={{ strokeOpacity: 0.2 }}
                 interval={0}
