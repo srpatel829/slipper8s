@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
 import { getPrimaryArchetypeEmoji } from "@/lib/archetypes"
+import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
 
 // ── Team pill status ─────────────────────────────────────────────────────────
 
@@ -94,45 +95,55 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
     const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
     const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
+    const calloutData: TeamCalloutData = {
+      name: pick.name,
+      shortName: pick.shortName,
+      seed: pick.seed,
+      region: pick.region ?? "",
+      wins: pick.wins,
+      eliminated: pick.eliminated,
+      logoUrl: pick.logoUrl,
+    }
+
     return (
-      <div
-        key={pick.teamId}
-        className="relative w-8 h-8 shrink-0"
-        title={`#${pick.seed} ${pick.name} · ${pick.region ?? ""} · ${pick.wins} wins · ${pick.eliminated ? "Eliminated" : "Alive"}`}
-      >
-        {/* Logo box with thick status border */}
+      <TeamCallout key={pick.teamId} team={calloutData}>
         <div
-          className={`relative w-8 h-8 rounded-md overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold ${
-            pick.eliminated ? "grayscale opacity-40" : "shadow-sm"
-          }`}
-          style={{ border: `2.5px solid ${pick.eliminated ? "#666" : statusColor}`, backgroundColor: "var(--background)" }}
+          className="relative w-8 h-8 shrink-0 cursor-pointer"
         >
-          {pick.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={pick.logoUrl} alt="" className="w-full h-full object-contain" />
-          ) : (
-            <span className="text-[8px] font-bold text-muted-foreground leading-none text-center break-all">{pick.shortName.substring(0, 3)}</span>
-          )}
-        </div>
-
-        {/* Region badge — top-left */}
-        {regionAbbrev && (
+          {/* Logo box with thick status border */}
           <div
-            className="absolute -top-1.5 -left-1.5 h-[13px] min-w-[13px] px-0.5 rounded-sm flex items-center justify-center text-[6.5px] font-black text-white shadow-sm border border-background"
-            style={{ backgroundColor: regionColor }}
+            className={`relative w-8 h-8 rounded-md overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold ${
+              pick.eliminated ? "grayscale opacity-40" : "shadow-sm"
+            }`}
+            style={{ border: `2.5px solid ${pick.eliminated ? "#666" : statusColor}`, backgroundColor: "var(--background)" }}
           >
-            {regionAbbrev}
+            {pick.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={pick.logoUrl} alt="" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-[8px] font-bold text-muted-foreground leading-none text-center break-all">{pick.shortName.substring(0, 3)}</span>
+            )}
           </div>
-        )}
 
-        {/* Seed badge — bottom-right with spec colors */}
-        <div
-          className="absolute -bottom-1.5 -right-1.5 w-[15px] h-[15px] rounded-sm flex items-center justify-center text-[8px] font-black text-white shadow-sm border border-background"
-          style={{ backgroundColor: seedColor }}
-        >
-          {pick.seed}
+          {/* Region badge — top-left */}
+          {regionAbbrev && (
+            <div
+              className="absolute -top-1.5 -left-1.5 h-[13px] min-w-[13px] px-0.5 rounded-sm flex items-center justify-center text-[6.5px] font-black text-white shadow-sm border border-background"
+              style={{ backgroundColor: regionColor }}
+            >
+              {regionAbbrev}
+            </div>
+          )}
+
+          {/* Seed badge — bottom-right with spec colors */}
+          <div
+            className="absolute -bottom-1.5 -right-1.5 w-[15px] h-[15px] rounded-sm flex items-center justify-center text-[8px] font-black text-white shadow-sm border border-background"
+            style={{ backgroundColor: seedColor }}
+          >
+            {pick.seed}
+          </div>
         </div>
-      </div>
+      </TeamCallout>
     )
   }
 
@@ -164,47 +175,60 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
   const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
   const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
+  const calloutData: TeamCalloutData = {
+    name: pick.name,
+    shortName: pick.shortName,
+    seed: pick.seed,
+    region: pick.region ?? "",
+    wins: pick.wins,
+    eliminated: pick.eliminated,
+    logoUrl: pick.logoUrl,
+    score: pts,
+  }
+
   return (
-    <div className={`flex flex-col items-center gap-1.5 w-16 ${pick.eliminated ? "opacity-50 grayscale" : ""}`}>
-      {/* Logo container with status border */}
-      <div
-        className="relative w-12 h-12 rounded-lg flex items-center justify-center bg-card shadow-sm p-1.5"
-        style={{ border: `3px solid ${pick.eliminated ? "#666" : statusColor}` }}
-      >
-        {pick.logoUrl ? (
-          <img src={pick.logoUrl} alt={pick.shortName} className="w-full h-full object-contain" />
-        ) : (
-          <span className="text-[10px] font-bold text-muted-foreground">{pick.shortName.substring(0, 3)}</span>
-        )}
-
-        {/* Region badge — top-left */}
-        {regionAbbrev && (
-          <div
-            className="absolute -top-2 -left-2 h-[15px] min-w-[15px] px-0.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shadow-sm border border-background"
-            style={{ backgroundColor: regionColor }}
-          >
-            {regionAbbrev}
-          </div>
-        )}
-
-        {/* Seed badge — bottom-right with spec colors */}
+    <TeamCallout team={calloutData}>
+      <div className={`flex flex-col items-center gap-1.5 w-16 cursor-pointer ${pick.eliminated ? "opacity-50 grayscale" : ""}`}>
+        {/* Logo container with status border */}
         <div
-          className="absolute -bottom-2 -right-2 w-[18px] h-[18px] rounded flex items-center justify-center text-[9px] font-black text-white shadow-sm border border-background"
-          style={{ backgroundColor: seedColor }}
+          className="relative w-12 h-12 rounded-lg flex items-center justify-center bg-card shadow-sm p-1.5"
+          style={{ border: `3px solid ${pick.eliminated ? "#666" : statusColor}` }}
         >
-          {pick.seed}
-        </div>
-      </div>
+          {pick.logoUrl ? (
+            <img src={pick.logoUrl} alt={pick.shortName} className="w-full h-full object-contain" />
+          ) : (
+            <span className="text-[10px] font-bold text-muted-foreground">{pick.shortName.substring(0, 3)}</span>
+          )}
 
-      {/* Details below logo */}
-      <div className="w-full rounded border border-border/50 p-1.5 flex flex-col items-center justify-center text-center bg-muted/20">
-        <span className="text-[9px] font-extrabold truncate w-full">{pick.shortName}</span>
-        <div className="flex flex-col items-center gap-0 text-[9px] mt-0.5 opacity-90 font-medium">
-          <span className="font-semibold text-[8px] opacity-80 uppercase tracking-wider">{pick.wins} Wins</span>
-          <span className="font-mono font-bold mt-0.5">{pts > 0 ? `${pts} pts` : "\u2013"}</span>
+          {/* Region badge — top-left */}
+          {regionAbbrev && (
+            <div
+              className="absolute -top-2 -left-2 h-[15px] min-w-[15px] px-0.5 rounded-sm flex items-center justify-center text-[7px] font-black text-white shadow-sm border border-background"
+              style={{ backgroundColor: regionColor }}
+            >
+              {regionAbbrev}
+            </div>
+          )}
+
+          {/* Seed badge — bottom-right with spec colors */}
+          <div
+            className="absolute -bottom-2 -right-2 w-[18px] h-[18px] rounded flex items-center justify-center text-[9px] font-black text-white shadow-sm border border-background"
+            style={{ backgroundColor: seedColor }}
+          >
+            {pick.seed}
+          </div>
+        </div>
+
+        {/* Details below logo */}
+        <div className="w-full rounded border border-border/50 p-1.5 flex flex-col items-center justify-center text-center bg-muted/20">
+          <span className="text-[9px] font-extrabold truncate w-full">{pick.shortName}</span>
+          <div className="flex flex-col items-center gap-0 text-[9px] mt-0.5 opacity-90 font-medium">
+            <span className="font-semibold text-[8px] opacity-80 uppercase tracking-wider">{pick.wins} Wins</span>
+            <span className="font-mono font-bold mt-0.5">{pts > 0 ? `${pts} pts` : "\u2013"}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </TeamCallout>
   )
 }
 

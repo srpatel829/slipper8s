@@ -13,6 +13,7 @@
 import { useState } from "react"
 import { ChevronUp, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -201,22 +202,28 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
                   </span>
                 </div>
 
-                {/* Team name + logo */}
-                <div className="flex items-center gap-2 min-w-0">
-                  {team.logoUrl ? (
-                    <img src={team.logoUrl} alt="" className={cn("h-5 w-5 object-contain shrink-0", team.eliminated && "grayscale")} />
-                  ) : (
-                    <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[8px] font-bold shrink-0">
-                      {team.shortName[0]}
-                    </div>
-                  )}
-                  <span className={cn(
-                    "text-sm font-medium truncate",
-                    team.eliminated && "text-muted-foreground"
-                  )}>
-                    {team.name}
-                  </span>
-                </div>
+                {/* Team name + logo with callout */}
+                <TeamCallout team={{
+                  name: team.name, shortName: team.shortName, seed: team.seed,
+                  region: team.region, wins: team.wins, eliminated: team.eliminated,
+                  logoUrl: team.logoUrl, score,
+                }}>
+                  <div className="flex items-center gap-2 min-w-0 cursor-pointer">
+                    {team.logoUrl ? (
+                      <img src={team.logoUrl} alt="" className={cn("h-5 w-5 object-contain shrink-0", team.eliminated && "grayscale")} />
+                    ) : (
+                      <div className="h-5 w-5 rounded-full bg-muted flex items-center justify-center text-[8px] font-bold shrink-0">
+                        {team.shortName[0]}
+                      </div>
+                    )}
+                    <span className={cn(
+                      "text-sm font-medium truncate",
+                      team.eliminated && "text-muted-foreground"
+                    )}>
+                      {team.name}
+                    </span>
+                  </div>
+                </TeamCallout>
 
                 {/* Region */}
                 <div>
@@ -316,13 +323,21 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
             >
               {/* Top row: logo, name, seed, region */}
               <div className="flex items-center gap-2 mb-2">
-                {team.logoUrl ? (
-                  <img src={team.logoUrl} alt="" className={cn("h-7 w-7 object-contain shrink-0", team.eliminated && "grayscale")} />
-                ) : (
-                  <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
-                    {team.shortName[0]}
+                <TeamCallout team={{
+                  name: team.name, shortName: team.shortName, seed: team.seed,
+                  region: team.region, wins: team.wins, eliminated: team.eliminated,
+                  logoUrl: team.logoUrl, score,
+                }}>
+                  <div className="flex items-center gap-2 cursor-pointer">
+                    {team.logoUrl ? (
+                      <img src={team.logoUrl} alt="" className={cn("h-7 w-7 object-contain shrink-0", team.eliminated && "grayscale")} />
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center text-[10px] font-bold shrink-0">
+                        {team.shortName[0]}
+                      </div>
+                    )}
                   </div>
-                )}
+                </TeamCallout>
                 <div className="flex-1 min-w-0">
                   <span className={cn("text-sm font-semibold", team.eliminated && "text-muted-foreground")}>
                     {team.name}
