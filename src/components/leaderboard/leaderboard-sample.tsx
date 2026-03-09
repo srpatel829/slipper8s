@@ -16,7 +16,8 @@ import { ChevronDown, ChevronUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
-import { getPrimaryArchetypeEmoji } from "@/lib/archetypes"
+import { getPrimaryArchetypeEmoji, getArchetypeByKey, ARCHETYPE_LEGEND } from "@/lib/archetypes"
+import { ArchetypePopover } from "@/components/archetype-popover"
 import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -37,17 +38,7 @@ interface LeaderboardSampleProps {
   optimal8Final?: Optimal8Data
 }
 
-// ── Archetype legend data ───────────────────────────────────────────────────
-
-const ARCHETYPE_LEGEND = [
-  { emoji: "\u{1F460}", label: "Cinderella Chaser" },   // 👠
-  { emoji: "\u{1F3AF}", label: "Sweet Spotter" },        // 🎯
-  { emoji: "\u{1F9E0}", label: "The Strategist" },       // 🧠
-  { emoji: "\u{1F525}", label: "Chaos Agent" },           // 🔥
-  { emoji: "\u{1F5FA}\uFE0F", label: "Regional Purist" },// 🗺️
-  { emoji: "\u{270F}\uFE0F", label: "Chalk Artist" },    // ✏️
-  { emoji: "\u{1F504}", label: "The Contrarian" },        // 🔄
-]
+// ── Archetype legend (imported from centralized definitions) ────────────────
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -194,13 +185,15 @@ function StatusLegend() {
 
 function ArchetypeLegendRow() {
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground min-w-[70px]">Archetypes</span>
       {ARCHETYPE_LEGEND.map(a => (
-        <span key={a.label} className="flex items-center gap-1 text-[11px] text-muted-foreground">
-          <span>{a.emoji}</span>
-          <span>{a.label}</span>
-        </span>
+        <ArchetypePopover key={a.key} emoji={a.emoji} label={a.label} description={a.description}>
+          <span className="flex items-center gap-1 hover:bg-muted/50 rounded px-1 py-0.5 transition-colors text-[11px] text-muted-foreground">
+            <span>{a.emoji}</span>
+            <span>{a.label}</span>
+          </span>
+        </ArchetypePopover>
       ))}
     </div>
   )
@@ -281,7 +274,7 @@ function EntryRow({
   allFloorRanks: number[]
   totalEntries: number
 }) {
-  const archetypeEmoji = getPrimaryArchetypeEmoji(entry.archetypes)
+  const allArchetypes = (entry.archetypes ?? []).map(k => getArchetypeByKey(k)).filter(Boolean) as { key: string; emoji: string; label: string; description: string }[]
   const teamsLeft = entry.teamsRemaining
 
   const rankDisplay = formatRankValue(entry.rank, allRanks)
@@ -316,7 +309,11 @@ function EntryRow({
       {/* Player */}
       <td className="px-2 py-2.5 text-left whitespace-nowrap">
         <div className="flex items-center gap-1.5">
-          {archetypeEmoji && <span className="text-sm">{archetypeEmoji}</span>}
+          {allArchetypes.map(a => (
+            <ArchetypePopover key={a.key} emoji={a.emoji} label={a.label} description={a.description}>
+              <span className="text-sm">{a.emoji}</span>
+            </ArchetypePopover>
+          ))}
           <span className="text-sm font-medium">{entry.name}</span>
           {isYou && (
             <Badge variant="outline" className="text-[9px] border-primary/40 text-primary h-4 px-1.5 shrink-0">You</Badge>

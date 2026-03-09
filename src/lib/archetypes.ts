@@ -173,3 +173,13 @@ export function getPrimaryArchetypeEmoji(archetypes: string[] | undefined): stri
   const def = ARCHETYPE_DEFS.find(d => d.key === key)
   return def?.emoji ?? ""
 }
+
+/**
+ * Look up full archetype metadata by key.
+ */
+export function getArchetypeByKey(key: string): { key: string; emoji: string; label: string; description: string } | undefined {
+  if (key === MIXER_FALLBACK.key) return MIXER_FALLBACK
+  const def = ARCHETYPE_DEFS.find(d => d.key === key)
+  if (!def) return undefined
+  return { key: def.key, emoji: def.emoji, label: def.label, description: def.description }
+}

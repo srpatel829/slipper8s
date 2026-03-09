@@ -7,7 +7,8 @@ import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
-import { getPrimaryArchetypeEmoji, ARCHETYPE_LEGEND } from "@/lib/archetypes"
+import { getPrimaryArchetypeEmoji, getArchetypeByKey, ARCHETYPE_LEGEND } from "@/lib/archetypes"
+import { ArchetypePopover } from "@/components/archetype-popover"
 import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
 
 // ── Team pill status ─────────────────────────────────────────────────────────
@@ -339,32 +340,17 @@ function StatusLegend() {
 
 // ── Archetype emoji legend ───────────────────────────────────────────────────
 
-function ArchetypeLegendItem({ emoji, label, description }: { emoji: string; label: string; description: string }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="flex items-center gap-1 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
-          <span>{emoji}</span>
-          <span>{label}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent side="top" className="w-56 p-3 text-xs" sideOffset={4}>
-        <div className="flex items-center gap-1.5 font-semibold mb-1">
-          <span className="text-sm">{emoji}</span>
-          <span>{label}</span>
-        </div>
-        <p className="text-muted-foreground leading-relaxed">{description}</p>
-      </PopoverContent>
-    </Popover>
-  )
-}
-
 function ArchetypeLegend() {
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
       <span className="font-semibold uppercase tracking-wider mr-1">Archetypes:</span>
       {ARCHETYPE_LEGEND.map(a => (
-        <ArchetypeLegendItem key={a.key} emoji={a.emoji} label={a.label} description={a.description} />
+        <ArchetypePopover key={a.key} emoji={a.emoji} label={a.label} description={a.description}>
+          <span className="flex items-center gap-1 hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
+            <span>{a.emoji}</span>
+            <span>{a.label}</span>
+          </span>
+        </ArchetypePopover>
       ))}
     </div>
   )
@@ -472,7 +458,7 @@ function LeaderboardRow({
   allEntries: LeaderboardEntry[]
 }) {
   const rankDisplay = formatRank(entry, allEntries)
-  const archetypeEmoji = getPrimaryArchetypeEmoji(entry.archetypes)
+  const allArchetypes = (entry.archetypes ?? []).map(k => getArchetypeByKey(k)).filter(Boolean) as { key: string; emoji: string; label: string; description: string }[]
   return (
     <div
       className={`rounded-xl border overflow-hidden transition-all duration-200 ${isMe
@@ -499,7 +485,11 @@ function LeaderboardRow({
                   <span className="text-[9px] text-red-500 font-bold">▼{Math.abs(entry.rankChange)}</span>
                 )}
               </div>
-              {archetypeEmoji && <span className="text-sm" title={entry.archetypes?.[0]}>{archetypeEmoji}</span>}
+              {allArchetypes.map(a => (
+                <ArchetypePopover key={a.key} emoji={a.emoji} label={a.label} description={a.description}>
+                  <span className="text-sm">{a.emoji}</span>
+                </ArchetypePopover>
+              ))}
               <span className="text-[11px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4">You</Badge>}
             </div>
@@ -558,7 +548,11 @@ function LeaderboardRow({
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              {archetypeEmoji && <span className="text-sm" title={entry.archetypes?.[0]}>{archetypeEmoji}</span>}
+              {allArchetypes.map(a => (
+                <ArchetypePopover key={a.key} emoji={a.emoji} label={a.label} description={a.description}>
+                  <span className="text-sm">{a.emoji}</span>
+                </ArchetypePopover>
+              ))}
               <span className="font-semibold text-sm truncate">{entry.name}</span>
               {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
