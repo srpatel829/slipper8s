@@ -337,12 +337,12 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   )
 
   // Compute rankChange by comparing with previous game's leaderboard
+  // When gameIndex=0 (first game), compare against pre-tournament (gameIndex=-1)
   const leaderboardData = useMemo(() => {
     if (gameIndex < 0) return leaderboardDataRaw
-    const prevLeaderboard = gameIndex > 0
-      ? computeLeaderboardAtGame(tournamentData.teams, demoUsers, gameSequence, gameIndex - 1, demoUserPicks)
-      : null
-    if (!prevLeaderboard) return leaderboardDataRaw
+    const prevLeaderboard = computeLeaderboardAtGame(
+      tournamentData.teams, demoUsers, gameSequence, gameIndex - 1, demoUserPicks
+    )
     const prevRankMap = new Map(prevLeaderboard.map(e => [e.userId, e.rank]))
     return leaderboardDataRaw.map(entry => ({
       ...entry,

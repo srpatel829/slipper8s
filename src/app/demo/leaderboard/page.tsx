@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * Demo Leaderboard — reuses real LeaderboardTable + adds LeaderboardHistoryChart.
+ * Demo Leaderboard — reuses real LeaderboardSample + LeaderboardHistoryChart.
  * Data comes from DemoContext (no API calls).
  */
 
@@ -9,12 +9,14 @@ import { useState, useMemo } from "react"
 import { ChevronDown, ChevronUp, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LeaderboardTable, type Optimal8Data } from "@/components/leaderboard/leaderboard-table"
+import { LeaderboardSample, type Optimal8Data } from "@/components/leaderboard/leaderboard-sample"
 import { LeaderboardHistoryChart } from "@/components/leaderboard/leaderboard-history-chart"
 import { useDemoContext } from "@/lib/demo-context"
 import { computeOptimal8 } from "@/lib/scoring"
-import { computeTeamsForPicks } from "@/lib/demo-game-sequence"
+import { computeBracketAwarePPR } from "@/lib/bracket-ppr"
+import { computeTeamsForPicks, computeStateAtGame } from "@/lib/demo-game-sequence"
 import { getTournamentData } from "@/lib/tournament-data"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2025"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 
 export default function DemoLeaderboardPage() {
@@ -37,7 +39,14 @@ export default function DemoLeaderboardPage() {
     leaderboardData.map(e => [e.userId, e.name])
   )
 
-  // Compute Optimal 8 from current alive teams
+  // Current team state for expected score computation
+  const teamState = useMemo(
+    () => gameIndex >= 0 ? computeStateAtGame(gameSequence, gameIndex) : new Map<string, { wins: number; eliminated: boolean }>(),
+    [gameSequence, gameIndex]
+  )
+  const preTournament = gameIndex < 0
+
+  // ── Optimal 8 (Rolling): best 8 by current score ───────────────────────────
   const optimal8: Optimal8Data | undefined = useMemo(() => {
     const teamInfoMap = new Map<string, TeamBracketInfo>()
     for (const t of teamsData) {
@@ -49,14 +58,12 @@ export default function DemoLeaderboardPage() {
       })
     }
 
-    // Pass ALL non-play-in teams — the algorithm handles alive vs eliminated internally
     const candidateTeams = teamsData
     if (candidateTeams.length === 0) return undefined
 
     const result = computeOptimal8(candidateTeams, teamInfoMap)
     if (result.teamIds.length === 0) return undefined
 
-    // Build pick summaries for the 8 selected teams
     const picks = result.teamIds
       .map(id => teamsData.find(t => t.id === id))
       .filter(Boolean)
@@ -72,14 +79,17 @@ export default function DemoLeaderboardPage() {
         isPlayIn: t!.isPlayIn,
       }))
 
-    return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
-  }, [teamsData])
+    // Compute expected score for these 8 teams
+    const expectedScore = calculateEntryExpectedScore(result.teamIds, teamState, preTournament)
 
-  // Compute Optimal 8 Hindsight: best possible 8 picks knowing ALL results
-  const optimal8Hindsight: Optimal8Data | undefined = useMemo(() => {
+    return { score: result.score, ppr: result.ppr, tps: result.tps, picks, expectedScore }
+  }, [teamsData, teamState, preTournament])
+
+  // ── Optimal 8 (Final): best 8 knowing ALL results, scored at CURRENT timeline ──
+  // Step 1: Determine which team IDs are optimal knowing the full results (computed once)
+  const optimal8FinalTeamIds = useMemo(() => {
     if (gameSequence.length === 0) return undefined
     const tournamentData = getTournamentData(selectedYear)
-    // Compute teams state at the END of the tournament
     const finalTeams = computeTeamsForPicks(tournamentData.teams, gameSequence, gameSequence.length - 1)
     if (finalTeams.length === 0) return undefined
 
@@ -96,8 +106,29 @@ export default function DemoLeaderboardPage() {
     const result = computeOptimal8(finalTeams, hindsightInfoMap)
     if (result.teamIds.length === 0) return undefined
 
-    const picks = result.teamIds
-      .map(id => finalTeams.find(t => t.id === id))
+    return result.teamIds
+  }, [gameSequence, selectedYear])
+
+  // Step 2: Build Optimal 8 Final data using CURRENT wins + collision-aware TPS
+  const optimal8Final: Optimal8Data | undefined = useMemo(() => {
+    if (!optimal8FinalTeamIds) return undefined
+
+    // Build current bracket info for these teams
+    const bracketInfoMap = new Map<string, TeamBracketInfo>()
+    for (const id of optimal8FinalTeamIds) {
+      const t = teamsData.find(td => td.id === id)
+      if (t) {
+        bracketInfoMap.set(id, {
+          seed: t.seed,
+          region: t.region,
+          wins: t.wins,
+          eliminated: t.eliminated,
+        })
+      }
+    }
+
+    const picks = optimal8FinalTeamIds
+      .map(id => teamsData.find(t => t.id === id))
       .filter(Boolean)
       .map(t => ({
         teamId: t!.id,
@@ -111,18 +142,32 @@ export default function DemoLeaderboardPage() {
         isPlayIn: t!.isPlayIn,
       }))
 
-    return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
-  }, [gameSequence, selectedYear])
+    // Current score
+    const currentScore = picks.reduce((sum, p) => sum + p.seed * p.wins, 0)
+
+    // Collision-aware PPR at CURRENT timeline point (not fixed)
+    const { totalPPR } = computeBracketAwarePPR(optimal8FinalTeamIds, bracketInfoMap)
+
+    // Expected score
+    const expectedScore = calculateEntryExpectedScore(optimal8FinalTeamIds, teamState, preTournament)
+
+    return {
+      score: currentScore,
+      ppr: totalPPR,
+      tps: currentScore + totalPPR,
+      picks,
+      expectedScore,
+    }
+  }, [optimal8FinalTeamIds, teamsData, teamState, preTournament])
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
-      {/* Leaderboard table */}
-      <LeaderboardTable
-        initialData={leaderboardData}
+      {/* Leaderboard table — approved sample format */}
+      <LeaderboardSample
+        entries={leaderboardData}
         currentUserId={currentPersona.userId}
-        demoMode
         optimal8={optimal8}
-        optimal8Hindsight={optimal8Hindsight}
+        optimal8Final={optimal8Final}
       />
 
       {/* History chart */}

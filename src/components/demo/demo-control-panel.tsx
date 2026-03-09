@@ -86,12 +86,12 @@ export function DemoControlPanel() {
   return (
     <TooltipProvider delayDuration={300}>
       {/* Outer wrapper: darker bg, orange top border, stronger shadow */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[oklch(0.07_0.012_264)] border-t-2 border-primary/50 shadow-xl shadow-black/60 ring-1 ring-inset ring-primary/10">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-muted border-t-2 border-primary/50 shadow-xl shadow-foreground/10 ring-1 ring-inset ring-primary/10">
 
         {/* Collapse toggle — more prominent */}
         <button
           onClick={() => setExpanded(e => !e)}
-          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-[oklch(0.07_0.012_264)] border border-primary/40 border-b-0 rounded-t-lg px-5 py-1.5 flex items-center gap-2 transition-colors hover:border-primary/70 glow-blue-sm"
+          className="absolute -top-8 left-1/2 -translate-x-1/2 bg-muted border border-primary/40 border-b-0 rounded-t-lg px-5 py-1.5 flex items-center gap-2 transition-colors hover:border-primary/70 glow-blue-sm"
         >
           <Tv2 className="h-3.5 w-3.5 text-primary" />
           <span className="text-xs font-semibold text-primary tracking-wide">DEMO MODE</span>
@@ -205,10 +205,15 @@ export function DemoControlPanel() {
                 </Tooltip>
               )}
 
-              {/* Checkpoint counter */}
-              <span className="ml-auto text-xs text-muted-foreground shrink-0">
-                {checkpointIndex} / {totalCheckpoints - 1}
-              </span>
+              {/* Games + Days counters */}
+              <div className="ml-auto flex items-center gap-3 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  Games: <strong className="text-foreground font-mono">{Math.max(0, gameIndex + 1)}</strong>/{totalGames}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Days: <strong className="text-foreground font-mono">{Math.max(0, checkpointIndex)}</strong>/{totalCheckpoints - 1}
+                </span>
+              </div>
             </div>
 
             {/* Row 2: Timeline scrubber + controls */}
@@ -303,11 +308,11 @@ export function DemoControlPanel() {
                   max={totalCheckpoints - 1}
                   value={checkpointIndex}
                   onChange={handleSliderChange}
-                  className="w-full h-1 appearance-none bg-white/10 rounded-full cursor-pointer
+                  className="w-full h-1 appearance-none bg-foreground/10 rounded-full cursor-pointer
                     [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4
                     [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full
                     [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:border-2
-                    [&::-webkit-slider-thumb]:border-background [&::-webkit-slider-thumb]:cursor-grab
+                    [&::-webkit-slider-thumb]:border-muted [&::-webkit-slider-thumb]:cursor-grab
                     [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:shadow-primary/30
                     relative"
                 />
@@ -338,7 +343,7 @@ export function DemoControlPanel() {
 
         {/* Collapsed: mini progress bar only */}
         {!expanded && (
-          <div className="h-1 bg-white/5">
+          <div className="h-1 bg-foreground/5">
             <div
               className="h-full bg-primary/70 transition-all"
               style={{ width: `${progress}%` }}

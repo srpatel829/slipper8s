@@ -340,8 +340,9 @@ export function computeOptimal8(
       return { ...t, seed, wins, eliminated, score, ppr }
     })
 
-  // Sort by score desc, then S-Curve rank asc (lower = stronger team) as tiebreaker
-  scored.sort((a, b) => b.score - a.score || (a.sCurveRank ?? 999) - (b.sCurveRank ?? 999))
+  // Sort by score desc, then PPR desc (highest remaining potential first — favours
+  // high seeds pre-tournament), then S-Curve rank asc as final tiebreaker
+  scored.sort((a, b) => b.score - a.score || b.ppr - a.ppr || (a.sCurveRank ?? 999) - (b.sCurveRank ?? 999))
 
   const selectedIds = scored.slice(0, 8).map(t => t.id)
 

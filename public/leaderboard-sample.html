@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leaderboard Sample — Slipper8s</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0a0e1a;
+    color: #e2e8f0;
+    padding: 20px;
+  }
+
+  h2 { font-size: 18px; margin-bottom: 12px; color: #00A9E0; }
+
+  /* ── Legends ───────────────────────────────────────── */
+  .legends {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background: #111827;
+    border-radius: 8px;
+    border: 1px solid #1e293b;
+  }
+  .legend-section { display: flex; align-items: center; gap: 12px; }
+  .legend-section-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-right: 4px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #94a3b8; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 3px;
+  }
+  .dot-green { background: #27AE60; }
+  .dot-yellow { background: #D4AC0D; }
+  .dot-grey { background: #6b7280; }
+
+  /* ── Data Table ────────────────────────────────────── */
+  .table-wrapper {
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+
+  /* Column widths */
+  col.rank-actual { width: 50px; }
+  col.rank-max    { width: 50px; }
+  col.rank-floor  { width: 50px; }
+  col.percentile  { width: 65px; }
+  col.player      { width: 180px; }
+  col.score-actual { width: 60px; }
+  col.score-max    { width: 55px; }
+  col.score-exp    { width: 60px; }
+  col.teams        { width: auto; }
+  col.teams-left   { width: 45px; }
+
+  /* Super-header */
+  thead .super-header th {
+    background: #111827;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 6px 2px;
+    border-bottom: none;
+    text-align: center;
+  }
+  thead .super-header th.left { text-align: left; }
+
+  /* Sub-header */
+  thead .sub-header th {
+    background: #111827;
+    color: #475569;
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 6px 8px;
+    border-bottom: 2px solid #1e293b;
+    text-align: center;
+  }
+  thead .sub-header th.left { text-align: left; }
+
+  /* Sticky header + frozen rows */
+  thead { position: sticky; top: 0; z-index: 10; }
+  tbody .frozen-row td { position: sticky; z-index: 5; background: #0f172a; }
+  tbody .frozen-row:nth-child(1) td { top: 56px; } /* after header ~56px */
+  tbody .frozen-row:nth-child(2) td { top: 96px; }
+  tbody .frozen-row:nth-child(3) td { top: 136px; }
+
+  /* Row styles */
+  tbody tr { border-bottom: 1px solid #1e293b; }
+  tbody tr:hover { background: rgba(0, 169, 224, 0.04); }
+  tbody tr.optimal-row { background: rgba(0, 169, 224, 0.06); }
+  tbody tr.optimal-row-final { background: rgba(244, 121, 32, 0.06); }
+  tbody tr.you-row { background: rgba(0, 169, 224, 0.10); }
+  tbody tr.divider-row td {
+    padding: 0;
+    height: 3px;
+    background: transparent;
+    border-bottom: 2px dashed #334155;
+  }
+
+  td {
+    padding: 10px 6px;
+    vertical-align: middle;
+    text-align: center;
+    white-space: nowrap;
+  }
+  td.left { text-align: left; }
+
+  /* ── Cell-specific styles ──────────────────────────── */
+  .rank-actual-val { font-weight: 600; color: #e2e8f0; font-size: 14px; }
+  .rank-max-val { color: #27AE60; font-weight: 600; }
+  .rank-floor-val { color: #ef4444; font-weight: 600; }
+  .percentile-val { color: #94a3b8; font-size: 12px; }
+
+  .player-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-align: left;
+  }
+  .archetype-emoji { font-size: 14px; }
+  .player-name { font-weight: 500; color: #e2e8f0; font-size: 13px; }
+  .player-name.optimal-label { color: #00A9E0; font-weight: 700; font-size: 12px; }
+  .player-name.optimal-final-label { color: #F47920; font-weight: 700; font-size: 12px; }
+  .you-badge {
+    font-size: 9px;
+    font-weight: 700;
+    color: #00A9E0;
+    border: 1px solid rgba(0, 169, 224, 0.4);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .rank-change {
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .rank-change.up { color: #27AE60; }
+  .rank-change.down { color: #ef4444; }
+
+  .score-actual-val { font-weight: 700; font-size: 15px; color: #e2e8f0; }
+  .score-max-val { color: #94a3b8; font-size: 13px; }
+  .score-exp-val { color: #94a3b8; font-size: 12px; }
+
+  .na-val { color: #334155; font-size: 11px; }
+
+  .teams-left-val { font-weight: 600; font-size: 14px; }
+  .teams-left-val.alive { color: #27AE60; }
+  .teams-left-val.some { color: #D4AC0D; }
+  .teams-left-val.none { color: #6b7280; }
+
+  /* ── Team logo boxes ───────────────────────────────── */
+  .teams-strip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-start;
+  }
+  .team-divider {
+    width: 2px;
+    height: 28px;
+    background: #ef4444;
+    border-radius: 1px;
+    margin: 0 2px;
+    flex-shrink: 0;
+  }
+  .team-box {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    border: 2.5px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 800;
+    flex-shrink: 0;
+    background: #1e293b;
+  }
+  .team-box.alive-won { border-color: #27AE60; color: #e2e8f0; }
+  .team-box.alive-pending { border-color: #D4AC0D; color: #e2e8f0; }
+  .team-box.eliminated {
+    border-color: #4b5563;
+    color: #6b7280;
+    opacity: 0.45;
+    filter: grayscale(100%);
+  }
+  .team-box .region-badge {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    font-size: 6px;
+    font-weight: 900;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #0a0e1a;
+  }
+  .team-box .seed-badge {
+    position: absolute;
+    bottom: -5px;
+    right: -5px;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    font-size: 7px;
+    font-weight: 900;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #0a0e1a;
+  }
+  /* Region colors */
+  .region-S { background: #c026d3; }
+  .region-W { background: #2563eb; }
+  .region-E { background: #0d9488; }
+  .region-MW { background: #7c3aed; }
+  /* Seed colors */
+  .seed-1-4 { background: #003087; }
+  .seed-5-8 { background: #E67E22; }
+  .seed-9-12 { background: #0891b2; }
+  .seed-13-16 { background: #78350f; }
+
+  /* ── Scroll container for body rows ────────────────── */
+  .scroll-area {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  /* ── Note at bottom ────────────────────────────────── */
+  .note {
+    margin-top: 16px;
+    font-size: 11px;
+    color: #475569;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<h2>Leaderboard — Sample Format (Static Mockup)</h2>
+
+<!-- ── Legends ──────────────────────────────────────────── -->
+<div class="legends">
+  <div class="legend-section">
+    <span class="legend-section-title">Status</span>
+    <span class="legend-item"><span class="legend-dot dot-green"></span> Won round</span>
+    <span class="legend-item"><span class="legend-dot dot-yellow"></span> Yet to play</span>
+    <span class="legend-item"><span class="legend-dot dot-grey"></span> Eliminated</span>
+  </div>
+  <div class="legend-section">
+    <span class="legend-section-title">Archetypes</span>
+    <span class="legend-item">🎯 Strategist</span>
+    <span class="legend-item">👠 Cinderella Chaser</span>
+    <span class="legend-item">✏️ Sweet Spotter</span>
+    <span class="legend-item">🌪️ Chaos Agent</span>
+    <span class="legend-item">🏠 Regional Purist</span>
+    <span class="legend-item">📐 Chalk Artist</span>
+    <span class="legend-item">🔮 Contrarian</span>
+  </div>
+</div>
+
+<!-- ── Data Table ───────────────────────────────────────── -->
+<div class="table-wrapper">
+  <table>
+    <colgroup>
+      <col class="rank-actual">
+      <col class="rank-max">
+      <col class="rank-floor">
+      <col class="percentile">
+      <col class="player">
+      <col class="score-actual">
+      <col class="score-max">
+      <col class="score-exp">
+      <col class="teams">
+      <col class="teams-left">
+    </colgroup>
+
+    <thead>
+      <!-- Super-header -->
+      <tr class="super-header">
+        <th colspan="3">Rank</th>
+        <th>Percentile</th>
+        <th class="left">Player</th>
+        <th colspan="3">Score</th>
+        <th class="left">Teams</th>
+        <th>Left</th>
+      </tr>
+      <!-- Sub-header -->
+      <tr class="sub-header">
+        <th>Actual</th>
+        <th>Max</th>
+        <th>Floor</th>
+        <th></th>
+        <th></th>
+        <th>Actual</th>
+        <th>Max</th>
+        <th>Exp</th>
+        <th></th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <!-- Row 1: Optimal 8 (Rolling) -->
+      <tr class="frozen-row optimal-row">
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">✨</span>
+            <span class="player-name optimal-label">Optimal 8 (Rolling)</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">87</span></td>
+        <td><span class="score-max-val">99</span></td>
+        <td><span class="score-exp-val">93.2</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <!-- 8 alive teams for optimal -->
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-W">W</span>
+              BYU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-E">E</span>
+              OLE
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              CSU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-S">S</span>
+              MCN
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-MW">MW</span>
+              DRK
+              <span class="seed-badge seed-9-12">11</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              MIC
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-W">W</span>
+              NMX
+              <span class="seed-badge seed-9-12">10</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val alive">8</span></td>
+      </tr>
+
+      <!-- Row 2: Optimal 8 (Final) -->
+      <tr class="frozen-row optimal-row-final">
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td><span class="na-val">—</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🏆</span>
+            <span class="player-name optimal-final-label">Optimal 8 (Final)</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">99</span></td>
+        <td><span class="score-max-val">99</span></td>
+        <td><span class="score-exp-val">99.0</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-W">W</span>
+              BYU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-E">E</span>
+              OLE
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              CSU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              MCN
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              DRK
+              <span class="seed-badge seed-9-12">11</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-E">E</span>
+              MIC
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-W">W</span>
+              NMX
+              <span class="seed-badge seed-9-12">10</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val alive">8</span></td>
+      </tr>
+
+      <!-- Row 3: YOU (current player) -->
+      <tr class="frozen-row you-row">
+        <td><span class="rank-actual-val">47</span></td>
+        <td><span class="rank-max-val">12</span></td>
+        <td><span class="rank-floor-val">89</span></td>
+        <td><span class="percentile-val">82.3%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">✏️</span>
+            <span class="player-name">Sumeet Patel</span>
+            <span class="you-badge">You</span>
+            <span class="rank-change up">▲13</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">52</span></td>
+        <td><span class="score-max-val">78</span></td>
+        <td><span class="score-exp-val">61.4</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <!-- 4 alive -->
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              FLA
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              HOU
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-S">S</span>
+              MCN
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <!-- red divider -->
+            <div class="team-divider"></div>
+            <!-- 4 eliminated -->
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              UNC
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              TCU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              MEM
+              <span class="seed-badge seed-5-8">8</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              VT
+              <span class="seed-badge seed-9-12">10</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">4</span></td>
+      </tr>
+
+      <!-- Divider row -->
+      <tr class="divider-row"><td colspan="10"></td></tr>
+
+      <!-- Row 4: Rank 1 -->
+      <tr>
+        <td><span class="rank-actual-val">1</span></td>
+        <td><span class="rank-max-val">1</span></td>
+        <td><span class="rank-floor-val">3</span></td>
+        <td><span class="percentile-val">99.6%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">👠</span>
+            <span class="player-name">Jig Samani (2)</span>
+            <span class="rank-change up">▲2</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">79</span></td>
+        <td><span class="score-max-val">79</span></td>
+        <td><span class="score-exp-val">79.0</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-W">W</span>
+              BYU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-E">E</span>
+              OLE
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              CSU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              MCN
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              DRK
+              <span class="seed-badge seed-9-12">11</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              MIC
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              NMX
+              <span class="seed-badge seed-9-12">10</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">3</span></td>
+      </tr>
+
+      <!-- Row 5: Rank 2 -->
+      <tr>
+        <td><span class="rank-actual-val">2</span></td>
+        <td><span class="rank-max-val">1</span></td>
+        <td><span class="rank-floor-val">8</span></td>
+        <td><span class="percentile-val">99.2%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🎯</span>
+            <span class="player-name">Niam Patel</span>
+            <span class="rank-change down">▼1</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">76</span></td>
+        <td><span class="score-max-val">92</span></td>
+        <td><span class="score-exp-val">82.1</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              FLA
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              HOU
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-W">W</span>
+              STJ
+              <span class="seed-badge seed-1-4">2</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              CLE
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              WIS
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              BAY
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              TEX
+              <span class="seed-badge seed-9-12">9</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">4</span></td>
+      </tr>
+
+      <!-- Row 6: Tie at 3 -->
+      <tr>
+        <td><span class="rank-actual-val">T3</span></td>
+        <td><span class="rank-max-val">1</span></td>
+        <td><span class="rank-floor-val">15</span></td>
+        <td><span class="percentile-val">98.9%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">📐</span>
+            <span class="player-name">Max Starks</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">71</span></td>
+        <td><span class="score-max-val">85</span></td>
+        <td><span class="score-exp-val">76.8</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              HOU
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-S">S</span>
+              AUB
+              <span class="seed-badge seed-1-4">4</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              GON
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              MRQ
+              <span class="seed-badge seed-1-4">2</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              KEN
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              PUR
+              <span class="seed-badge seed-1-4">4</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              CRE
+              <span class="seed-badge seed-1-4">4</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">3</span></td>
+      </tr>
+
+      <!-- Row 7: Tie at 3 -->
+      <tr>
+        <td><span class="rank-actual-val">T3</span></td>
+        <td><span class="rank-max-val">1</span></td>
+        <td><span class="rank-floor-val">22</span></td>
+        <td><span class="percentile-val">98.9%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🌪️</span>
+            <span class="player-name">Jesse Casso</span>
+            <span class="rank-change up">▲5</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">71</span></td>
+        <td><span class="score-max-val">95</span></td>
+        <td><span class="score-exp-val">78.2</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              FLA
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-MW">MW</span>
+              MRK
+              <span class="seed-badge seed-9-12">11</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              ORE
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              VAN
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              LIB
+              <span class="seed-badge seed-13-16">13</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              GCU
+              <span class="seed-badge seed-13-16">15</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">4</span></td>
+      </tr>
+
+      <!-- Row 8: Rank 5 -->
+      <tr>
+        <td><span class="rank-actual-val">5</span></td>
+        <td><span class="rank-max-val">1</span></td>
+        <td><span class="rank-floor-val">30</span></td>
+        <td><span class="percentile-val">98.1%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🎯</span>
+            <span class="player-name">Rohan Mehta</span>
+            <span class="rank-change up">▲1</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">68</span></td>
+        <td><span class="score-max-val">88</span></td>
+        <td><span class="score-exp-val">74.3</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              FLA
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-MW">MW</span>
+              HOU
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              STJ
+              <span class="seed-badge seed-1-4">2</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              MIS
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              OLE
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              KSU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              CIN
+              <span class="seed-badge seed-5-8">8</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val some">3</span></td>
+      </tr>
+
+      <!-- Row 9: Rank 6 — all eliminated -->
+      <tr>
+        <td><span class="rank-actual-val">6</span></td>
+        <td><span class="rank-max-val">6</span></td>
+        <td><span class="rank-floor-val">6</span></td>
+        <td><span class="percentile-val">97.7%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🔮</span>
+            <span class="player-name">Priya Shah</span>
+            <span class="rank-change down">▼3</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">65</span></td>
+        <td><span class="score-max-val">65</span></td>
+        <td><span class="score-exp-val">65.0</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <!-- All eliminated — no alive teams, no divider needed -->
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              BYU
+              <span class="seed-badge seed-5-8">6</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              MIC
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              WIS
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-S">S</span>
+              CLE
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              ORE
+              <span class="seed-badge seed-5-8">5</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              BAY
+              <span class="seed-badge seed-5-8">7</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              DRK
+              <span class="seed-badge seed-9-12">11</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val none">0</span></td>
+      </tr>
+
+      <!-- Row 10: Rank 7 -->
+      <tr>
+        <td><span class="rank-actual-val">7</span></td>
+        <td><span class="rank-max-val">2</span></td>
+        <td><span class="rank-floor-val">45</span></td>
+        <td><span class="percentile-val">97.4%</span></td>
+        <td class="left">
+          <div class="player-cell">
+            <span class="archetype-emoji">🏠</span>
+            <span class="player-name">Ankur Patel (2)</span>
+            <span class="rank-change up">▲8</span>
+          </div>
+        </td>
+        <td><span class="score-actual-val">63</span></td>
+        <td><span class="score-max-val">99</span></td>
+        <td><span class="score-exp-val">75.1</span></td>
+        <td class="left">
+          <div class="teams-strip">
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              FLA
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-S">S</span>
+              ARK
+              <span class="seed-badge seed-9-12">12</span>
+            </div>
+            <div class="team-box alive-won">
+              <span class="region-badge region-MW">MW</span>
+              HOU
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-E">E</span>
+              DUK
+              <span class="seed-badge seed-1-4">1</span>
+            </div>
+            <div class="team-box alive-pending">
+              <span class="region-badge region-W">W</span>
+              STJ
+              <span class="seed-badge seed-1-4">2</span>
+            </div>
+            <div class="team-divider"></div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-MW">MW</span>
+              PUR
+              <span class="seed-badge seed-1-4">4</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-E">E</span>
+              KEN
+              <span class="seed-badge seed-1-4">3</span>
+            </div>
+            <div class="team-box eliminated">
+              <span class="region-badge region-W">W</span>
+              CRE
+              <span class="seed-badge seed-1-4">4</span>
+            </div>
+          </div>
+        </td>
+        <td><span class="teams-left-val alive">5</span></td>
+      </tr>
+
+    </tbody>
+  </table>
+</div>
+
+<p class="note">Static mockup for format approval. Hardcoded values — not wired to real data. Iterate on layout here, then implement in React.</p>
+
+</body>
+</html>
