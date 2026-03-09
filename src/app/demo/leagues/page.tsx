@@ -15,6 +15,15 @@ interface DemoLeague {
   adminName: string
 }
 
+const TROPHY_COLORS = [
+  "text-yellow-400 bg-yellow-400/10",
+  "text-blue-400 bg-blue-400/10",
+  "text-purple-400 bg-purple-400/10",
+  "text-emerald-400 bg-emerald-400/10",
+  "text-rose-400 bg-rose-400/10",
+  "text-orange-400 bg-orange-400/10",
+]
+
 const DEMO_LEAGUES: DemoLeague[] = [
   { id: "lg-1", name: "The Patel Family", code: "PATEL26", memberCount: 12, adminName: "Sumeet Patel" },
   { id: "lg-2", name: "Office Pool 2025", code: "OFFICE25", memberCount: 34, adminName: "Mike Johnson" },
@@ -66,12 +75,14 @@ export default function DemoLeaguesPage() {
           Your Leagues
         </h2>
 
-        {DEMO_LEAGUES.map((league) => (
+        {DEMO_LEAGUES.map((league, i) => {
+          const [trophyText, trophyBg] = TROPHY_COLORS[i % TROPHY_COLORS.length].split(" ")
+          return (
           <div key={league.id} className="bg-card border border-border rounded-xl p-4 hover:border-primary/30 transition-colors cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Trophy className="h-5 w-5 text-primary" />
+                <div className={`w-10 h-10 rounded-lg ${trophyBg} flex items-center justify-center`}>
+                  <Trophy className={`h-5 w-5 ${trophyText}`} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm">{league.name}</h3>
@@ -91,7 +102,8 @@ export default function DemoLeaguesPage() {
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       <p className="text-xs text-muted-foreground text-center">

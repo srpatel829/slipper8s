@@ -158,6 +158,20 @@ export default function DemoPicksPage() {
         </div>
       )}
 
+      {/* Picks form (summary + TPS shown first, then region/seed views) */}
+      <PicksForm
+        key={`${currentPersona.userId}-${formKey}`}
+        teams={teams}
+        playInSlots={[]}
+        existingPicks={fakeExistingPicks as Parameters<typeof PicksForm>[0]["existingPicks"]}
+        deadlinePassed={deadlinePassed}
+        defaultCharities={demoSettings.defaultCharities}
+        demoMode
+        onDemoSubmit={handleDemoSubmit}
+        matchupInfoMap={matchupInfoMap}
+        enableViewModes
+      />
+
       {/* Bracket View — only shown pre-tournament */}
       {!deadlinePassed && (
         <Tabs defaultValue="advancing">
@@ -197,19 +211,6 @@ export default function DemoPicksPage() {
           </TabsContent>
         </Tabs>
       )}
-
-      <PicksForm
-        key={`${currentPersona.userId}-${formKey}`}
-        teams={teams}
-        playInSlots={[]}
-        existingPicks={fakeExistingPicks as Parameters<typeof PicksForm>[0]["existingPicks"]}
-        deadlinePassed={deadlinePassed}
-        defaultCharities={demoSettings.defaultCharities}
-        demoMode
-        onDemoSubmit={handleDemoSubmit}
-        matchupInfoMap={matchupInfoMap}
-        enableViewModes
-      />
     </div>
   )
 }

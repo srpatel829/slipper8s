@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -9,9 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TeamCard } from "@/components/picks/team-card"
 import { PlayInSlotCard } from "@/components/picks/play-in-slot"
-import { PicksTracker, SEED_TIERS } from "@/components/picks/picks-tracker"
-import { Target, Heart, Lock, CheckCircle2, LayoutGrid, Layers, Grid2x2 } from "lucide-react"
+import { SEED_TIERS } from "@/components/picks/picks-tracker"
+import { Target, Heart, Lock, CheckCircle2, Layers, Grid2x2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { Team, PlayInSlot, Pick } from "@/generated/prisma"
 
 type PlayInSlotWithTeams = PlayInSlot & {
@@ -141,6 +142,32 @@ export function PicksForm({
 
   const allRegions = [...new Set(teams.map((t) => t.region))].sort()
 
+  // ── TPS calculation ──
+  const selectedTeamObjects = useMemo(() => {
+    return teams.filter(t => selectedTeamIds.has(t.id))
+  }, [teams, selectedTeamIds])
+
+  const bracketTPS = useMemo(() => {
+    if (selectedTeamObjects.length === 0) return 0
+    const infoMap = new Map<string, TeamBracketInfo>()
+    for (const t of selectedTeamObjects) {
+      infoMap.set(t.id, {
+        seed: t.seed,
+        region: t.region ?? "",
+        wins: (t as { wins?: number }).wins ?? 0,
+        eliminated: (t as { eliminated?: boolean }).eliminated ?? false,
+      })
+    }
+    const { totalPPR } = computeBracketAwarePPR(
+      selectedTeamObjects.map(t => t.id),
+      infoMap
+    )
+    const currentScore = selectedTeamObjects.reduce(
+      (s, t) => s + t.seed * ((t as { wins?: number }).wins ?? 0), 0
+    )
+    return currentScore + totalPPR
+  }, [selectedTeamObjects])
+
   // ── Team card renderer (shared between view modes) ──
   function renderTeamCard(team: Team) {
     return (
@@ -163,37 +190,33 @@ export function PicksForm({
       {/* Sticky progress bar */}
       <div className="sticky top-14 z-30 -mx-4 px-4 py-3 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between gap-4">
-          {/* Enhanced tracker (demo) or simple dot row */}
-          {enableViewModes ? (
-            <PicksTracker selected={selected} teams={teams} maxPicks={MAX_PICKS} />
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                {Array.from({ length: MAX_PICKS }, (_, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "h-2.5 w-2.5 rounded-full transition-all",
-                      i < selected.length ? "bg-primary" : "bg-muted-foreground/20"
-                    )}
-                  />
-                ))}
-              </div>
-              <span className="text-sm font-semibold">
-                <span className="text-primary">{selected.length}</span>
-                <span className="text-muted-foreground">/{MAX_PICKS}</span>
-              </span>
-              {remaining > 0 && (
-                <span className="text-xs text-muted-foreground hidden sm:block">Pick {remaining} more</span>
-              )}
-              {selected.length === MAX_PICKS && (
-                <span className="text-xs text-primary flex items-center gap-1">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Ready
-                </span>
-              )}
+          {/* Simple progress dots */}
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              {Array.from({ length: MAX_PICKS }, (_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-2.5 w-2.5 rounded-full transition-all",
+                    i < selected.length ? "bg-primary" : "bg-muted-foreground/20"
+                  )}
+                />
+              ))}
             </div>
-          )}
+            <span className="text-sm font-semibold">
+              <span className="text-primary">{selected.length}</span>
+              <span className="text-muted-foreground">/{MAX_PICKS}</span>
+            </span>
+            {remaining > 0 && (
+              <span className="text-xs text-muted-foreground hidden sm:block">Pick {remaining} more</span>
+            )}
+            {selected.length === MAX_PICKS && (
+              <span className="text-xs text-primary flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Ready
+              </span>
+            )}
+          </div>
 
           {deadlinePassed ? (
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -213,9 +236,20 @@ export function PicksForm({
         </div>
       </div>
 
-      {/* 8-pick summary strip */}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 px-1">
+      {/* 8-pick summary with TPS */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Target className="h-4 w-4 text-primary" />
+            Your Picks
+          </h2>
+          {selected.length > 0 && bracketTPS > 0 && (
+            <div className="text-xs text-muted-foreground">
+              TPS: <span className="font-mono font-bold text-primary">{bracketTPS}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
           {selected.map((pick) => {
             const team = teams.find(t => t.id === pick.teamId)
             if (!team) return null
@@ -235,7 +269,7 @@ export function PicksForm({
             </span>
           ))}
         </div>
-      )}
+      </div>
 
       {/* Play-in slots */}
       {playInSlots.length > 0 && (

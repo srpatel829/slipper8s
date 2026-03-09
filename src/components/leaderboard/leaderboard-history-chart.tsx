@@ -19,6 +19,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react"
+import { useTheme } from "@/components/layout/theme-provider"
 import {
   LineChart,
   Line,
@@ -163,6 +164,14 @@ export function LeaderboardHistoryChart({
   userNames,
   gameSequence = [],
 }: LeaderboardHistoryChartProps) {
+  const { mode } = useTheme()
+  const isDark = mode === "dark"
+  const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.08)"
+  const tickFill = isDark ? "#94a3b8" : "#64748b"
+  const refLineStroke = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.12)"
+  const futureZoneFill = isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.03)"
+  const refLabelFill = isDark ? "#64748b" : "#94a3b8"
+
   const [chartCursor, setChartCursor] = useState(gameIndex)
   const [isDragging, setIsDragging] = useState(false)
   const [animateIndex, setAnimateIndex] = useState<number | null>(null)
@@ -544,14 +553,14 @@ export function LeaderboardHistoryChart({
       >
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 4 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+            <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
 
             <XAxis
               dataKey="gameIndex"
               type="number"
               domain={[0, totalGames - 1]}
               tickCount={7}
-              tick={{ fontSize: 10, fill: "#94a3b8" }}
+              tick={{ fontSize: 10, fill: tickFill }}
               tickFormatter={(v: number) => {
                 const boundary = roundBoundaries.find(b => b.gameIndex === v)
                 return boundary ? boundary.roundLabel.split(" ")[0] : ""
@@ -559,7 +568,7 @@ export function LeaderboardHistoryChart({
             />
 
             <YAxis
-              tick={{ fontSize: 10, fill: "#94a3b8" }}
+              tick={{ fontSize: 10, fill: tickFill }}
               width={36}
               domain={[0, yAxisMax]}
             />
@@ -571,12 +580,12 @@ export function LeaderboardHistoryChart({
               <ReferenceLine
                 key={b.gameIndex}
                 x={b.gameIndex}
-                stroke="rgba(255,255,255,0.12)"
+                stroke={refLineStroke}
                 strokeDasharray="4 2"
                 label={{
                   value: b.roundLabel.split(" ")[0],
                   position: "insideTopRight",
-                  fill: "#64748b",
+                  fill: refLabelFill,
                   fontSize: 9,
                 }}
               />
@@ -587,7 +596,7 @@ export function LeaderboardHistoryChart({
               <ReferenceArea
                 x1={effectiveIndex}
                 x2={totalGames - 1}
-                fill="rgba(255,255,255,0.02)"
+                fill={futureZoneFill}
                 stroke="none"
               />
             )}
