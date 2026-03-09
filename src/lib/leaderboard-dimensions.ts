@@ -8,6 +8,7 @@
  */
 
 import type { LeaderboardEntry } from "@/types"
+import { getTeamDisplayName } from "@/lib/conference-map"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -252,9 +253,9 @@ export function formatDimensionValue(
 ): string {
   if (value === NO_RESPONSE) return NO_RESPONSE
 
-  if (dimension.type === "fanBase" && teams) {
-    const team = teams.find(t => t.id === value)
-    return team?.name ?? value
+  if (dimension.type === "fanBase") {
+    // Use ESPN-style display names from conference-map, with teams array as fallback
+    return getTeamDisplayName(value, teams)
   }
 
   return value

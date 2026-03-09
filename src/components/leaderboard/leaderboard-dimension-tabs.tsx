@@ -11,7 +11,7 @@
  * State, Fan Base, and Conference use searchable dropdowns.
  */
 
-import { useState, useMemo, useEffect, useRef, type ReactNode } from "react"
+import { useState, useMemo, useEffect, useRef, useCallback, type ReactNode } from "react"
 import { Search } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
@@ -49,6 +49,8 @@ interface LeaderboardDimensionTabsProps {
   teams: Array<{ id: string; name: string }>
   /** Render callback for the leaderboard content */
   renderLeaderboard: (filteredEntries: LeaderboardEntry[]) => ReactNode
+  /** Called whenever the filtered set of user IDs changes (for chart sync) */
+  onFilterChange?: (filteredUserIds: Set<string>) => void
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -143,6 +145,7 @@ export function LeaderboardDimensionTabs({
   currentUserId,
   teams,
   renderLeaderboard,
+  onFilterChange,
 }: LeaderboardDimensionTabsProps) {
   const [activeDimension, setActiveDimension] = useState<DimensionType>("global")
 
@@ -160,24 +163,36 @@ export function LeaderboardDimensionTabs({
     [entries, activeConfig]
   )
 
-  // Auto-select user's default when switching to a new tab for the first time
-  useEffect(() => {
-    if (activeDimension === "global" || activeDimension === "privateLeague") return
-    if (subSelections[activeDimension]) return // already has a selection
+  // Compute the selected value synchronously (no effect delay).
+  // If user hasn't explicitly picked a sub-value for this tab yet,
+  // default to the logged-in player's own value for that dimension.
+  const selectedValue = useMemo(() => {
+    if (activeDimension === "global") return "global"
+    if (activeDimension === "privateLeague") return ""
 
-    const defaultVal = getDefaultDimensionValue(currentUserId, entries, activeConfig, dimensionValues)
-    setSubSelections(prev => ({ ...prev, [activeDimension]: defaultVal }))
-  }, [activeDimension, currentUserId, entries, activeConfig, dimensionValues, subSelections])
+    // User already made an explicit selection for this tab
+    const explicit = subSelections[activeDimension]
+    if (explicit) return explicit
 
-  const selectedValue = activeDimension === "global"
-    ? "global"
-    : (subSelections[activeDimension] ?? dimensionValues[0] ?? NO_RESPONSE)
+    // Default to the logged-in player's own value
+    return getDefaultDimensionValue(currentUserId, entries, activeConfig, dimensionValues)
+  }, [activeDimension, subSelections, currentUserId, entries, activeConfig, dimensionValues])
 
   // Filter and re-rank entries
   const filteredEntries = useMemo(
     () => filterAndRerank(entries, activeConfig, selectedValue),
     [entries, activeConfig, selectedValue]
   )
+
+  // Notify parent of filter changes (for chart sync)
+  const filteredUserIds = useMemo(
+    () => new Set(filteredEntries.map(e => e.userId)),
+    [filteredEntries]
+  )
+
+  useEffect(() => {
+    onFilterChange?.(filteredUserIds)
+  }, [filteredUserIds, onFilterChange])
 
   const responseCount = useMemo(
     () => countResponses(entries, activeConfig),

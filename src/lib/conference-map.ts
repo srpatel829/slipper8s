@@ -206,13 +206,104 @@ export function normalizeFavoriteTeam(rawValue: string | null | undefined): stri
   return FAVORITE_TEAM_NORMALIZE[trimmed] ?? trimmed.toLowerCase().replace(/\s+/g, "-")
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TEAM DISPLAY NAMES (ESPN-style — includes non-tournament favorites)
+// ═══════════════════════════════════════════════════════════════════════════════
+
 /**
- * Get display name for a team ID. Uses the teams array from demo data.
+ * ESPN-style display names for all team IDs that might appear as favorites.
+ * Tournament teams are also covered here so lookups don't need the DemoTeam array.
+ */
+export const TEAM_DISPLAY_NAMES: Record<string, string> = {
+  // Non-tournament favorites (not in DemoTeam[])
+  "florida-st": "Florida State",
+  "georgia-tech": "Georgia Tech",
+  "penn-st": "Penn State",
+  "ucf": "UCF",
+  "stanford": "Stanford",
+  "villanova": "Villanova",
+  "miami": "Miami",
+  "virginia": "Virginia",
+
+  // Tournament teams (mirror DemoTeam names for consistency)
+  "duke": "Duke",
+  "alabama": "Alabama",
+  "wisconsin": "Wisconsin",
+  "arizona": "Arizona",
+  "oregon": "Oregon",
+  "byu": "BYU",
+  "saint-marys": "Saint Mary's",
+  "mississippi-st": "Mississippi State",
+  "baylor": "Baylor",
+  "vanderbilt": "Vanderbilt",
+  "vcu": "VCU",
+  "liberty": "Liberty",
+  "akron": "Akron",
+  "montana": "Montana",
+  "robert-morris": "Robert Morris",
+  "mount-st-marys": "Mount St. Mary's",
+  "florida": "Florida",
+  "st-johns": "St. John's",
+  "texas-tech": "Texas Tech",
+  "maryland": "Maryland",
+  "memphis": "Memphis",
+  "missouri": "Missouri",
+  "kansas": "Kansas",
+  "uconn": "UConn",
+  "oklahoma": "Oklahoma",
+  "arkansas": "Arkansas",
+  "drake": "Drake",
+  "colorado-st": "Colorado State",
+  "grand-canyon": "Grand Canyon",
+  "unc-wilmington": "UNC Wilmington",
+  "omaha": "Omaha",
+  "norfolk-st": "Norfolk State",
+  "auburn": "Auburn",
+  "michigan-st": "Michigan State",
+  "iowa-st": "Iowa State",
+  "texas-am": "Texas A&M",
+  "michigan": "Michigan",
+  "ole-miss": "Ole Miss",
+  "marquette": "Marquette",
+  "louisville": "Louisville",
+  "creighton": "Creighton",
+  "new-mexico": "New Mexico",
+  "north-carolina": "North Carolina",
+  "uc-san-diego": "UC San Diego",
+  "yale": "Yale",
+  "lipscomb": "Lipscomb",
+  "bryant": "Bryant",
+  "alabama-st": "Alabama State",
+  "houston": "Houston",
+  "tennessee": "Tennessee",
+  "kentucky": "Kentucky",
+  "purdue": "Purdue",
+  "clemson": "Clemson",
+  "illinois": "Illinois",
+  "ucla": "UCLA",
+  "gonzaga": "Gonzaga",
+  "georgia": "Georgia",
+  "utah-st": "Utah State",
+  "xavier": "Xavier",
+  "mcneese-st": "McNeese State",
+  "high-point": "High Point",
+  "troy": "Troy",
+  "wofford": "Wofford",
+  "siu-edwardsville": "SIU Edwardsville",
+}
+
+/**
+ * Get ESPN-style display name for a team ID.
+ * First checks the canonical display name map, then falls back to the teams array.
  */
 export function getTeamDisplayName(
   teamId: string,
-  teams: Array<{ id: string; name: string }>
+  teams?: Array<{ id: string; name: string }>
 ): string {
-  const team = teams.find(t => t.id === teamId)
-  return team?.name ?? teamId
+  if (TEAM_DISPLAY_NAMES[teamId]) return TEAM_DISPLAY_NAMES[teamId]
+  if (teams) {
+    const team = teams.find(t => t.id === teamId)
+    if (team) return team.name
+  }
+  return teamId
 }

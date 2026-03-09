@@ -3,24 +3,13 @@
 import { useMemo } from "react"
 import { useDemoContext } from "@/lib/demo-context"
 import { TeamsTable, type TeamRow } from "@/components/teams/teams-table"
+import { LeaderboardDimensionTabs } from "@/components/leaderboard/leaderboard-dimension-tabs"
 
 export default function DemoTeamsPage() {
-  const { teamsData, demoUserPicks } = useDemoContext()
+  const { teamsData, demoUserPicks, leaderboardData, currentPersona } = useDemoContext()
 
-  // Count how many demo users picked each team
-  const pickerCountMap = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const picks of demoUserPicks.values()) {
-      for (const teamId of picks) {
-        counts.set(teamId, (counts.get(teamId) ?? 0) + 1)
-      }
-    }
-    return counts
-  }, [demoUserPicks])
-
-  const totalDemoEntries = demoUserPicks.size
-
-  const rows: TeamRow[] = useMemo(() => {
+  // Base team rows (without picker counts — those depend on dimension filter)
+  const baseRows = useMemo(() => {
     return teamsData
       .filter(t => !t.isPlayIn)
       .map(t => ({
@@ -33,19 +22,44 @@ export default function DemoTeamsPage() {
         wins: t.wins,
         logoUrl: t.logoUrl,
         conference: (t as Record<string, unknown>).conference as string ?? null,
-        pickerCount: pickerCountMap.get(t.id) ?? 0,
+        pickerCount: 0, // will be overridden per dimension
       }))
-  }, [teamsData, pickerCountMap])
+  }, [teamsData])
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Tournament Teams</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          All {rows.length} teams · {totalDemoEntries} entries · Default sort: % Selected
+          All {baseRows.length} teams · Default sort: % Selected
         </p>
       </div>
-      <TeamsTable teams={rows} totalEntries={totalDemoEntries} />
+
+      {/* Dimension tabs filter which entries count toward "% Selected" */}
+      <LeaderboardDimensionTabs
+        entries={leaderboardData}
+        currentUserId={currentPersona.userId}
+        teams={teamsData}
+        renderLeaderboard={(filteredEntries) => {
+          // Compute picker counts from only the filtered users
+          const filteredIds = new Set(filteredEntries.map(e => e.userId))
+          const pickerCounts = new Map<string, number>()
+          for (const [userId, picks] of demoUserPicks) {
+            if (filteredIds.has(userId)) {
+              for (const teamId of picks) {
+                pickerCounts.set(teamId, (pickerCounts.get(teamId) ?? 0) + 1)
+              }
+            }
+          }
+
+          const rows: TeamRow[] = baseRows.map(r => ({
+            ...r,
+            pickerCount: pickerCounts.get(r.id) ?? 0,
+          }))
+
+          return <TeamsTable teams={rows} totalEntries={filteredIds.size} />
+        }}
+      />
     </div>
   )
 }

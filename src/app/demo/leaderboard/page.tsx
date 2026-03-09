@@ -5,7 +5,7 @@
  * Data comes from DemoContext (no API calls).
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useCallback } from "react"
 import { ChevronDown, ChevronUp, BarChart3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -36,6 +36,15 @@ export default function DemoLeaderboardPage() {
   } = useDemoContext()
 
   const [chartExpanded, setChartExpanded] = useState(true)
+
+  // Track which user IDs are in the active dimension filter (null = global/all)
+  const [filteredUserIds, setFilteredUserIds] = useState<Set<string> | null>(null)
+
+  // Stable callback to avoid re-render loops
+  // When filter includes all entries (global), pass null to skip unnecessary filtering
+  const handleFilterChange = useCallback((ids: Set<string>) => {
+    setFilteredUserIds(ids.size >= leaderboardData.length ? null : ids)
+  }, [leaderboardData.length])
 
   // Build userNames map for the chart legend
   const userNames = Object.fromEntries(
@@ -163,6 +172,33 @@ export default function DemoLeaderboardPage() {
     }
   }, [optimal8FinalTeamIds, teamsData, teamState, preTournament])
 
+  // ── Filtered history for chart (synced to dimension tabs) ──────────────────
+  const filteredHistory = useMemo(() => {
+    // null = global, no filtering needed
+    if (!filteredUserIds) return leaderboardHistory
+
+    return leaderboardHistory.map(snap => ({
+      ...snap,
+      entries: snap.entries.filter(e => filteredUserIds.has(e.userId)),
+    }))
+  }, [leaderboardHistory, filteredUserIds])
+
+  // Only show "You" line if current user is in the filtered set
+  const chartHighlightUserId = useMemo(() => {
+    if (!filteredUserIds) return currentPersona.userId
+    return filteredUserIds.has(currentPersona.userId) ? currentPersona.userId : undefined
+  }, [filteredUserIds, currentPersona.userId])
+
+  // Filter userNames to match dimension filter (for chart player dropdown)
+  const filteredUserNames = useMemo(() => {
+    if (!filteredUserIds) return userNames
+    const filtered: Record<string, string> = {}
+    for (const [id, name] of Object.entries(userNames)) {
+      if (filteredUserIds.has(id)) filtered[id] = name
+    }
+    return filtered
+  }, [userNames, filteredUserIds])
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
       {/* Leaderboard with dimension tabs */}
@@ -170,6 +206,7 @@ export default function DemoLeaderboardPage() {
         entries={leaderboardData}
         currentUserId={currentPersona.userId}
         teams={teamsData}
+        onFilterChange={handleFilterChange}
         renderLeaderboard={(filteredEntries) => (
           <LeaderboardSample
             entries={filteredEntries}
@@ -204,12 +241,12 @@ export default function DemoLeaderboardPage() {
         {chartExpanded && (
           <CardContent>
             <LeaderboardHistoryChart
-              history={leaderboardHistory}
+              history={filteredHistory}
               gameIndex={gameIndex}
               totalGames={totalGames}
               roundBoundaries={roundBoundaries}
-              highlightUserId={currentPersona.userId}
-              userNames={userNames}
+              highlightUserId={chartHighlightUserId}
+              userNames={filteredUserNames}
               gameSequence={gameSequence}
               optimal8RollingScores={optimal8RollingScores}
               optimal8FinalScores={optimal8FinalScores}
