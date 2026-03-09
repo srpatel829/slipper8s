@@ -102,12 +102,23 @@ async function getUserProfile(userId: string) {
   } : null
 }
 
+async function getSeasonStatus(): Promise<string | null> {
+  const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+  if (!settings?.currentSeasonId) return null
+  const season = await prisma.season.findUnique({
+    where: { id: settings.currentSeasonId },
+    select: { status: true },
+  })
+  return season?.status ?? null
+}
+
 export default async function LeaderboardPage() {
   const session = await auth()
-  const [leaderboard, userLeagues, userProfile] = await Promise.all([
+  const [leaderboard, userLeagues, userProfile, seasonStatus] = await Promise.all([
     getLeaderboard(),
     session?.user?.id ? getUserLeagues(session.user.id) : Promise.resolve([]),
     session?.user?.id ? getUserProfile(session.user.id) : Promise.resolve(null),
+    getSeasonStatus(),
   ])
 
   // Find the current user's best entry for share card
@@ -137,6 +148,7 @@ export default async function LeaderboardPage() {
               percentile={userEntry.percentile}
               teamsAlive={userEntry.teamsRemaining}
               totalEntries={leaderboard.length}
+              seasonCompleted={seasonStatus === "COMPLETED"}
             />
           )}
           <Link

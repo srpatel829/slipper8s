@@ -9,6 +9,7 @@ interface LeaderboardShareButtonProps {
   percentile: number
   teamsAlive: number
   totalEntries: number
+  seasonCompleted?: boolean
 }
 
 export function LeaderboardShareButton({
@@ -18,6 +19,7 @@ export function LeaderboardShareButton({
   percentile,
   teamsAlive,
   totalEntries,
+  seasonCompleted = false,
 }: LeaderboardShareButtonProps) {
   return (
     <ShareCard
@@ -27,7 +29,7 @@ export function LeaderboardShareButton({
       percentile={percentile}
       teamsAlive={teamsAlive}
       totalEntries={totalEntries}
-      type="during"
+      type={seasonCompleted ? "post" : "during"}
     />
   )
 }
