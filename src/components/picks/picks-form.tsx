@@ -213,6 +213,30 @@ export function PicksForm({
         </div>
       </div>
 
+      {/* 8-pick summary strip */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 px-1">
+          {selected.map((pick) => {
+            const team = teams.find(t => t.id === pick.teamId)
+            if (!team) return null
+            return (
+              <span
+                key={team.id}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 border border-primary/20 text-foreground"
+              >
+                <span className="font-bold text-primary">#{team.seed}</span>
+                {team.shortName}
+              </span>
+            )
+          })}
+          {Array.from({ length: MAX_PICKS - selected.length }).map((_, i) => (
+            <span key={`empty-${i}`} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] text-muted-foreground/40 border border-dashed border-border/30">
+              ???
+            </span>
+          ))}
+        </div>
+      )}
+
       {/* Play-in slots */}
       {playInSlots.length > 0 && (
         <div>

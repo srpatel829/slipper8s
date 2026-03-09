@@ -16,9 +16,8 @@ import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
 import { useDemoContext } from "@/lib/demo-context"
 import { getR64Matchups } from "@/lib/demo-game-sequence"
 import type { SelectedPick } from "@/components/picks/picks-form"
-import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ChevronDown, ChevronUp, Info, Lock, Lightbulb, X, LayoutTemplate, Grid2X2 } from "lucide-react"
+import { Lock, Lightbulb, X, LayoutTemplate, Grid2X2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export default function DemoPicksPage() {
@@ -33,9 +32,6 @@ export default function DemoPicksPage() {
   } = useDemoContext()
 
   const deadlinePassed = gameIndex >= 0
-
-  // Scoring explainer collapsed state (starts expanded pre-tournament)
-  const [explainerOpen, setExplainerOpen] = useState(true)
 
   // Key for force-remounting PicksForm when QuickPickGenerator/bracket changes picks
   const [formKey, setFormKey] = useState(0)
@@ -162,88 +158,44 @@ export default function DemoPicksPage() {
         </div>
       )}
 
-      {/* Scoring explainer + Bracket View — only shown pre-tournament */}
+      {/* Bracket View — only shown pre-tournament */}
       {!deadlinePassed && (
-        <Card className="border-primary/20 bg-primary/5">
-          <button
-            type="button"
-            className="w-full flex items-center justify-between px-4 py-3 text-left"
-            onClick={() => setExplainerOpen(o => !o)}
-          >
-            <div className="flex items-center gap-2">
-              <Info className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold text-primary">How Scoring Works + Bracket</span>
-            </div>
-            {explainerOpen
-              ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              : <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            }
-          </button>
-          {explainerOpen && (
-            <CardContent className="pt-0 pb-4 space-y-4 text-sm">
-              {/* Scoring formula cards */}
-              <div className="grid sm:grid-cols-3 gap-3">
-                <div className="bg-background/60 rounded-lg p-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Formula</p>
-                  <p className="text-foreground font-mono font-bold text-base">Seed × Wins = Score</p>
-                  <p className="text-xs text-muted-foreground">Each win earns you the team&apos;s seed number in points.</p>
-                </div>
-                <div className="bg-background/60 rounded-lg p-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Example</p>
-                  <p className="text-foreground font-medium">#12 seed wins 2 games = <span className="text-primary font-bold">24 pts</span></p>
-                  <p className="text-foreground font-medium">#1 seed wins 4 games = <span className="text-primary font-bold">4 pts</span></p>
-                </div>
-                <div className="bg-background/60 rounded-lg p-3 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Strategy</p>
-                  <p className="text-xs text-muted-foreground">
-                    <span className="text-foreground font-medium">High seeds</span> (1-4) are safe but earn less per win.{" "}
-                    <span className="text-foreground font-medium">Low seeds</span> (9-16) score big if they upset — max is <span className="text-primary">seed × 6</span> for a champion.
-                  </p>
-                </div>
-              </div>
-
-              {/* Interactive bracket view — Advancing (default) or Classic */}
-              <div>
-                <Tabs defaultValue="advancing">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      Tournament Bracket
-                    </p>
-                    <TabsList className="h-7 text-[10px]">
-                      <TabsTrigger value="advancing" className="gap-1 h-6 px-2 text-[10px]">
-                        <LayoutTemplate className="h-3 w-3" />
-                        Advancing
-                      </TabsTrigger>
-                      <TabsTrigger value="classic" className="gap-1 h-6 px-2 text-[10px]">
-                        <Grid2X2 className="h-3 w-3" />
-                        Classic
-                      </TabsTrigger>
-                    </TabsList>
-                  </div>
-                  <TabsContent value="advancing" className="mt-0">
-                    <AdvancingBracket
-                      teams={teamsData}
-                      mode="picks"
-                      selectedTeamIds={selectedTeamIds}
-                      onToggleTeam={handleBracketToggle}
-                      gameSequence={gameSequence}
-                      gameIndex={gameIndex}
-                      disabled={deadlinePassed}
-                    />
-                  </TabsContent>
-                  <TabsContent value="classic" className="mt-0">
-                    <BracketView
-                      teams={teamsData}
-                      selectedTeamIds={selectedTeamIds}
-                      onToggleTeam={handleBracketToggle}
-                      disabled={deadlinePassed}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </CardContent>
-          )}
-        </Card>
+        <Tabs defaultValue="advancing">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Tournament Bracket
+            </p>
+            <TabsList className="h-7 text-[10px]">
+              <TabsTrigger value="advancing" className="gap-1 h-6 px-2 text-[10px]">
+                <LayoutTemplate className="h-3 w-3" />
+                Advancing
+              </TabsTrigger>
+              <TabsTrigger value="classic" className="gap-1 h-6 px-2 text-[10px]">
+                <Grid2X2 className="h-3 w-3" />
+                Classic
+              </TabsTrigger>
+            </TabsList>
+          </div>
+          <TabsContent value="advancing" className="mt-0">
+            <AdvancingBracket
+              teams={teamsData}
+              mode="picks"
+              selectedTeamIds={selectedTeamIds}
+              onToggleTeam={handleBracketToggle}
+              gameSequence={gameSequence}
+              gameIndex={gameIndex}
+              disabled={deadlinePassed}
+            />
+          </TabsContent>
+          <TabsContent value="classic" className="mt-0">
+            <BracketView
+              teams={teamsData}
+              selectedTeamIds={selectedTeamIds}
+              onToggleTeam={handleBracketToggle}
+              disabled={deadlinePassed}
+            />
+          </TabsContent>
+        </Tabs>
       )}
 
       <PicksForm

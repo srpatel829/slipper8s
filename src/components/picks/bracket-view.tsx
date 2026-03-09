@@ -278,18 +278,6 @@ function RegionBracket({
 
   return (
     <div>
-      {/* Conflict warnings */}
-      {conflictPairs.length > 0 && (
-        <div className="mb-2 px-1">
-          {conflictPairs.map((pair, i) => (
-            <p key={i} className="text-[9px] text-amber-400/80">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/60 mr-1" />
-              {pair}
-            </p>
-          ))}
-        </div>
-      )}
-
       {/* Bracket tree */}
       <div
         className="overflow-x-auto overflow-y-hidden pb-2"

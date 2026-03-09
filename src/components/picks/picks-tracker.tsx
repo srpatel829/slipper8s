@@ -168,11 +168,6 @@ export function PicksTracker({ selected, teams, maxPicks }: PicksTrackerProps) {
             <span className="text-[10px] text-muted-foreground">
               Max TPS: <span className="font-mono font-bold text-foreground/80">{bracketTPS}</span>
             </span>
-            {hasConflict && (
-              <span className="text-[9px] text-amber-400" title={`Naive max: ${naiveTPS} — reduced due to bracket conflicts`}>
-                (conflict)
-              </span>
-            )}
           </div>
         )}
       </div>
