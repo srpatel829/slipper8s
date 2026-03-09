@@ -187,8 +187,8 @@ export function LeaderboardHistoryChart({
     ? history[0].entries.map(e => e.userId)
     : []
 
-  // Default: show only Leader, Median, and You (highlighted user)
-  // Per spec: default lines are Optimal 8 (Rolling), Leader, You, Median
+  // Default: show 6 lines — Leader, Runner-Up, You, Median, Last, + one mid-pack
+  // Plus Optimal 8 (Rolling) which is always visible (not in hidden system)
   const getDefaultHidden = useCallback(() => {
     const anchorSnapIndex = Math.min(Math.max(0, gameIndex), history.length - 1)
     const anchorSnap = history[anchorSnapIndex]
@@ -196,12 +196,20 @@ export function LeaderboardHistoryChart({
 
     const sorted = [...anchorSnap.entries].sort((a, b) => b.currentScore - a.currentScore)
     const leaderId = sorted[0]?.userId
+    const runnerUpId = sorted[1]?.userId
     const medianIdx = Math.floor(sorted.length / 2)
     const medianId = sorted[medianIdx]?.userId
+    const lastId = sorted[sorted.length - 1]?.userId
+    // Mid-pack: halfway between leader and median
+    const midIdx = Math.floor(medianIdx / 2)
+    const midPackId = sorted[midIdx]?.userId
 
     const showIds = new Set<string>()
     if (leaderId) showIds.add(leaderId)
+    if (runnerUpId) showIds.add(runnerUpId)
     if (medianId) showIds.add(medianId)
+    if (lastId) showIds.add(lastId)
+    if (midPackId) showIds.add(midPackId)
     if (highlightUserId) showIds.add(highlightUserId)
 
     const hidden = new Set<string>()

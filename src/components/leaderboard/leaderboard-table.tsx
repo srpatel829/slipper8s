@@ -112,10 +112,8 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
         >
           {/* Logo box with thick status border */}
           <div
-            className={`relative w-8 h-8 rounded-md overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold ${
-              pick.eliminated ? "grayscale opacity-40" : "shadow-sm"
-            }`}
-            style={{ border: `2.5px solid ${pick.eliminated ? "#666" : statusColor}`, backgroundColor: "var(--background)" }}
+            className="relative w-8 h-8 rounded-md overflow-hidden flex items-center justify-center p-0.5 text-[8px] font-bold shadow-sm"
+            style={{ border: `2.5px solid ${statusColor}`, backgroundColor: "var(--background)" }}
           >
             {pick.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -188,11 +186,11 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
 
   return (
     <TeamCallout team={calloutData}>
-      <div className={`flex flex-col items-center gap-1.5 w-16 cursor-pointer ${pick.eliminated ? "opacity-50 grayscale" : ""}`}>
+      <div className="flex flex-col items-center gap-1.5 w-16 cursor-pointer">
         {/* Logo container with status border */}
         <div
           className="relative w-12 h-12 rounded-lg flex items-center justify-center bg-card shadow-sm p-1.5"
-          style={{ border: `3px solid ${pick.eliminated ? "#666" : statusColor}` }}
+          style={{ border: `3px solid ${statusColor}` }}
         >
           {pick.logoUrl ? (
             <img src={pick.logoUrl} alt={pick.shortName} className="w-full h-full object-contain" />
@@ -274,22 +272,23 @@ export interface Optimal8Data {
   picks: ResolvedPickSummary[]
 }
 
-function Optimal8Card({ data }: { data: Optimal8Data }) {
+function Optimal8Card({ data, label = "Optimal 8", description = "Best available picks by TPS potential", variant = "rolling" }: { data: Optimal8Data; label?: string; description?: string; variant?: "rolling" | "hindsight" }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const isHindsight = variant === "hindsight"
 
   return (
-    <div className="rounded-xl border border-primary/25 bg-primary/5 mb-3 overflow-hidden transition-all shadow-sm shadow-primary/10">
+    <div className={`rounded-xl border mb-3 overflow-hidden transition-all shadow-sm ${isHindsight ? "border-amber-400/25 bg-amber-400/5 shadow-amber-400/10" : "border-primary/25 bg-primary/5 shadow-primary/10"}`}>
       <button
-        className="w-full text-left px-4 py-3 hover:bg-primary/10 transition-colors"
+        className={`w-full text-left px-4 py-3 transition-colors ${isHindsight ? "hover:bg-amber-400/10" : "hover:bg-primary/10"}`}
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between flex-wrap gap-2">
           {/* Label + scores */}
           <div className="flex items-center gap-2 min-w-0">
-            <Sparkles className="h-4 w-4 text-primary shrink-0" />
+            <Sparkles className={`h-4 w-4 shrink-0 ${isHindsight ? "text-amber-400" : "text-primary"}`} />
             <div>
-              <p className="text-xs font-bold text-primary">Optimal 8</p>
-              <p className="text-[10px] text-muted-foreground">Best available picks by TPS potential</p>
+              <p className={`text-xs font-bold ${isHindsight ? "text-amber-400" : "text-primary"}`}>{label}</p>
+              <p className="text-[10px] text-muted-foreground">{description}</p>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs shrink-0">
@@ -334,10 +333,32 @@ function StatusLegend() {
         <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATUS_BORDER_COLORS.yellow }} />
         Yet to play
       </span>
-      <span className="flex items-center gap-1">
-        <span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: STATUS_BORDER_COLORS.red }} />
-        Eliminated
-      </span>
+    </div>
+  )
+}
+
+// ── Archetype emoji legend ───────────────────────────────────────────────────
+
+const ARCHETYPE_LEGEND = [
+  { emoji: "\u{1F460}", label: "Cinderella Chaser" },   // 👠
+  { emoji: "\u{1F3AF}", label: "Sweet Spotter" },        // 🎯
+  { emoji: "\u{1F9E0}", label: "The Strategist" },       // 🧠
+  { emoji: "\u{1F525}", label: "Chaos Agent" },           // 🔥
+  { emoji: "\u{1F5FA}\uFE0F", label: "Regional Purist" }, // 🗺️
+  { emoji: "\u{270F}\uFE0F", label: "Chalk Artist" },     // ✏️
+  { emoji: "\u{1F504}", label: "The Contrarian" },         // 🔄
+]
+
+function ArchetypeLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+      <span className="font-semibold uppercase tracking-wider mr-1">Archetypes:</span>
+      {ARCHETYPE_LEGEND.map(a => (
+        <span key={a.label} className="flex items-center gap-1">
+          <span>{a.emoji}</span>
+          <span>{a.label}</span>
+        </span>
+      ))}
     </div>
   )
 }
@@ -362,6 +383,7 @@ interface LeaderboardTableProps {
   currentUserId?: string
   demoMode?: boolean
   optimal8?: Optimal8Data
+  optimal8Hindsight?: Optimal8Data
   userLeagues?: LeagueInfo[]
   userProfile?: UserProfile | null
 }
@@ -459,8 +481,16 @@ function LeaderboardRow({
         <div className="px-4 py-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-bold shrink-0 ${rankStyle(entry.rank)}`}>
-                {rankDisplay}
+              <div className="flex items-center gap-0.5">
+                <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-bold shrink-0 ${rankStyle(entry.rank)}`}>
+                  {rankDisplay}
+                </div>
+                {entry.rankChange != null && entry.rankChange > 0 && (
+                  <span className="text-[9px] text-green-500 font-bold">▲{entry.rankChange}</span>
+                )}
+                {entry.rankChange != null && entry.rankChange < 0 && (
+                  <span className="text-[9px] text-red-500 font-bold">▼{Math.abs(entry.rankChange)}</span>
+                )}
               </div>
               {archetypeEmoji && <span className="text-sm" title={entry.archetypes?.[0]}>{archetypeEmoji}</span>}
               <span className="text-[11px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
@@ -505,8 +535,16 @@ function LeaderboardRow({
         onClick={onToggle}
       >
         <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
-          <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
-            {rankDisplay}
+          <div className="flex flex-col items-center gap-0">
+            <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
+              {rankDisplay}
+            </div>
+            {entry.rankChange != null && entry.rankChange > 0 && (
+              <span className="text-[9px] text-green-500 font-bold leading-none">▲{entry.rankChange}</span>
+            )}
+            {entry.rankChange != null && entry.rankChange < 0 && (
+              <span className="text-[9px] text-red-500 font-bold leading-none">▼{Math.abs(entry.rankChange)}</span>
+            )}
           </div>
           <div className="text-center">
             <span className="text-[10px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
@@ -605,7 +643,7 @@ function LeaderboardRow({
   )
 }
 
-export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, userLeagues, userProfile }: LeaderboardTableProps) {
+export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, optimal8Hindsight, userLeagues, userProfile }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>("rank")
@@ -705,6 +743,9 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       {/* Status color legend */}
       <StatusLegend />
 
+      {/* Archetype emoji legend */}
+      <ArchetypeLegend />
+
       {/* Dimension tabs — always visible per spec */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {(
@@ -779,8 +820,9 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Max↑</span>
       </div>
 
-      {/* Optimal 8 card (above real leaderboard) */}
-      {optimal8 && <Optimal8Card data={optimal8} />}
+      {/* Optimal 8 cards (above real leaderboard) */}
+      {optimal8 && <Optimal8Card data={optimal8} label="Optimal 8 (Rolling)" description="Best 8 teams by current score at this moment" />}
+      {optimal8Hindsight && <Optimal8Card data={optimal8Hindsight} label="Optimal 8 (Hindsight)" description="Best possible 8 picks knowing all tournament results" variant="hindsight" />}
 
       {/* Rows */}
       <div className="space-y-1.5">

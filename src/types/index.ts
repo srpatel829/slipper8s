@@ -102,6 +102,7 @@ export interface LeaderboardEntry {
   expectedScore?: number | null
   maxRank?: number | null
   floorRank?: number | null
+  rankChange?: number | null
   tierName?: string | null
   charity?: string | null
   country?: string | null

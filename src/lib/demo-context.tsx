@@ -331,10 +331,26 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   }, [])
 
   // ── Computed data ──
-  const leaderboardData = useMemo(
+  const leaderboardDataRaw = useMemo(
     () => computeLeaderboardAtGame(tournamentData.teams, demoUsers, gameSequence, gameIndex, demoUserPicks),
     [tournamentData.teams, demoUsers, gameSequence, gameIndex, demoUserPicks]
   )
+
+  // Compute rankChange by comparing with previous game's leaderboard
+  const leaderboardData = useMemo(() => {
+    if (gameIndex < 0) return leaderboardDataRaw
+    const prevLeaderboard = gameIndex > 0
+      ? computeLeaderboardAtGame(tournamentData.teams, demoUsers, gameSequence, gameIndex - 1, demoUserPicks)
+      : null
+    if (!prevLeaderboard) return leaderboardDataRaw
+    const prevRankMap = new Map(prevLeaderboard.map(e => [e.userId, e.rank]))
+    return leaderboardDataRaw.map(entry => ({
+      ...entry,
+      rankChange: prevRankMap.has(entry.userId)
+        ? (prevRankMap.get(entry.userId)! - entry.rank) // positive = moved up
+        : null,
+    }))
+  }, [leaderboardDataRaw, gameIndex, tournamentData.teams, demoUsers, gameSequence, demoUserPicks])
 
   const scoresData = useMemo(
     () => computeGamesAsLiveData(tournamentData.teams, gameSequence, gameIndex),

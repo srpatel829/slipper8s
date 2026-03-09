@@ -13,6 +13,8 @@ import { LeaderboardTable, type Optimal8Data } from "@/components/leaderboard/le
 import { LeaderboardHistoryChart } from "@/components/leaderboard/leaderboard-history-chart"
 import { useDemoContext } from "@/lib/demo-context"
 import { computeOptimal8 } from "@/lib/scoring"
+import { computeTeamsForPicks } from "@/lib/demo-game-sequence"
+import { getTournamentData } from "@/lib/tournament-data"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 
 export default function DemoLeaderboardPage() {
@@ -25,6 +27,7 @@ export default function DemoLeaderboardPage() {
     currentPersona,
     gameSequence,
     teamsData,
+    selectedYear,
   } = useDemoContext()
 
   const [chartExpanded, setChartExpanded] = useState(true)
@@ -72,6 +75,45 @@ export default function DemoLeaderboardPage() {
     return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
   }, [teamsData])
 
+  // Compute Optimal 8 Hindsight: best possible 8 picks knowing ALL results
+  const optimal8Hindsight: Optimal8Data | undefined = useMemo(() => {
+    if (gameSequence.length === 0) return undefined
+    const tournamentData = getTournamentData(selectedYear)
+    // Compute teams state at the END of the tournament
+    const finalTeams = computeTeamsForPicks(tournamentData.teams, gameSequence, gameSequence.length - 1)
+    if (finalTeams.length === 0) return undefined
+
+    const hindsightInfoMap = new Map<string, TeamBracketInfo>()
+    for (const t of finalTeams) {
+      hindsightInfoMap.set(t.id, {
+        seed: t.seed,
+        region: t.region,
+        wins: t.wins,
+        eliminated: t.eliminated,
+      })
+    }
+
+    const result = computeOptimal8(finalTeams, hindsightInfoMap)
+    if (result.teamIds.length === 0) return undefined
+
+    const picks = result.teamIds
+      .map(id => finalTeams.find(t => t.id === id))
+      .filter(Boolean)
+      .map(t => ({
+        teamId: t!.id,
+        name: t!.name,
+        shortName: t!.shortName,
+        seed: t!.seed,
+        region: t!.region,
+        wins: t!.wins,
+        eliminated: t!.eliminated,
+        logoUrl: t!.logoUrl,
+        isPlayIn: t!.isPlayIn,
+      }))
+
+    return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
+  }, [gameSequence, selectedYear])
+
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
       {/* Leaderboard table */}
@@ -80,6 +122,7 @@ export default function DemoLeaderboardPage() {
         currentUserId={currentPersona.userId}
         demoMode
         optimal8={optimal8}
+        optimal8Hindsight={optimal8Hindsight}
       />
 
       {/* History chart */}

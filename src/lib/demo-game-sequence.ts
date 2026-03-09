@@ -283,11 +283,33 @@ export function computeLeaderboardAtGame(
       rank,
       percentile: total > 1 ? Math.round((rank / total) * 1000) / 10 : 0,
       tierName: rank === 1 ? "Champion" : rank === 2 ? "Runner Up" : rank <= 4 ? "Final 4" : rank <= 8 ? "Elite 8" : rank <= 16 ? "Sweet 16" : rank <= 32 ? "Worthy 32" : rank <= 64 ? "Dancing 64" : rank <= 68 ? "Play In 68" : null,
+      maxPossibleScore: entries[i].tps,
       charity: i < 4
         ? (users.find(u => u.id === entries[i].userId)?.charityPreference ?? null)
         : null,
     })
   }
+
+  // Compute maxRank and floorRank for each entry
+  for (let i = 0; i < ranked.length; i++) {
+    const entry = ranked[i]
+    // maxRank: best case — this entry reaches its TPS, all others stay at currentScore
+    let betterInBest = 0
+    for (let j = 0; j < ranked.length; j++) {
+      if (j === i) continue
+      if (ranked[j].currentScore > entry.tps) betterInBest++
+    }
+    ranked[i] = { ...ranked[i], maxRank: betterInBest + 1 }
+
+    // floorRank: worst case — this entry stays at currentScore, all others reach their TPS
+    let betterInWorst = 0
+    for (let j = 0; j < ranked.length; j++) {
+      if (j === i) continue
+      if (ranked[j].tps > entry.currentScore) betterInWorst++
+    }
+    ranked[i] = { ...ranked[i], floorRank: betterInWorst + 1 }
+  }
+
   return ranked
 }
 
