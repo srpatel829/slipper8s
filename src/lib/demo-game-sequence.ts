@@ -12,6 +12,7 @@ import type { DemoTeam, DemoUser } from "@/lib/demo-data"
 import type { LeaderboardEntry, LiveGameData, ResolvedPickSummary } from "@/types"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2025"
+import { classifyArchetypes } from "@/lib/archetypes"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -232,10 +233,13 @@ export function computeLeaderboardAtGame(
     const { totalPPR: ppr } = computeBracketAwarePPR(userPicks, bracketInfoMap)
 
     // Compute expected score from Silver Bulletin probabilities
-    // Pre-tournament (gameIndex < 0): use raw pre-tournament probabilities
-    // During tournament: use conditional probabilities based on current state
     const preTournament = gameIndex < 0
     const expectedScore = calculateEntryExpectedScore(userPicks, teamState, preTournament)
+
+    // Classify archetypes from pick seeds and regions
+    const pickSeeds = picks.map(p => p.seed)
+    const pickRegions = picks.map(p => p.region).filter((r): r is string => !!r)
+    const archetypeResults = classifyArchetypes(pickSeeds, pickRegions)
 
     return {
       entryId: user.id, // use userId as entryId in demo
@@ -250,6 +254,7 @@ export function computeLeaderboardAtGame(
       tps: currentScore + ppr,
       teamsRemaining,
       expectedScore,
+      archetypes: archetypeResults.map(a => a.key),
       picks,
     }
   })
