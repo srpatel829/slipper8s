@@ -14,8 +14,9 @@
  *   This cascades all the way to F4 and Championship.
  */
 
-import { useMemo } from "react"
+import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
+import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -636,10 +637,39 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
         return result
     }, [mode, teams])
 
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [zoom, setZoom] = useState(typeof window !== "undefined" && window.innerWidth < 640 ? 0.65 : 0.85)
+
+    const ZoomControls = () => (
+        <div className="flex items-center gap-1 mb-2 justify-end">
+            <button
+                className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}
+            >
+                <ZoomOut className="h-3 w-3" />
+            </button>
+            <span className="text-[10px] text-muted-foreground w-8 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+                className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
+            >
+                <ZoomIn className="h-3 w-3" />
+            </button>
+            <button
+                className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+                onClick={() => setZoom(0.85)}
+            >
+                <Maximize2 className="h-3 w-3" />
+            </button>
+        </div>
+    )
+
     if (mode === "simulator") {
         return (
-            <div className="w-full overflow-x-auto">
-                <div className="min-w-[900px] flex flex-col gap-3">
+            <div>
+                <ZoomControls />
+                <div className="w-full overflow-x-auto">
+                <div className="min-w-[900px] flex flex-col gap-3" style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
                     <div className="flex gap-1 justify-center items-start">
                         <div className="flex-1 min-w-0">
                             <SimRegionColumn
@@ -692,13 +722,16 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                     </div>
                 </div>
             </div>
+            </div>
         )
     }
 
     // Picks mode
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[600px] grid grid-cols-2 gap-4">
+        <div>
+            <ZoomControls />
+            <div className="w-full overflow-x-auto">
+            <div className="min-w-[600px] grid grid-cols-2 gap-4" style={{ transform: `scale(${zoom})`, transformOrigin: "top left" }}>
                 {REGIONS.map(region => (
                     <PicksRegionColumn
                         key={region}
@@ -710,6 +743,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                         reversed={false}
                     />
                 ))}
+            </div>
             </div>
         </div>
     )
