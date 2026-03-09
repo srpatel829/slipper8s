@@ -5,7 +5,7 @@
  *
  * Follows the approved chart-test design:
  * - 5 default lines: Optimal 8 Rolling, Optimal 8 Final, Leader, Median, You
- * - Solid lines = actual scores, dashed lines = projected trajectory
+ * - Solid lines = actual scores, dashed lines = optimal trajectory (max possible)
  * - 63 minor X-axis ticks, 10 major checkpoint labels
  * - No horizontal gridlines, vertical gridlines at checkpoints only
  * - "NOW" marker at current game
@@ -30,6 +30,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button"
 import type { HistorySnapshot } from "@/types"
 import type { RoundBoundary, DemoGameEvent } from "@/lib/demo-game-sequence"
+import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TOURNAMENT STRUCTURE — 63 games across 10 sessions
@@ -65,6 +66,96 @@ const COLOR_YOU = "#facc15"              // yellow
 const OTHER_PLAYER_PALETTE = [
   "#f472b6", "#2dd4bf", "#fb923c", "#818cf8", "#4ade80", "#e879f9", "#94a3b8",
 ]
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// OPTIMAL TRAJECTORY — bracket-aware collision analysis per player
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * For each user at `gameIndex`, compute the maximum possible score trajectory
+ * through the remaining games using bracket-aware PPR (collision analysis).
+ *
+ * Returns { userId → trajectory[0..totalGames] } where trajectory[i] is the
+ * max possible score at game i. Games before gameIndex are null.
+ */
+function computeOptimalTrajectories(
+  history: HistorySnapshot[],
+  gameIndex: number,
+  gameSequence: DemoGameEvent[],
+  totalGames: number
+): Record<string, (number | null)[]> {
+  if (!history.length || gameIndex < 0) return {}
+
+  const anchorIndex = Math.min(gameIndex, history.length - 1)
+  const anchorSnapshot = history[anchorIndex]
+  if (!anchorSnapshot) return {}
+
+  const result: Record<string, (number | null)[]> = {}
+
+  for (const entry of anchorSnapshot.entries) {
+    const uid = entry.userId
+    const trajectory: (number | null)[] = new Array(totalGames).fill(null)
+
+    // 1. Build team bracket info for collision-aware PPR
+    const teamInfoMap = new Map<string, TeamBracketInfo>()
+    for (const pick of entry.picks) {
+      if (!pick.isPlayIn) {
+        teamInfoMap.set(pick.teamId, {
+          seed: pick.seed,
+          region: pick.region || "",
+          wins: pick.wins,
+          eliminated: pick.eliminated,
+        })
+      }
+    }
+
+    // 2. Compute bracket-aware PPR per team
+    const { perTeam } = computeBracketAwarePPR(
+      entry.picks.map(p => p.teamId),
+      teamInfoMap
+    )
+
+    // 3. Map future wins to rounds (pointsByRound)
+    const pointsByRound = new Map<number, number[]>()
+    for (const pick of entry.picks) {
+      if (pick.eliminated || pick.isPlayIn || pick.seed === 0) continue
+      const ppr = perTeam.get(pick.teamId) || 0
+      const additionalWins = ppr / pick.seed
+      for (let r = pick.wins + 1; r <= pick.wins + additionalWins; r++) {
+        const pts = pointsByRound.get(r) || []
+        pts.push(pick.seed)
+        pointsByRound.set(r, pts)
+      }
+    }
+
+    // 4. Step through future games, assigning points progressively
+    let currentScore = entry.currentScore
+    if (gameIndex < totalGames) {
+      trajectory[gameIndex] = currentScore
+    }
+
+    const assignedByRound = new Map<number, number>()
+
+    for (let i = gameIndex + 1; i < totalGames; i++) {
+      const game = gameSequence[i]
+      if (game) {
+        const round = game.round
+        const pts = pointsByRound.get(round) || []
+        const assignedIdx = assignedByRound.get(round) || 0
+
+        if (assignedIdx < pts.length) {
+          currentScore += pts[assignedIdx]
+          assignedByRound.set(round, assignedIdx + 1)
+        }
+      }
+      trajectory[i] = currentScore
+    }
+
+    result[uid] = trajectory
+  }
+
+  return result
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -162,7 +253,7 @@ function ChartTooltip({ active, payload, label, visibleLines, currentGame, histo
       <div className="font-semibold mb-1.5 text-foreground flex items-center gap-2">
         <span>Game {gameIdx + 1}</span>
         {roundLabel && <span className="text-muted-foreground font-normal">{roundLabel}</span>}
-        {!isPast && <span className="text-[10px] text-muted-foreground italic font-normal">(projected)</span>}
+        {!isPast && <span className="text-[10px] text-muted-foreground italic font-normal">(optimal trajectory)</span>}
       </div>
       {visibleLines.map(line => {
         const actualEntry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.dataKey && p.value != null)
@@ -271,9 +362,16 @@ export function LeaderboardHistoryChart({
   totalGames,
   highlightUserId,
   userNames,
+  gameSequence = [],
   optimal8RollingScores,
   optimal8FinalScores,
 }: LeaderboardHistoryChartProps) {
+
+  // ── Compute optimal trajectories (bracket-aware collision analysis) ──
+  const trajectories = useMemo(() => {
+    if (!gameSequence.length || gameIndex < 0) return {}
+    return computeOptimalTrajectories(history, gameIndex, gameSequence, totalGames)
+  }, [history, gameIndex, gameSequence, totalGames])
 
   // ── Build line definitions and chart data ──
   const { allLines, chartData } = useMemo(() => {
@@ -377,51 +475,64 @@ export function LeaderboardHistoryChart({
       colorIdx++
     }
 
-    // Build merged chart data (actual + projected split at gameIndex)
-    const data: Record<string, number | null>[] = history.map((snap, g) => {
+    // Helper: map userId to its data key for trajectories
+    const userIdToDataKey = new Map<string, string>()
+    if (leaderUserId && leaderUserId !== highlightUserId) userIdToDataKey.set(leaderUserId, "leader")
+    if (medianUserId && medianUserId !== highlightUserId && medianUserId !== leaderUserId) userIdToDataKey.set(medianUserId, "median")
+    if (highlightUserId) userIdToDataKey.set(highlightUserId, "you")
+    for (const uid of otherPlayers) userIdToDataKey.set(uid, uid)
+
+    // Build merged chart data:
+    //   Actual scores (solid): games 0 to gameIndex
+    //   Optimal trajectory (dashed): games gameIndex onward — uses bracket-aware PPR
+    const data: Record<string, number | null>[] = history.map((_snap, g) => {
       const point: Record<string, number | null> = { game: g }
       const isActual = g <= gameIndex
-      const isProjected = g >= gameIndex
+      const isTrajectory = g >= gameIndex
 
-      // Optimal 8 Rolling
+      // Optimal 8 Rolling — benchmark uses actual future values
       point["optimal_rolling"] = isActual ? (optimal8RollingScores[g] ?? 0) : null
-      point["optimal_rolling_proj"] = isProjected ? (optimal8RollingScores[g] ?? 0) : null
+      point["optimal_rolling_proj"] = isTrajectory ? (optimal8RollingScores[g] ?? 0) : null
 
-      // Optimal 8 Final
+      // Optimal 8 Final — benchmark uses actual future values
       point["optimal_final"] = isActual ? (optimal8FinalScores[g] ?? 0) : null
-      point["optimal_final_proj"] = isProjected ? (optimal8FinalScores[g] ?? 0) : null
+      point["optimal_final_proj"] = isTrajectory ? (optimal8FinalScores[g] ?? 0) : null
 
-      // Leader
-      if (leaderScores.length) {
+      // Leader — actual scores for solid, optimal trajectory for dashed
+      if (leaderScores.length && leaderUserId) {
         point["leader"] = isActual ? leaderScores[g] : null
-        point["leader_proj"] = isProjected ? leaderScores[g] : null
+        const traj = trajectories[leaderUserId]
+        point["leader_proj"] = (isTrajectory && traj) ? (traj[g] ?? null) : null
       }
 
       // Median
-      if (medianScores.length && medianUserId !== leaderUserId && medianUserId !== highlightUserId) {
+      if (medianScores.length && medianUserId && medianUserId !== leaderUserId && medianUserId !== highlightUserId) {
         point["median"] = isActual ? medianScores[g] : null
-        point["median_proj"] = isProjected ? medianScores[g] : null
+        const traj = trajectories[medianUserId]
+        point["median_proj"] = (isTrajectory && traj) ? (traj[g] ?? null) : null
       }
 
       // You
-      if (youScores.length) {
+      if (youScores.length && highlightUserId) {
         point["you"] = isActual ? youScores[g] : null
-        point["you_proj"] = isProjected ? youScores[g] : null
+        const traj = trajectories[highlightUserId]
+        point["you_proj"] = (isTrajectory && traj) ? (traj[g] ?? null) : null
       }
 
       // Other players
       for (const uid of otherPlayers) {
-        const entry = snap.entries.find(e => e.userId === uid)
+        const entry = _snap.entries.find(e => e.userId === uid)
         const score = entry?.currentScore ?? 0
         point[uid] = isActual ? score : null
-        point[`${uid}_proj`] = isProjected ? score : null
+        const traj = trajectories[uid]
+        point[`${uid}_proj`] = (isTrajectory && traj) ? (traj[g] ?? null) : null
       }
 
       return point
     })
 
     return { allLines: lines, chartData: data }
-  }, [history, gameIndex, highlightUserId, userNames, optimal8RollingScores, optimal8FinalScores])
+  }, [history, gameIndex, highlightUserId, userNames, optimal8RollingScores, optimal8FinalScores, trajectories])
 
   // ── Visible line state ──
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() =>
@@ -518,7 +629,7 @@ export function LeaderboardHistoryChart({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-4 h-0 inline-block border-t border-dashed border-foreground/40" />
-              <span>Dashed = projected</span>
+              <span>Dashed = optimal trajectory</span>
             </div>
           </div>
         )}
