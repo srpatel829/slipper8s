@@ -50,9 +50,21 @@ function teamStats(team: TeamRow) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+type DimensionTab = "global" | "country" | "state" | "gender" | "fanbase" | "conference"
+
+const DIMENSION_TABS: Array<{ key: DimensionTab; label: string }> = [
+  { key: "global", label: "Global" },
+  { key: "country", label: "Country" },
+  { key: "state", label: "State" },
+  { key: "gender", label: "Gender" },
+  { key: "fanbase", label: "Fanbase" },
+  { key: "conference", label: "Conference" },
+]
+
 export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("pickerPct")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
+  const [dimension, setDimension] = useState<DimensionTab>("global")
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -104,6 +116,29 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
   const eliminatedCount = teams.filter(t => t.eliminated).length
 
   return (
+    <div className="space-y-3">
+      {/* Dimension tabs */}
+      <div className="flex items-center gap-1 overflow-x-auto pb-1">
+        {DIMENSION_TABS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => key === "global" && setDimension(key)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap",
+              dimension === key
+                ? "bg-primary/15 text-primary"
+                : key === "global"
+                  ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+            )}
+            disabled={key !== "global"}
+            title={key !== "global" ? `${label} filter available in 2026` : undefined}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
     <div className="rounded-xl border border-border overflow-hidden">
       {/* Legend */}
       <div className="flex items-center gap-4 px-4 py-2 border-b border-border/50 bg-muted/20 flex-wrap">
@@ -340,6 +375,7 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
           )
         })}
       </div>
+    </div>
     </div>
   )
 }

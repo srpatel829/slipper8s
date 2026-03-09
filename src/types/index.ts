@@ -107,6 +107,7 @@ export interface LeaderboardEntry {
   country?: string | null
   state?: string | null
   gender?: string | null
+  favoriteTeam?: string | null
   conference?: string | null
   leagueId?: string | null
   archetypes?: string[]

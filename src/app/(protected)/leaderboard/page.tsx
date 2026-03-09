@@ -89,12 +89,15 @@ async function getUserProfile(userId: string) {
       country: true,
       state: true,
       gender: true,
-      favoriteTeam: { select: { conference: true } },
+      favoriteTeam: { select: { name: true, conference: true } },
     },
   })
-  // Flatten conference from favoriteTeam for the dimension tabs
+  // Flatten conference and favoriteTeam name for the dimension tabs
   return user ? {
-    ...user,
+    country: user.country,
+    state: user.state,
+    gender: user.gender,
+    favoriteTeam: user.favoriteTeam?.name ?? null,
     conference: user.favoriteTeam?.conference ?? null,
   } : null
 }

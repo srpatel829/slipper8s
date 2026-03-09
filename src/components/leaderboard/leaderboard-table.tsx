@@ -318,7 +318,7 @@ function StatusLegend() {
   )
 }
 
-export type DimensionTab = "global" | "state" | "country" | "gender" | "conference" | "league"
+export type DimensionTab = "global" | "state" | "country" | "gender" | "fanbase" | "conference" | "league"
 
 interface LeagueInfo {
   id: string
@@ -329,6 +329,7 @@ interface UserProfile {
   country?: string | null
   state?: string | null
   gender?: string | null
+  favoriteTeam?: string | null
   conference?: string | null
 }
 
@@ -359,6 +360,9 @@ function filterByDimension(
   }
   if (dim === "gender" && userProfile?.gender) {
     return data.filter((e) => e.gender === userProfile.gender)
+  }
+  if (dim === "fanbase" && userProfile?.favoriteTeam) {
+    return data.filter((e) => e.favoriteTeam === userProfile.favoriteTeam)
   }
   if (dim === "conference" && userProfile?.conference) {
     return data.filter((e) => e.conference === userProfile.conference)
@@ -685,6 +689,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
             { key: "country" as DimensionTab, label: userProfile?.country ?? "Country", available: !!userProfile?.country },
             { key: "state" as DimensionTab, label: userProfile?.state ?? "State", available: !!userProfile?.state },
             { key: "gender" as DimensionTab, label: userProfile?.gender ? (GENDER_LABELS[userProfile.gender] ?? "Gender") : "Gender", available: !!userProfile?.gender && userProfile.gender !== "NO_RESPONSE" },
+            { key: "fanbase" as DimensionTab, label: userProfile?.favoriteTeam ?? "Fanbase", available: !!userProfile?.favoriteTeam },
             { key: "conference" as DimensionTab, label: userProfile?.conference ?? "Conference", available: !!userProfile?.conference },
           ]
         ).map(({ key, label, available }) => (
