@@ -259,24 +259,36 @@ export function computeLeaderboardAtGame(
     }
   })
 
-  // Sort: currentScore desc → TPS desc → name asc
+  // Sort: score desc → max score (tps) desc → expected desc → name asc
   entries.sort(
-    (a, b) => b.currentScore - a.currentScore || b.tps - a.tps || a.name.localeCompare(b.name)
+    (a, b) =>
+      b.currentScore - a.currentScore ||
+      b.tps - a.tps ||
+      (b.expectedScore ?? 0) - (a.expectedScore ?? 0) ||
+      a.name.localeCompare(b.name)
   )
 
+  // Tie-aware ranking: entries with same score get same rank (T4 etc.)
   const total = entries.length
-  return entries.map((e, i) => {
-    const rank = i + 1
-    return {
-      ...e,
+  const ranked: LeaderboardEntry[] = []
+  for (let i = 0; i < entries.length; i++) {
+    // Find the first entry in this tie group
+    let tieStart = i
+    while (tieStart > 0 && entries[tieStart - 1].currentScore === entries[i].currentScore) {
+      tieStart--
+    }
+    const rank = tieStart + 1
+    ranked.push({
+      ...entries[i],
       rank,
       percentile: total > 1 ? Math.round((rank / total) * 1000) / 10 : 0,
       tierName: rank === 1 ? "Champion" : rank === 2 ? "Runner Up" : rank <= 4 ? "Final 4" : rank <= 8 ? "Elite 8" : rank <= 16 ? "Sweet 16" : rank <= 32 ? "Worthy 32" : rank <= 64 ? "Dancing 64" : rank <= 68 ? "Play In 68" : null,
       charity: i < 4
-        ? (users.find(u => u.id === e.userId)?.charityPreference ?? null)
+        ? (users.find(u => u.id === entries[i].userId)?.charityPreference ?? null)
         : null,
-    }
-  })
+    })
+  }
+  return ranked
 }
 
 // ─── LiveGameData Conversion ─────────────────────────────────────────────────

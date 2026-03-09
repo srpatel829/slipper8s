@@ -7,6 +7,7 @@ import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
+import { getPrimaryArchetypeEmoji } from "@/lib/archetypes"
 
 // ── Team pill status ─────────────────────────────────────────────────────────
 
@@ -370,14 +371,19 @@ function filterByDimension(
 
 function rerankFiltered(entries: LeaderboardEntry[]): LeaderboardEntry[] {
   const sorted = [...entries].sort(
-    (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
+    (a, b) =>
+      b.currentScore - a.currentScore ||
+      b.tps - a.tps ||
+      (b.expectedScore ?? 0) - (a.expectedScore ?? 0) ||
+      a.name.localeCompare(b.name)
   )
   const total = sorted.length
-  return sorted.map((e, i) => ({
-    ...e,
-    rank: i + 1,
-    percentile: total <= 1 ? 0 : Math.round(((i + 1) / total) * 1000) / 10,
-  }))
+  return sorted.map((e, i) => {
+    let tieStart = i
+    while (tieStart > 0 && sorted[tieStart - 1].currentScore === e.currentScore) tieStart--
+    const rank = tieStart + 1
+    return { ...e, rank, percentile: total <= 1 ? 0 : Math.round((rank / total) * 1000) / 10 }
+  })
 }
 
 const GENDER_LABELS: Record<string, string> = {
@@ -387,19 +393,29 @@ const GENDER_LABELS: Record<string, string> = {
   NO_RESPONSE: "All",
 }
 
+/** Format rank with tie prefix: T4 if tied, #4 otherwise */
+function formatRank(entry: LeaderboardEntry, allEntries: LeaderboardEntry[]): string {
+  const isTied = allEntries.filter(e => e.rank === entry.rank).length > 1
+  return isTied ? `T${entry.rank}` : `#${entry.rank}`
+}
+
 function LeaderboardRow({
   entry,
   isMe,
   isExpanded,
   rankStyle,
   onToggle,
+  allEntries,
 }: {
   entry: LeaderboardEntry
   isMe: boolean
   isExpanded: boolean
   rankStyle: (rank: number) => string
   onToggle: () => void
+  allEntries: LeaderboardEntry[]
 }) {
+  const rankDisplay = formatRank(entry, allEntries)
+  const archetypeEmoji = getPrimaryArchetypeEmoji(entry.archetypes)
   return (
     <div
       className={`rounded-xl border overflow-hidden transition-all duration-200 ${isMe
@@ -416,8 +432,9 @@ function LeaderboardRow({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[11px] font-bold shrink-0 ${rankStyle(entry.rank)}`}>
-                #{entry.rank}
+                {rankDisplay}
               </div>
+              {archetypeEmoji && <span className="text-sm" title={entry.archetypes?.[0]}>{archetypeEmoji}</span>}
               <span className="text-[11px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4">You</Badge>}
             </div>
@@ -461,13 +478,14 @@ function LeaderboardRow({
       >
         <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
           <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
-            #{entry.rank}
+            {rankDisplay}
           </div>
           <div className="text-center">
             <span className="text-[10px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
+              {archetypeEmoji && <span className="text-sm" title={entry.archetypes?.[0]}>{archetypeEmoji}</span>}
               <span className="font-semibold text-sm truncate">{entry.name}</span>
               {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
@@ -805,6 +823,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                         onToggle={() =>
                           setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                         }
+                        allEntries={sorted}
                       />
                     ))}
                   </div>
@@ -837,6 +856,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                   onToggle={() =>
                     setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                   }
+                  allEntries={sorted}
                 />
               ))}
               {showAll && sorted.length > 15 && (
