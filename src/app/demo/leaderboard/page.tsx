@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LeaderboardSample, type Optimal8Data } from "@/components/leaderboard/leaderboard-sample"
 import { LeaderboardHistoryChart } from "@/components/leaderboard/leaderboard-history-chart"
+import { LeaderboardDimensionTabs } from "@/components/leaderboard/leaderboard-dimension-tabs"
 import { useDemoContext } from "@/lib/demo-context"
 import { computeOptimal8 } from "@/lib/scoring"
 import { computeBracketAwarePPR } from "@/lib/bracket-ppr"
@@ -164,12 +165,19 @@ export default function DemoLeaderboardPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6 max-w-5xl">
-      {/* Leaderboard table — approved sample format */}
-      <LeaderboardSample
+      {/* Leaderboard with dimension tabs */}
+      <LeaderboardDimensionTabs
         entries={leaderboardData}
         currentUserId={currentPersona.userId}
-        optimal8={optimal8}
-        optimal8Final={optimal8Final}
+        teams={teamsData}
+        renderLeaderboard={(filteredEntries) => (
+          <LeaderboardSample
+            entries={filteredEntries}
+            currentUserId={currentPersona.userId}
+            optimal8={optimal8}
+            optimal8Final={optimal8Final}
+          />
+        )}
       />
 
       {/* History chart */}

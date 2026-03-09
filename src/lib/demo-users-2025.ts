@@ -15,7 +15,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "drake",
       "ucla"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-2",
@@ -32,7 +36,11 @@ export const REAL_2025_USERS = [
       "duke",
       "oregon",
       "florida"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-3",
@@ -49,7 +57,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "vcu",
       "utah-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Washington",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-4",
@@ -66,7 +78,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "high-point",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-5",
@@ -83,7 +99,11 @@ export const REAL_2025_USERS = [
       "montana",
       "auburn",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-6",
@@ -100,7 +120,11 @@ export const REAL_2025_USERS = [
       "st-johns",
       "florida",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-7",
@@ -117,7 +141,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "xavier",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-8",
@@ -134,7 +162,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "arkansas",
       "tennessee"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-9",
@@ -151,7 +183,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "ole-miss",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-10",
@@ -168,7 +204,11 @@ export const REAL_2025_USERS = [
       "drake",
       "uconn",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-11",
@@ -185,7 +225,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "arizona",
       "tennessee"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-12",
@@ -202,7 +246,11 @@ export const REAL_2025_USERS = [
       "arkansas",
       "byu",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": "North Carolina",
+    "gender": "Male",
+    "favoriteTeam": "ucf"
   },
   {
     "id": "user-13",
@@ -219,7 +267,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "uc-san-diego",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-14",
@@ -236,7 +288,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "memphis",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-15",
@@ -253,7 +309,11 @@ export const REAL_2025_USERS = [
       "maryland",
       "ole-miss",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-16",
@@ -270,7 +330,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "arizona",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-17",
@@ -287,7 +351,11 @@ export const REAL_2025_USERS = [
       "byu",
       "drake",
       "mississippi-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-18",
@@ -304,7 +372,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "colorado-st",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-19",
@@ -321,7 +393,11 @@ export const REAL_2025_USERS = [
       "missouri",
       "ole-miss",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-20",
@@ -338,7 +414,11 @@ export const REAL_2025_USERS = [
       "drake",
       "mcneese-st",
       "ucla"
-    ]
+    ],
+    "country": "USA",
+    "state": "California",
+    "gender": "Male",
+    "favoriteTeam": "stanford"
   },
   {
     "id": "user-21",
@@ -355,7 +435,11 @@ export const REAL_2025_USERS = [
       "byu",
       "gonzaga",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-22",
@@ -372,7 +456,11 @@ export const REAL_2025_USERS = [
       "ole-miss",
       "illinois",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-23",
@@ -389,7 +477,11 @@ export const REAL_2025_USERS = [
       "drake",
       "florida",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-24",
@@ -406,7 +498,11 @@ export const REAL_2025_USERS = [
       "texas-am",
       "byu",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-25",
@@ -423,7 +519,11 @@ export const REAL_2025_USERS = [
       "grand-canyon",
       "baylor",
       "louisville"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-26",
@@ -440,7 +540,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "baylor",
       "vcu"
-    ]
+    ],
+    "country": "UK",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "stanford"
   },
   {
     "id": "user-27",
@@ -457,7 +561,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "xavier",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-28",
@@ -474,7 +582,11 @@ export const REAL_2025_USERS = [
       "yale",
       "montana",
       "louisville"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-29",
@@ -491,7 +603,11 @@ export const REAL_2025_USERS = [
       "yale",
       "ucla",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-30",
@@ -508,7 +624,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "vcu",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-31",
@@ -525,7 +645,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "colorado-st",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-32",
@@ -542,7 +666,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "gonzaga",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "kentucky"
   },
   {
     "id": "user-33",
@@ -559,7 +687,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "high-point",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-34",
@@ -576,7 +708,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "colorado-st",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-35",
@@ -593,7 +729,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "liberty",
       "byu"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-36",
@@ -610,7 +750,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "louisville",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-37",
@@ -627,7 +771,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "missouri",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-38",
@@ -644,7 +792,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "xavier",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-39",
@@ -661,7 +813,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "clemson",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-40",
@@ -678,7 +834,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "saint-marys",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-41",
@@ -695,7 +855,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "clemson",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-42",
@@ -712,7 +876,11 @@ export const REAL_2025_USERS = [
       "houston",
       "missouri",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Female",
+    "favoriteTeam": "north-carolina"
   },
   {
     "id": "user-43",
@@ -729,7 +897,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "montana",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-44",
@@ -746,7 +918,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "vcu",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-45",
@@ -763,7 +939,11 @@ export const REAL_2025_USERS = [
       "saint-marys",
       "kansas",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-46",
@@ -780,7 +960,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "high-point",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-47",
@@ -797,7 +981,11 @@ export const REAL_2025_USERS = [
       "grand-canyon",
       "texas-am",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-48",
@@ -814,7 +1002,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "colorado-st",
       "grand-canyon"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-49",
@@ -831,7 +1023,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "yale",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-50",
@@ -848,7 +1044,11 @@ export const REAL_2025_USERS = [
       "drake",
       "kansas",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": "villanova"
   },
   {
     "id": "user-51",
@@ -865,7 +1065,11 @@ export const REAL_2025_USERS = [
       "oregon",
       "arkansas",
       "uc-san-diego"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "ucf"
   },
   {
     "id": "user-52",
@@ -882,7 +1086,11 @@ export const REAL_2025_USERS = [
       "duke",
       "auburn",
       "grand-canyon"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-53",
@@ -899,7 +1107,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "colorado-st",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-54",
@@ -916,7 +1128,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "ucla",
       "north-carolina"
-    ]
+    ],
+    "country": "Germany",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-55",
@@ -933,7 +1149,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "baylor",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-56",
@@ -950,7 +1170,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "gonzaga",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-57",
@@ -967,7 +1191,11 @@ export const REAL_2025_USERS = [
       "alabama",
       "yale",
       "wisconsin"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-58",
@@ -984,7 +1212,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "ucla",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-59",
@@ -1001,7 +1233,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "wisconsin",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-60",
@@ -1018,7 +1254,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "high-point",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-61",
@@ -1035,7 +1275,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "north-carolina",
       "byu"
-    ]
+    ],
+    "country": "USA",
+    "state": "North Carolina",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-62",
@@ -1052,7 +1296,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "vcu",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-63",
@@ -1069,7 +1317,11 @@ export const REAL_2025_USERS = [
       "byu",
       "iowa-st",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-64",
@@ -1086,7 +1338,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "uc-san-diego",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-65",
@@ -1103,7 +1359,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "purdue",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-66",
@@ -1120,7 +1380,11 @@ export const REAL_2025_USERS = [
       "yale",
       "louisville",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-67",
@@ -1137,7 +1401,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "uc-san-diego",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-68",
@@ -1154,7 +1422,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "ole-miss",
       "florida"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-69",
@@ -1171,7 +1443,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "clemson",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-70",
@@ -1188,7 +1464,11 @@ export const REAL_2025_USERS = [
       "texas-am",
       "houston",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-71",
@@ -1205,7 +1485,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "new-mexico",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-72",
@@ -1222,7 +1506,11 @@ export const REAL_2025_USERS = [
       "saint-marys",
       "illinois",
       "ole-miss"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-73",
@@ -1239,7 +1527,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "uc-san-diego",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-74",
@@ -1256,7 +1548,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "ucla",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-75",
@@ -1273,7 +1569,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "gonzaga",
       "xavier"
-    ]
+    ],
+    "country": "UK",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-76",
@@ -1290,7 +1590,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "byu",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "uconn"
   },
   {
     "id": "user-77",
@@ -1307,7 +1611,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "grand-canyon",
       "texas-tech"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-78",
@@ -1324,7 +1632,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "saint-marys",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-79",
@@ -1341,7 +1653,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "oregon",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "California",
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-80",
@@ -1358,7 +1674,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "arizona",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-81",
@@ -1375,7 +1695,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "vcu",
       "montana"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-82",
@@ -1392,7 +1716,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "uc-san-diego",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-83",
@@ -1409,7 +1737,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "uconn",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-84",
@@ -1426,7 +1758,11 @@ export const REAL_2025_USERS = [
       "yale",
       "xavier",
       "liberty"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-85",
@@ -1443,7 +1779,11 @@ export const REAL_2025_USERS = [
       "akron",
       "uc-san-diego",
       "texas-tech"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-86",
@@ -1460,7 +1800,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "illinois",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-87",
@@ -1477,7 +1821,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "michigan",
       "auburn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-88",
@@ -1494,7 +1842,11 @@ export const REAL_2025_USERS = [
       "ucla",
       "bryant",
       "montana"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Male",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-89",
@@ -1511,7 +1863,11 @@ export const REAL_2025_USERS = [
       "mississippi-st",
       "kentucky",
       "georgia"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-90",
@@ -1528,7 +1884,11 @@ export const REAL_2025_USERS = [
       "lipscomb",
       "bryant",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Texas",
+    "gender": "Male",
+    "favoriteTeam": "florida-st"
   },
   {
     "id": "user-91",
@@ -1545,7 +1905,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "byu",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-92",
@@ -1562,7 +1926,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "north-carolina",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-93",
@@ -1579,7 +1947,11 @@ export const REAL_2025_USERS = [
       "bryant",
       "gonzaga",
       "georgia"
-    ]
+    ],
+    "country": "USA",
+    "state": "Massachusetts",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-94",
@@ -1596,7 +1968,11 @@ export const REAL_2025_USERS = [
       "ole-miss",
       "purdue",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-95",
@@ -1613,7 +1989,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "vcu",
       "liberty"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-96",
@@ -1630,7 +2010,11 @@ export const REAL_2025_USERS = [
       "oklahoma",
       "creighton",
       "georgia"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-97",
@@ -1647,7 +2031,11 @@ export const REAL_2025_USERS = [
       "drake",
       "clemson",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-98",
@@ -1664,7 +2052,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "troy",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-99",
@@ -1681,7 +2073,11 @@ export const REAL_2025_USERS = [
       "arkansas",
       "purdue",
       "oklahoma"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-100",
@@ -1698,7 +2094,11 @@ export const REAL_2025_USERS = [
       "wisconsin",
       "clemson",
       "ucla"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-101",
@@ -1715,7 +2115,11 @@ export const REAL_2025_USERS = [
       "omaha",
       "st-johns",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-102",
@@ -1732,7 +2136,11 @@ export const REAL_2025_USERS = [
       "byu",
       "texas-tech",
       "clemson"
-    ]
+    ],
+    "country": null,
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-103",
@@ -1749,7 +2157,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "north-carolina",
       "arizona"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-104",
@@ -1766,7 +2178,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "maryland",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-105",
@@ -1783,7 +2199,11 @@ export const REAL_2025_USERS = [
       "oregon",
       "illinois",
       "purdue"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-106",
@@ -1800,7 +2220,11 @@ export const REAL_2025_USERS = [
       "arkansas",
       "ole-miss",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": "California",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-107",
@@ -1817,7 +2241,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "akron",
       "alabama"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-108",
@@ -1834,7 +2262,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "xavier",
       "vanderbilt"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-109",
@@ -1851,7 +2283,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "vanderbilt",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-110",
@@ -1868,7 +2304,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "colorado-st",
       "montana"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-111",
@@ -1885,7 +2325,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "yale",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-112",
@@ -1902,7 +2346,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "kansas",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-113",
@@ -1919,7 +2367,11 @@ export const REAL_2025_USERS = [
       "marquette",
       "kansas",
       "clemson"
-    ]
+    ],
+    "country": null,
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-114",
@@ -1936,7 +2388,11 @@ export const REAL_2025_USERS = [
       "drake",
       "uc-san-diego",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-115",
@@ -1953,7 +2409,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "akron",
       "saint-marys"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Male",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-116",
@@ -1970,7 +2430,11 @@ export const REAL_2025_USERS = [
       "yale",
       "xavier",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-117",
@@ -1987,7 +2451,11 @@ export const REAL_2025_USERS = [
       "lipscomb",
       "vanderbilt",
       "liberty"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Female",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-118",
@@ -2004,7 +2472,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "michigan",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "michigan"
   },
   {
     "id": "user-119",
@@ -2021,7 +2493,11 @@ export const REAL_2025_USERS = [
       "purdue",
       "oregon",
       "michigan-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Female",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-120",
@@ -2038,7 +2514,11 @@ export const REAL_2025_USERS = [
       "saint-marys",
       "ucla",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "michigan"
   },
   {
     "id": "user-121",
@@ -2055,7 +2535,11 @@ export const REAL_2025_USERS = [
       "vanderbilt",
       "gonzaga",
       "ucla"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-122",
@@ -2072,7 +2556,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "colorado-st",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Illinois",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-123",
@@ -2089,7 +2577,11 @@ export const REAL_2025_USERS = [
       "saint-marys",
       "north-carolina",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-124",
@@ -2106,7 +2598,11 @@ export const REAL_2025_USERS = [
       "grand-canyon",
       "texas-am",
       "georgia"
-    ]
+    ],
+    "country": "UK",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-125",
@@ -2123,7 +2619,11 @@ export const REAL_2025_USERS = [
       "byu",
       "purdue",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-126",
@@ -2140,7 +2640,11 @@ export const REAL_2025_USERS = [
       "kentucky",
       "vcu",
       "iowa-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-127",
@@ -2157,7 +2661,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "ucla",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-128",
@@ -2174,7 +2682,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "drake",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-129",
@@ -2191,7 +2703,11 @@ export const REAL_2025_USERS = [
       "georgia",
       "arkansas",
       "florida"
-    ]
+    ],
+    "country": "USA",
+    "state": "Virginia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-130",
@@ -2208,7 +2724,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "gonzaga",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-131",
@@ -2225,7 +2745,11 @@ export const REAL_2025_USERS = [
       "wisconsin",
       "illinois",
       "oregon"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-132",
@@ -2242,7 +2766,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "north-carolina",
       "georgia"
-    ]
+    ],
+    "country": "USA",
+    "state": "South Carolina",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-133",
@@ -2259,7 +2787,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "akron",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-134",
@@ -2276,7 +2808,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "baylor",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-135",
@@ -2293,7 +2829,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "uconn",
       "texas-tech"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-136",
@@ -2310,7 +2850,11 @@ export const REAL_2025_USERS = [
       "drake",
       "saint-marys",
       "louisville"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-137",
@@ -2327,7 +2871,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "ucla",
       "arizona"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-138",
@@ -2344,7 +2892,11 @@ export const REAL_2025_USERS = [
       "maryland",
       "arizona",
       "iowa-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-139",
@@ -2361,7 +2913,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "ole-miss",
       "florida"
-    ]
+    ],
+    "country": "USA",
+    "state": "South Carolina",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-140",
@@ -2378,7 +2934,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "uc-san-diego",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-141",
@@ -2395,7 +2955,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "creighton",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-142",
@@ -2412,7 +2976,11 @@ export const REAL_2025_USERS = [
       "yale",
       "clemson",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-143",
@@ -2429,7 +2997,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "baylor",
       "akron"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-144",
@@ -2446,7 +3018,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "baylor",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-145",
@@ -2463,7 +3039,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "yale",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-146",
@@ -2480,7 +3060,11 @@ export const REAL_2025_USERS = [
       "purdue",
       "saint-marys",
       "arizona"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-147",
@@ -2497,7 +3081,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "colorado-st",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-148",
@@ -2514,7 +3102,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "clemson",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-149",
@@ -2531,7 +3123,11 @@ export const REAL_2025_USERS = [
       "byu",
       "ucla",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "north-carolina"
   },
   {
     "id": "user-150",
@@ -2548,7 +3144,11 @@ export const REAL_2025_USERS = [
       "texas-am",
       "clemson",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-151",
@@ -2565,7 +3165,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "arizona",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-152",
@@ -2582,7 +3186,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "vcu",
       "baylor"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-153",
@@ -2599,7 +3207,11 @@ export const REAL_2025_USERS = [
       "troy",
       "bryant",
       "montana"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-154",
@@ -2616,7 +3228,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "tennessee",
       "gonzaga"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-155",
@@ -2633,7 +3249,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "troy",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-156",
@@ -2650,7 +3270,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "saint-marys",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-157",
@@ -2667,7 +3291,11 @@ export const REAL_2025_USERS = [
       "yale",
       "drake",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-158",
@@ -2684,7 +3312,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "omaha",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-159",
@@ -2701,7 +3333,11 @@ export const REAL_2025_USERS = [
       "byu",
       "michigan",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-160",
@@ -2718,7 +3354,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "liberty",
       "akron"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "georgia-tech"
   },
   {
     "id": "user-161",
@@ -2735,7 +3375,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "xavier",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-162",
@@ -2752,7 +3396,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "kansas",
       "vanderbilt"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-163",
@@ -2769,7 +3417,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "kansas",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-164",
@@ -2786,7 +3438,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "michigan",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-165",
@@ -2803,7 +3459,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "north-carolina",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-166",
@@ -2820,7 +3480,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "memphis",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-167",
@@ -2837,7 +3501,11 @@ export const REAL_2025_USERS = [
       "uconn",
       "maryland",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-168",
@@ -2854,7 +3522,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "akron",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-169",
@@ -2871,7 +3543,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "yale",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-170",
@@ -2888,7 +3564,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "ucla",
       "ole-miss"
-    ]
+    ],
+    "country": "USA",
+    "state": "California",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-171",
@@ -2905,7 +3585,11 @@ export const REAL_2025_USERS = [
       "texas-am",
       "north-carolina",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-172",
@@ -2922,7 +3606,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "arizona",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-173",
@@ -2939,7 +3627,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "akron",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": "Virginia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-174",
@@ -2956,7 +3648,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "kansas",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-175",
@@ -2973,7 +3669,11 @@ export const REAL_2025_USERS = [
       "missouri",
       "arizona",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-176",
@@ -2990,7 +3690,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "arkansas",
       "akron"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-177",
@@ -3007,7 +3711,11 @@ export const REAL_2025_USERS = [
       "new-mexico",
       "drake",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": "District of Columbia",
+    "gender": "Male",
+    "favoriteTeam": "illinois"
   },
   {
     "id": "user-178",
@@ -3024,7 +3732,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "michigan",
       "memphis"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-179",
@@ -3041,7 +3753,11 @@ export const REAL_2025_USERS = [
       "byu",
       "maryland",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-180",
@@ -3058,7 +3774,11 @@ export const REAL_2025_USERS = [
       "drake",
       "colorado-st",
       "creighton"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-181",
@@ -3075,7 +3795,11 @@ export const REAL_2025_USERS = [
       "byu",
       "purdue",
       "texas-am"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-182",
@@ -3092,7 +3816,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "michigan",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-183",
@@ -3109,7 +3837,11 @@ export const REAL_2025_USERS = [
       "wisconsin",
       "clemson",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-184",
@@ -3126,7 +3858,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "yale",
       "mcneese-st"
-    ]
+    ],
+    "country": "AUS",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-185",
@@ -3143,7 +3879,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "gonzaga",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-186",
@@ -3160,7 +3900,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "gonzaga",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-187",
@@ -3177,7 +3921,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "tennessee",
       "wisconsin"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-188",
@@ -3194,7 +3942,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "st-johns",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-189",
@@ -3211,7 +3963,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "ole-miss",
       "missouri"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-190",
@@ -3228,7 +3984,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "saint-marys",
       "auburn"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-191",
@@ -3245,7 +4005,11 @@ export const REAL_2025_USERS = [
       "troy",
       "gonzaga",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-192",
@@ -3262,7 +4026,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "michigan-st",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-193",
@@ -3279,7 +4047,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "lipscomb",
       "oregon"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-194",
@@ -3296,7 +4068,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "louisville",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-195",
@@ -3313,7 +4089,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "yale",
       "new-mexico"
-    ]
+    ],
+    "country": "USA",
+    "state": "Massachusetts",
+    "gender": "Male",
+    "favoriteTeam": "maryland"
   },
   {
     "id": "user-196",
@@ -3330,7 +4110,11 @@ export const REAL_2025_USERS = [
       "st-johns",
       "michigan-st",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-197",
@@ -3347,7 +4131,11 @@ export const REAL_2025_USERS = [
       "st-johns",
       "akron",
       "purdue"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-198",
@@ -3364,7 +4152,11 @@ export const REAL_2025_USERS = [
       "alabama",
       "marquette",
       "oregon"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-199",
@@ -3381,7 +4173,11 @@ export const REAL_2025_USERS = [
       "ole-miss",
       "michigan-st",
       "texas-am"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-200",
@@ -3398,7 +4194,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "gonzaga",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-201",
@@ -3415,7 +4215,11 @@ export const REAL_2025_USERS = [
       "ole-miss",
       "vanderbilt",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-202",
@@ -3432,7 +4236,11 @@ export const REAL_2025_USERS = [
       "st-johns",
       "ucla",
       "tennessee"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-203",
@@ -3449,7 +4257,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "north-carolina",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-204",
@@ -3466,7 +4278,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "byu",
       "arizona"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-205",
@@ -3483,7 +4299,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "ole-miss",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-206",
@@ -3500,7 +4320,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "louisville",
       "north-carolina"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-207",
@@ -3517,7 +4341,11 @@ export const REAL_2025_USERS = [
       "colorado-st",
       "arkansas",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-208",
@@ -3534,7 +4362,11 @@ export const REAL_2025_USERS = [
       "vcu",
       "high-point",
       "illinois"
-    ]
+    ],
+    "country": "AUS",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-209",
@@ -3551,7 +4383,11 @@ export const REAL_2025_USERS = [
       "creighton",
       "uc-san-diego",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-210",
@@ -3568,7 +4404,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "xavier",
       "vanderbilt"
-    ]
+    ],
+    "country": "USA",
+    "state": "Arizona",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-211",
@@ -3585,7 +4425,11 @@ export const REAL_2025_USERS = [
       "liberty",
       "utah-st",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-212",
@@ -3602,7 +4446,11 @@ export const REAL_2025_USERS = [
       "st-johns",
       "louisville",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-213",
@@ -3619,7 +4467,11 @@ export const REAL_2025_USERS = [
       "high-point",
       "drake",
       "texas-am"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-214",
@@ -3636,7 +4488,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "texas-tech",
       "purdue"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-215",
@@ -3653,7 +4509,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "north-carolina",
       "yale"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-216",
@@ -3670,7 +4530,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "vcu",
       "kansas"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-217",
@@ -3687,7 +4551,11 @@ export const REAL_2025_USERS = [
       "missouri",
       "colorado-st",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-218",
@@ -3704,7 +4572,11 @@ export const REAL_2025_USERS = [
       "ucla",
       "illinois",
       "duke"
-    ]
+    ],
+    "country": "UK",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-219",
@@ -3721,7 +4593,11 @@ export const REAL_2025_USERS = [
       "oregon",
       "vanderbilt",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-220",
@@ -3738,7 +4614,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "clemson",
       "michigan-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "New Jersey",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-221",
@@ -3755,7 +4635,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "high-point",
       "grand-canyon"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-222",
@@ -3772,7 +4656,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "kansas",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-223",
@@ -3789,7 +4677,11 @@ export const REAL_2025_USERS = [
       "maryland",
       "uc-san-diego",
       "michigan"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-224",
@@ -3806,7 +4698,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "oregon",
       "memphis"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-225",
@@ -3823,7 +4719,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "uconn",
       "uc-san-diego"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-226",
@@ -3840,7 +4740,11 @@ export const REAL_2025_USERS = [
       "drake",
       "yale",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-227",
@@ -3857,7 +4761,11 @@ export const REAL_2025_USERS = [
       "michigan",
       "mississippi-st",
       "mcneese-st"
-    ]
+    ],
+    "country": "USA",
+    "state": "Pennsylvania",
+    "gender": "Male",
+    "favoriteTeam": "penn-st"
   },
   {
     "id": "user-228",
@@ -3874,7 +4782,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "maryland",
       "louisville"
-    ]
+    ],
+    "country": "UK",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-229",
@@ -3891,7 +4803,11 @@ export const REAL_2025_USERS = [
       "michigan-st",
       "kansas",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-230",
@@ -3908,7 +4824,11 @@ export const REAL_2025_USERS = [
       "liberty",
       "drake",
       "ucla"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-231",
@@ -3925,7 +4845,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "georgia",
       "creighton"
-    ]
+    ],
+    "country": "USA",
+    "state": "Pennsylvania",
+    "gender": "Male",
+    "favoriteTeam": "penn-st"
   },
   {
     "id": "user-232",
@@ -3942,7 +4866,11 @@ export const REAL_2025_USERS = [
       "saint-marys",
       "creighton",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Maryland",
+    "gender": "Female",
+    "favoriteTeam": "virginia"
   },
   {
     "id": "user-233",
@@ -3959,7 +4887,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "vcu",
       "saint-marys"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-234",
@@ -3976,7 +4908,11 @@ export const REAL_2025_USERS = [
       "xavier",
       "kentucky",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-235",
@@ -3993,7 +4929,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "troy",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-236",
@@ -4010,7 +4950,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "uconn",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-237",
@@ -4027,7 +4971,11 @@ export const REAL_2025_USERS = [
       "texas-tech",
       "texas-am",
       "illinois"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-238",
@@ -4044,7 +4992,11 @@ export const REAL_2025_USERS = [
       "memphis",
       "clemson",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-239",
@@ -4061,7 +5013,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "north-carolina",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-240",
@@ -4078,7 +5034,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "new-mexico",
       "texas-tech"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-241",
@@ -4095,7 +5055,11 @@ export const REAL_2025_USERS = [
       "north-carolina",
       "drake",
       "uc-san-diego"
-    ]
+    ],
+    "country": "USA",
+    "state": "New York",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-242",
@@ -4112,7 +5076,11 @@ export const REAL_2025_USERS = [
       "tennessee",
       "louisville",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-243",
@@ -4129,7 +5097,11 @@ export const REAL_2025_USERS = [
       "ucla",
       "arizona",
       "louisville"
-    ]
+    ],
+    "country": "USA",
+    "state": "Arizona",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-244",
@@ -4146,7 +5118,11 @@ export const REAL_2025_USERS = [
       "baylor",
       "georgia",
       "xavier"
-    ]
+    ],
+    "country": "USA",
+    "state": "Arizona",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-245",
@@ -4163,7 +5139,11 @@ export const REAL_2025_USERS = [
       "iowa-st",
       "vcu",
       "high-point"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-246",
@@ -4180,7 +5160,11 @@ export const REAL_2025_USERS = [
       "arizona",
       "vcu",
       "texas-am"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-247",
@@ -4197,7 +5181,11 @@ export const REAL_2025_USERS = [
       "robert-morris",
       "creighton",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": "Arizona",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-248",
@@ -4214,7 +5202,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "colorado-st",
       "maryland"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-249",
@@ -4231,7 +5223,11 @@ export const REAL_2025_USERS = [
       "arkansas",
       "vanderbilt",
       "marquette"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-250",
@@ -4248,7 +5244,11 @@ export const REAL_2025_USERS = [
       "houston",
       "unc-wilmington",
       "texas-am"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-251",
@@ -4265,7 +5265,11 @@ export const REAL_2025_USERS = [
       "purdue",
       "oregon",
       "kentucky"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-252",
@@ -4282,7 +5286,11 @@ export const REAL_2025_USERS = [
       "kansas",
       "maryland",
       "st-johns"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-253",
@@ -4299,7 +5307,11 @@ export const REAL_2025_USERS = [
       "yale",
       "omaha",
       "lipscomb"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-254",
@@ -4316,7 +5328,11 @@ export const REAL_2025_USERS = [
       "clemson",
       "uconn",
       "lipscomb"
-    ]
+    ],
+    "country": "USA",
+    "state": "North Carolina",
+    "gender": "Female",
+    "favoriteTeam": "miami"
   },
   {
     "id": "user-255",
@@ -4333,7 +5349,11 @@ export const REAL_2025_USERS = [
       "georgia",
       "arkansas",
       "vanderbilt"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-256",
@@ -4350,7 +5370,11 @@ export const REAL_2025_USERS = [
       "michigan-st",
       "michigan",
       "saint-marys"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": null,
+    "favoriteTeam": null
   },
   {
     "id": "user-257",
@@ -4367,7 +5391,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "marquette",
       "uconn"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-258",
@@ -4384,7 +5412,11 @@ export const REAL_2025_USERS = [
       "houston",
       "florida",
       "clemson"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-259",
@@ -4401,7 +5433,11 @@ export const REAL_2025_USERS = [
       "uc-san-diego",
       "marquette",
       "drake"
-    ]
+    ],
+    "country": "USA",
+    "state": "Georgia",
+    "gender": "Female",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-260",
@@ -4418,7 +5454,11 @@ export const REAL_2025_USERS = [
       "illinois",
       "gonzaga",
       "arizona"
-    ]
+    ],
+    "country": "USA",
+    "state": "North Carolina",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-261",
@@ -4435,7 +5475,11 @@ export const REAL_2025_USERS = [
       "ucla",
       "clemson",
       "creighton"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Female",
+    "favoriteTeam": null
   },
   {
     "id": "user-262",
@@ -4452,7 +5496,11 @@ export const REAL_2025_USERS = [
       "mcneese-st",
       "akron",
       "colorado-st"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "florida"
   },
   {
     "id": "user-263",
@@ -4469,7 +5517,11 @@ export const REAL_2025_USERS = [
       "drake",
       "high-point",
       "vcu"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-264",
@@ -4486,7 +5538,11 @@ export const REAL_2025_USERS = [
       "gonzaga",
       "colorado-st",
       "illinois"
-    ]
+    ],
+    "country": "AUS",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": "duke"
   },
   {
     "id": "user-265",
@@ -4503,7 +5559,11 @@ export const REAL_2025_USERS = [
       "louisville",
       "purdue",
       "wisconsin"
-    ]
+    ],
+    "country": "USA",
+    "state": null,
+    "gender": "Male",
+    "favoriteTeam": null
   },
   {
     "id": "user-266",
@@ -4520,6 +5580,10 @@ export const REAL_2025_USERS = [
       "wisconsin",
       "kansas",
       "arkansas"
-    ]
+    ],
+    "country": "USA",
+    "state": "Florida",
+    "gender": "Male",
+    "favoriteTeam": "florida"
   }
-]
+];

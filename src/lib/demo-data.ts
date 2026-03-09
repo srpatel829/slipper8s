@@ -30,6 +30,11 @@ export interface DemoUser {
   charityPreference: string | null
   role?: "USER" | "ADMIN" | "SUPERADMIN"
   picks: string[]
+  // Demographic / profile fields (optional — null = "No Response")
+  country?: string | null
+  state?: string | null         // Full state name (e.g. "Georgia")
+  gender?: string | null        // "Male", "Female", "Non-binary"
+  favoriteTeam?: string | null  // Team ID (e.g. "florida", "duke")
 }
 
 export const ROUND_LABELS = [

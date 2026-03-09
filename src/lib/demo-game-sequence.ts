@@ -13,6 +13,7 @@ import type { LeaderboardEntry, LiveGameData, ResolvedPickSummary } from "@/type
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2025"
 import { classifyArchetypes } from "@/lib/archetypes"
+import { getConferenceForTeam } from "@/lib/conference-map"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -256,6 +257,12 @@ export function computeLeaderboardAtGame(
       expectedScore,
       archetypes: archetypeResults.map(a => a.key),
       picks,
+      // Demographic / profile fields for dimension filtering
+      country: user.country ?? null,
+      state: user.state ?? null,
+      gender: user.gender ?? null,
+      favoriteTeam: user.favoriteTeam ?? null,
+      conference: user.favoriteTeam ? getConferenceForTeam(user.favoriteTeam) : null,
     }
   })
 
