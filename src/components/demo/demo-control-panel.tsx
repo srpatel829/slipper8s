@@ -7,7 +7,7 @@
  *
  * Shows:
  * - Tournament year selector
- * - Persona picker
+ * - Current persona label (read-only)
  * - Game-by-game timeline scrubber with play/pause
  * - Round jump buttons + speed selector
  * - Current game info
@@ -63,8 +63,6 @@ export function DemoControlPanel() {
     playSpeed,
     setPlaySpeed,
     currentPersona,
-    setPersona,
-    availablePersonas,
     currentGameInfo,
   } = useDemoContext()
 
@@ -130,45 +128,10 @@ export function DemoControlPanel() {
                 </Select>
               </div>
 
-              {/* Persona selector */}
-              <div className="flex items-center gap-1.5 shrink-0">
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
-                <Select
-                  value={currentPersona.userId}
-                  onValueChange={id => {
-                    const p = availablePersonas.find(p => p.userId === id)
-                    if (p) setPersona(p)
-                  }}
-                >
-                  <SelectTrigger className="h-7 w-44 text-xs border-border/40 bg-background/30">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <p className="text-[10px] text-muted-foreground px-2 py-1 border-b border-border/40">
-                      Participants
-                    </p>
-                    {availablePersonas
-                      .filter(p => p.role === "USER")
-                      .map(p => (
-                        <SelectItem key={p.userId} value={p.userId} className="text-xs">
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    <p className="text-[10px] text-muted-foreground px-2 py-1 border-b border-t border-border/40 mt-1">
-                      Admin
-                    </p>
-                    {availablePersonas
-                      .filter(p => p.role !== "USER")
-                      .map(p => (
-                        <SelectItem key={p.userId} value={p.userId} className="text-xs">
-                          {p.name}
-                          <Badge className="ml-1.5 h-3.5 px-1 text-[9px] bg-primary/20 text-primary border-0">
-                            {p.role === "SUPERADMIN" ? "super" : "admin"}
-                          </Badge>
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
+              {/* Current persona label */}
+              <div className="flex items-center gap-1.5 shrink-0 text-xs text-muted-foreground">
+                <User className="h-3.5 w-3.5" />
+                <span className="font-medium text-foreground">{currentPersona.name}</span>
               </div>
 
               {/* Current round badge */}
