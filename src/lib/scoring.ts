@@ -310,6 +310,7 @@ export interface Optimal8Team {
   region: string
   wins: number
   isPlayIn: boolean
+  sCurveRank?: number | null
 }
 
 export interface Optimal8Result {
@@ -339,7 +340,8 @@ export function computeOptimal8(
       return { ...t, seed, wins, eliminated, score, ppr }
     })
 
-  scored.sort((a, b) => b.score - a.score || a.seed - b.seed)
+  // Sort by score desc, then S-Curve rank asc (lower = stronger team) as tiebreaker
+  scored.sort((a, b) => b.score - a.score || (a.sCurveRank ?? 999) - (b.sCurveRank ?? 999))
 
   const selectedIds = scored.slice(0, 8).map(t => t.id)
 

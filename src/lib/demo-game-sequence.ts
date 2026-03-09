@@ -368,6 +368,7 @@ export function computeTeamsForPicks(
   eliminated: boolean
   wins: number
   logoUrl: string | null
+  sCurveRank: number | null
   createdAt: Date
   updatedAt: Date
 }> {
@@ -386,6 +387,7 @@ export function computeTeamsForPicks(
       eliminated: state.eliminated,
       wins: state.wins,
       logoUrl: t.logoUrl,
+      sCurveRank: t.sCurveRank ?? null,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
