@@ -213,7 +213,7 @@ export function DemoControlPanel() {
 
             {/* Row 2: Timeline scrubber + controls */}
             <div className="flex items-center gap-3">
-              {/* Round jump back */}
+              {/* Checkpoint jump back */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -226,19 +226,24 @@ export function DemoControlPanel() {
                     <ChevronsLeft className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">Previous round</TooltipContent>
+                <TooltipContent side="top" className="text-xs">Previous checkpoint</TooltipContent>
               </Tooltip>
 
-              {/* Step back */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={stepBack}
-                disabled={checkpointIndex <= 0}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </Button>
+              {/* Step back one game */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={stepBack}
+                    disabled={gameIndex < 0}
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">Previous game</TooltipContent>
+              </Tooltip>
 
               {/* Play / Pause */}
               <Button
@@ -253,18 +258,23 @@ export function DemoControlPanel() {
                 }
               </Button>
 
-              {/* Step forward */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-                onClick={stepForward}
-                disabled={checkpointIndex >= totalCheckpoints - 1}
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
+              {/* Step forward one game */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                    onClick={stepForward}
+                    disabled={gameIndex >= totalGames - 1}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">Next game</TooltipContent>
+              </Tooltip>
 
-              {/* Round jump forward */}
+              {/* Checkpoint jump forward */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -277,7 +287,7 @@ export function DemoControlPanel() {
                     <ChevronsRight className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="text-xs">Next round</TooltipContent>
+                <TooltipContent side="top" className="text-xs">Next checkpoint</TooltipContent>
               </Tooltip>
 
               {/* Scrubber */}

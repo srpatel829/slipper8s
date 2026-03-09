@@ -146,10 +146,10 @@ export default function DemoSimulatorPage() {
   const pickedCount = Object.keys(gamePicks).length
 
   return (
-    // Full-viewport layout: no page scroll, two column regions
-    <div className="flex h-[calc(100vh-60px)] overflow-hidden">
+    // Full-viewport layout: stacked on mobile, side-by-side on desktop
+    <div className="flex flex-col md:flex-row h-[calc(100vh-60px)] overflow-hidden">
 
-      {/* ── Left: scrollable bracket picker ───────────────────────────── */}
+      {/* ── Top/Left: scrollable bracket picker ───────────────────────── */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
         <div className="px-4 py-4">
           {/* Header */}
@@ -193,8 +193,8 @@ export default function DemoSimulatorPage() {
         </div>
       </div>
 
-      {/* ── Right: sticky leaderboard panel ───────────────────────────── */}
-      <div className="w-80 shrink-0 border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col overflow-hidden">
+      {/* ── Bottom/Right: sticky leaderboard panel ─────────────────────── */}
+      <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col overflow-hidden max-h-[40vh] md:max-h-none">
         {/* Leaderboard header — always visible */}
         <div className="px-4 py-3 border-b border-border/30 shrink-0">
           <div className="flex items-center justify-between">

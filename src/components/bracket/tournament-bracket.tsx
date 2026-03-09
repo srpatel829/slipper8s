@@ -10,8 +10,9 @@
  * The center column is vertically centered in the viewport between the two bracket rows.
  */
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
+import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 import { computeStateAtGame, type DemoGameEvent } from "@/lib/demo-game-sequence"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -462,41 +463,73 @@ export function TournamentBracket({ teams, gameSequence, gameIndex }: Tournament
         }
     }, [teamMap, gameSequence, gameIndex])
 
+    const [zoom, setZoom] = useState(typeof window !== "undefined" && window.innerWidth < 768 ? 0.5 : 0.85)
+
     return (
-        <div className="w-full overflow-x-auto">
-            <div className="min-w-[1100px]">
-                {/* Top row */}
-                <div className="flex gap-2 justify-center items-start">
-                    <div className="flex-1 min-w-0">
-                        <RegionBracket region="East" rounds={eastRounds} reversed={false} />
+        <div className="relative">
+            {/* Zoom controls */}
+            <div className="sticky top-16 z-20 flex items-center gap-1 mb-2 justify-end">
+                <button
+                    onClick={() => setZoom(z => Math.max(0.3, z - 0.1))}
+                    className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                </button>
+                <span className="text-[10px] font-mono text-muted-foreground w-10 text-center">
+                    {Math.round(zoom * 100)}%
+                </span>
+                <button
+                    onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
+                    className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                </button>
+                <button
+                    onClick={() => setZoom(0.85)}
+                    className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+            </div>
+
+            <div className="w-full overflow-x-auto overflow-y-hidden">
+                <div
+                    className="min-w-[1100px] origin-top-left transition-transform"
+                    style={{ transform: `scale(${zoom})`, width: `${100 / zoom}%` }}
+                >
+                    {/* Top row */}
+                    <div className="flex gap-2 justify-center items-start">
+                        <div className="flex-1 min-w-0">
+                            <RegionBracket region="East" rounds={eastRounds} reversed={false} />
+                        </div>
+
+                        <div className="shrink-0 flex items-start justify-center pt-5">
+                            <CenterColumn
+                                gameSequence={gameSequence}
+                                gameIndex={gameIndex}
+                                teamMap={teamMap}
+                                e8Winners={e8Winners}
+                            />
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                            <RegionBracket region="West" rounds={westRounds} reversed={true} />
+                        </div>
                     </div>
 
-                    <div className="shrink-0 flex items-start justify-center pt-5">
-                        <CenterColumn
-                            gameSequence={gameSequence}
-                            gameIndex={gameIndex}
-                            teamMap={teamMap}
-                            e8Winners={e8Winners}
-                        />
-                    </div>
+                    <div className="my-4 border-t border-border/15" />
 
-                    <div className="flex-1 min-w-0">
-                        <RegionBracket region="West" rounds={westRounds} reversed={true} />
-                    </div>
-                </div>
+                    {/* Bottom row */}
+                    <div className="flex gap-2 justify-center items-start">
+                        <div className="flex-1 min-w-0">
+                            <RegionBracket region="South" rounds={southRounds} reversed={false} />
+                        </div>
 
-                <div className="my-4 border-t border-border/15" />
+                        <div className="shrink-0 min-w-[150px] px-2" /> {/* spacer matching center */}
 
-                {/* Bottom row */}
-                <div className="flex gap-2 justify-center items-start">
-                    <div className="flex-1 min-w-0">
-                        <RegionBracket region="South" rounds={southRounds} reversed={false} />
-                    </div>
-
-                    <div className="shrink-0 min-w-[150px] px-2" /> {/* spacer matching center */}
-
-                    <div className="flex-1 min-w-0">
-                        <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} />
+                        <div className="flex-1 min-w-0">
+                            <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} />
+                        </div>
                     </div>
                 </div>
             </div>

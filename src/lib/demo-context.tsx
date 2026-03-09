@@ -266,25 +266,24 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     if (cp) setGameIndexRaw(cp.lastGameIndex)
   }, [checkpoints, totalCheckpoints])
 
-  // Step forward/back move between checkpoints
+  // Single arrow: step forward/back by 1 game
   const stepForward = useCallback(() => {
-    setCheckpointIndex(checkpointIndex + 1)
-  }, [checkpointIndex, setCheckpointIndex])
+    setGameIndex(gameIndex + 1)
+  }, [gameIndex, setGameIndex])
 
   const stepBack = useCallback(() => {
-    setCheckpointIndex(checkpointIndex - 1)
-  }, [checkpointIndex, setCheckpointIndex])
+    setGameIndex(gameIndex - 1)
+  }, [gameIndex, setGameIndex])
 
   const togglePlay = useCallback(() => setIsPlaying(p => !p), [])
 
+  // Double arrow: jump to next/prev checkpoint
   const jumpToNextRound = useCallback(() => {
-    // Jump forward by 2 checkpoints (skip to next round)
-    setCheckpointIndex(checkpointIndex + 2)
+    setCheckpointIndex(checkpointIndex + 1)
   }, [checkpointIndex, setCheckpointIndex])
 
   const jumpToPrevRound = useCallback(() => {
-    // Jump back by 2 checkpoints (skip to prev round)
-    setCheckpointIndex(checkpointIndex - 2)
+    setCheckpointIndex(checkpointIndex - 1)
   }, [checkpointIndex, setCheckpointIndex])
 
   // ── Auto-advance (checkpoint by checkpoint) ──
