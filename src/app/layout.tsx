@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     template: "%s | Slipper8s",
   },
   description: "Pick 8 teams, score seed x wins. Where sleeper picks become glass slippers.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.slipper8s.com"),
   openGraph: {
     type: "website",
     siteName: "Slipper8s",
