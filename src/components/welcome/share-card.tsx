@@ -49,7 +49,7 @@ function InstagramIcon({ className }: { className?: string }) {
 export function ShareCard({ shareUrl, firstName }: ShareCardProps) {
   const [copied, setCopied] = useState(false)
 
-  const shareText = `I'm registered to play Slipper8s. You should sign up and see if you can beat me!`
+  const shareText = `I'm registered to play Slipper8s for 2026!\nYou should sign up and see if you can beat me!\nPick 8 Teams | Seed x Wins = Score | Highest Score Wins!`
 
   async function copyToClipboard(text: string) {
     try {
@@ -116,10 +116,13 @@ export function ShareCard({ shareUrl, firstName }: ShareCardProps) {
               </div>
             </div>
             <div className="text-sm font-semibold mb-2">
-              I&apos;m registered to play Slipper8s
+              I&apos;m registered to play Slipper8s for 2026!
             </div>
-            <div className="text-xs opacity-90">
+            <div className="text-xs opacity-90 mb-2">
               You should sign up and see if you can beat me!
+            </div>
+            <div className="text-xs opacity-75">
+              Pick 8 Teams · Seed x Wins = Score · Highest Score Wins!
             </div>
             <div className="text-xs opacity-75 mt-3 pt-3 border-t border-white/20">
               slipper8s.com

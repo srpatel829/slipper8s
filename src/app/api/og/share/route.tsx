@@ -36,9 +36,9 @@ export async function GET(req: NextRequest) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            background: "linear-gradient(180deg, #001a4d 0%, #0a0a1a 40%, #001a4d 100%)",
+            background: "linear-gradient(180deg, #001a4d 0%, #0a0a1a 50%, #001a4d 100%)",
             fontFamily: "sans-serif",
-            padding: "60px",
+            padding: "48px 60px",
           }}
         >
           {/* Decorative top accent */}
@@ -48,43 +48,56 @@ export async function GET(req: NextRequest) {
               top: 0,
               left: 0,
               right: 0,
-              height: 4,
+              height: 6,
               background: "linear-gradient(90deg, #003087, #00A9E0, #F47920, #00A9E0, #003087)",
             }}
           />
 
-          {/* Logo */}
-          <div
-            style={{
-              width: 110,
-              height: 110,
-              borderRadius: "28px",
-              background: "#00A9E0",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: 32,
-              boxShadow: "0 0 80px rgba(0,169,224,0.35)",
-            }}
-          >
-            <span style={{ fontSize: 56 }}>🏀</span>
+          {/* Logo + Brand row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 20 }}>
+            <div
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: "22px",
+                background: "#00A9E0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 0 60px rgba(0,169,224,0.4)",
+              }}
+            >
+              <span style={{ fontSize: 48 }}>🏀</span>
+            </div>
+            <div
+              style={{
+                fontSize: 88,
+                fontWeight: 800,
+                color: "#00A9E0",
+                letterSpacing: "-3px",
+              }}
+            >
+              Slipper8s
+            </div>
           </div>
 
-          {/* Brand */}
-          <div
-            style={{
-              fontSize: 80,
-              fontWeight: 800,
-              color: "#00A9E0",
-              letterSpacing: "-2px",
-              marginBottom: 8,
-            }}
-          >
-            Slipper8s
-          </div>
-
-          <div style={{ fontSize: 22, color: "#71717a", marginBottom: 48 }}>
+          {/* Subtitle */}
+          <div style={{ fontSize: 28, color: "#71717a", marginBottom: 24 }}>
             College Basketball Tournament Pool · 2026
+          </div>
+
+          {/* Sign Up CTA */}
+          <div
+            style={{
+              fontSize: 64,
+              fontWeight: 800,
+              color: "#F47920",
+              marginBottom: 36,
+              textAlign: "center",
+              lineHeight: 1.1,
+            }}
+          >
+            Sign Up &amp; Play!
           </div>
 
           {/* Player card */}
@@ -93,54 +106,56 @@ export async function GET(req: NextRequest) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(0,169,224,0.2)",
-              borderRadius: 24,
-              padding: "36px 64px",
-              marginBottom: 48,
+              background: "rgba(255,255,255,0.05)",
+              border: "2px solid rgba(0,169,224,0.25)",
+              borderRadius: 28,
+              padding: "32px 72px",
+              marginBottom: 40,
             }}
           >
-            <div style={{ fontSize: 40, fontWeight: 700, color: "white", marginBottom: 12 }}>
+            <div style={{ fontSize: 48, fontWeight: 700, color: "white", marginBottom: 12 }}>
               {name}
             </div>
             <div
               style={{
-                fontSize: 22,
+                fontSize: 26,
                 color: "#00A9E0",
-                background: "rgba(0,169,224,0.1)",
-                padding: "8px 24px",
-                borderRadius: 12,
+                background: "rgba(0,169,224,0.12)",
+                padding: "10px 28px",
+                borderRadius: 14,
+                fontWeight: 600,
               }}
             >
               I&apos;m in for 2026 — join me!
             </div>
           </div>
 
-          {/* How it works pills */}
-          <div style={{ display: "flex", gap: 24 }}>
-            {["Pick 8 teams", "Seed × Wins", "Highest wins"].map((text) => (
+          {/* How it works — larger pills */}
+          <div style={{ display: "flex", gap: 20 }}>
+            {["Pick 8 Teams", "Seed x Wins = Score", "Highest Score Wins"].map((text) => (
               <div
                 key={text}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  fontSize: 18,
-                  color: "#a1a1aa",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  gap: 12,
+                  fontSize: 24,
+                  color: "#d4d4d8",
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: 99,
-                  padding: "10px 20px",
+                  padding: "14px 28px",
+                  fontWeight: 500,
                 }}
               >
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00A9E0" }} />
+                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#00A9E0" }} />
                 {text}
               </div>
             ))}
           </div>
 
           {/* Footer */}
-          <div style={{ position: "absolute", bottom: 36, fontSize: 18, color: "#3f3f46" }}>
+          <div style={{ position: "absolute", bottom: 32, fontSize: 22, color: "#52525b", fontWeight: 500 }}>
             slipper8s.com
           </div>
         </div>
