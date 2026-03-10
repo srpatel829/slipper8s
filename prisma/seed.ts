@@ -11,10 +11,12 @@ async function main() {
     create: {
       year: 2026,
       status: "REGISTRATION",
-      // March 19, 2026 12:00pm EDT = 16:00 UTC (DST starts March 8)
-      entryDeadlineUtc: new Date("2026-03-19T16:00:00.000Z"),
+      // March 19, 2026 12:15pm EDT = 16:15 UTC (DST starts March 8)
+      entryDeadlineUtc: new Date("2026-03-19T16:15:00.000Z"),
     },
-    update: {},
+    update: {
+      entryDeadlineUtc: new Date("2026-03-19T16:15:00.000Z"),
+    },
   })
 
   // Create AppSettings singleton and link to 2026 season
@@ -23,7 +25,7 @@ async function main() {
     create: {
       id: "main",
       currentSeasonId: season2026.id,
-      picksDeadline: new Date("2026-03-19T16:00:00.000Z"),
+      picksDeadline: new Date("2026-03-19T16:15:00.000Z"),
       payoutStructure: [
         { place: 1, label: "Champion", amount: "" },
         { place: 2, label: "Runner-Up", amount: "" },
@@ -36,7 +38,7 @@ async function main() {
     },
     update: {
       currentSeasonId: season2026.id,
-      picksDeadline: new Date("2026-03-19T16:00:00.000Z"),
+      picksDeadline: new Date("2026-03-19T16:15:00.000Z"),
     },
   })
 
