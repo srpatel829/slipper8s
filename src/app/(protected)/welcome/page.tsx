@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
 import { CountdownTimer } from "@/components/welcome/countdown-timer"
 import { ShareCard } from "@/components/welcome/share-card"
+import { JoinLeagueForm } from "@/components/welcome/join-league-form"
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"]
@@ -112,7 +113,7 @@ export default async function WelcomePage() {
 
           <div className="border-t border-border" />
 
-          {/* Private league */}
+          {/* Create a private league */}
           <div>
             <p className="text-sm font-medium text-foreground mb-3">Create a private league</p>
             <p className="text-xs text-muted-foreground mb-3">
@@ -122,6 +123,11 @@ export default async function WelcomePage() {
               <Link href="/leagues">Set up a league</Link>
             </Button>
           </div>
+
+          <div className="border-t border-border" />
+
+          {/* Join an existing private league */}
+          <JoinLeagueForm />
         </div>
 
         {/* YouTube Video */}
