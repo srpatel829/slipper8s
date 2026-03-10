@@ -26,7 +26,7 @@ export function ShareCard({
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://slipper8s.com"
+  const appUrl = typeof window !== "undefined" ? window.location.origin : "https://www.slipper8s.com"
 
   // Build OG image URL
   const params = new URLSearchParams()

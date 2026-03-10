@@ -14,7 +14,9 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
-const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "https://www.slipper8s.com"
+// Always use www for share links — env vars may point to the bare domain
+// which causes redirect issues with social platform crawlers
+const SHARE_URL = "https://www.slipper8s.com"
 
 export default async function WelcomePage() {
   const session = await auth()
@@ -110,7 +112,7 @@ export default async function WelcomePage() {
         <div className="bg-card border border-border rounded-2xl p-5 space-y-5 mb-6">
 
           {/* Share Card */}
-          <ShareCard shareUrl={APP_URL} firstName={firstName} />
+          <ShareCard shareUrl={SHARE_URL} firstName={firstName} />
 
           <div className="border-t border-border" />
 
