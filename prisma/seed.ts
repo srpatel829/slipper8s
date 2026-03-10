@@ -113,7 +113,7 @@ $25 per entry is donated to charity. The top 4 finishers choose the charity.
       lastName: "User",
       country: "United States",
       state: "California",
-      gender: "Other",
+      gender: "OTHER",
     },
     update: {
       registrationComplete: true,

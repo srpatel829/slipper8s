@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { Trophy, ArrowRight, Calendar, Share2, Users2 } from "lucide-react"
+import { ArrowRight, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
-import { CopyButton } from "@/components/ui/copy-button"
+import { CountdownTimer } from "@/components/welcome/countdown-timer"
+import { ShareCard } from "@/components/welcome/share-card"
 
 function ordinal(n: number): string {
   const s = ["th", "st", "nd", "rd"]
@@ -47,8 +48,10 @@ export default async function WelcomePage() {
 
         {/* Hero */}
         <div className="flex flex-col items-center mb-8 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-5 shadow-lg glow-blue">
-            <Trophy className="h-8 w-8 text-primary-foreground" />
+          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center mb-5 shadow-lg shadow-primary/30">
+            <svg className="h-8 w-8 text-primary-foreground" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2L15.09 8.26H22L17.55 12.5L19.64 18.74L12 14.5L4.36 18.74L6.45 12.5L2 8.26H8.91L12 2Z" />
+            </svg>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Congratulations, {firstName}!</h1>
           <p className="text-muted-foreground mt-3 text-base leading-relaxed">
@@ -58,78 +61,85 @@ export default async function WelcomePage() {
           </p>
         </div>
 
-        {/* Deadline reminder */}
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 mb-5 flex items-center gap-3">
-          <Calendar className="h-4 w-4 text-orange-400 shrink-0" />
-          <p className="text-sm text-orange-300">
-            <span className="font-semibold">Picks deadline:</span> Thursday, March 19 · 12:15pm ET
-          </p>
-        </div>
-
-        {/* Primary CTA — conditional on bracket status */}
         {bracketIsLive ? (
-          <Button
-            asChild
-            className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold glow-blue text-base mb-6"
-          >
-            <Link href="/picks">
-              Make my picks
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-          </Button>
-        ) : (
-          <div className="bg-card border border-border rounded-xl px-5 py-4 mb-6 text-center">
-            <p className="text-sm font-medium text-foreground mb-1">Picks open Sunday, March 15</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              The bracket gets announced Sunday evening. Log back in then to make your 8 picks before the Thursday deadline.
-            </p>
-          </div>
-        )}
-
-        {/* In the meantime */}
-        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            In the meantime
-          </p>
-
-          {/* Invite friends */}
-          <div className="flex items-start gap-4">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Share2 className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium mb-0.5">Invite friends to play</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Share this link — works in texts, email, WhatsApp, anywhere.
+          <>
+            {/* Deadline reminder */}
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
+              <Calendar className="h-4 w-4 text-orange-400 shrink-0" />
+              <p className="text-sm text-orange-300">
+                <span className="font-semibold">Picks deadline:</span> Thursday, March 19 · 12:15pm ET
               </p>
-              <CopyButton
-                text={APP_URL}
-                label="Copy invite link"
-                className="h-8 text-xs w-full sm:w-auto"
+            </div>
+
+            {/* Primary CTA: Make My Picks */}
+            <Button
+              asChild
+              className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/30 text-base mb-6"
+            >
+              <Link href="/picks">
+                Make my picks
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </>
+        ) : (
+          <>
+            {/* Countdown to Selection Sunday */}
+            <div className="mb-6">
+              <CountdownTimer
+                targetDate="2026-03-15T18:00:00-04:00"
+                label="Selection Sunday Countdown"
+                subtitle="Bracket announcement: 6pm ET Sunday, March 15th"
               />
             </div>
-          </div>
+
+            {/* Bracket announcement message */}
+            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl px-5 py-4 mb-6 text-center">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                The committee will announce the bracket at 6pm ET on Sunday March 15th.
+                Slipper 8s will go live shortly thereafter. Please log back in then to
+                make your own selections.
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Share and League CTAs */}
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-5 mb-6">
+
+          {/* Share Card */}
+          <ShareCard shareUrl={APP_URL} firstName={firstName} />
 
           <div className="border-t border-border" />
 
           {/* Private league */}
-          <div className="flex items-start gap-4">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <Users2 className="h-4 w-4 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium mb-0.5">Create a private league</p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Compete head-to-head with friends, family, or your office.
-              </p>
-              <Button
-                asChild
-                variant="outline"
-                className="h-8 text-xs w-full sm:w-auto"
-              >
-                <Link href="/leagues">Set up a league</Link>
-              </Button>
-            </div>
+          <div>
+            <p className="text-sm font-medium text-foreground mb-3">Create a private league</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Compete head-to-head with friends, family, or your office.
+            </p>
+            <Button asChild className="w-full">
+              <Link href="/leagues">Set up a league</Link>
+            </Button>
+          </div>
+        </div>
+
+        {/* YouTube Video */}
+        <div className="mb-6">
+          <p className="text-sm font-semibold text-foreground mb-3">
+            {bracketIsLive
+              ? "Arguably the best way to spend 6 minutes on the internet:"
+              : "While you wait for picks to go live, please enjoy Sumeet\u2019s One Shining Moment from 2025:"}
+          </p>
+          <div className="relative w-full overflow-hidden rounded-xl shadow-md" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              className="absolute top-0 left-0 w-full h-full"
+              src="https://www.youtube.com/embed/CpWGcVl3AM0"
+              title="One Shining Moment 2025"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         </div>
 
