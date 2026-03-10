@@ -71,7 +71,11 @@ export function ShareCard({ shareUrl, firstName }: ShareCardProps) {
   }
 
   function handleShareX() {
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
+    // Strip protocol — Twitter caches card images per URL string and the
+    // https:// variant may have a stale cache entry from earlier failures.
+    // Without the protocol Twitter auto-expands the link and uses a fresh cache.
+    const bareUrl = shareUrl.replace(/^https?:\/\//, "")
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(bareUrl)}`
     window.open(url, "_blank", "noopener,noreferrer")
   }
 
