@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ArrowRight, Calendar } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { prisma } from "@/lib/prisma"
 import { CountdownTimer } from "@/components/welcome/countdown-timer"
@@ -64,12 +64,13 @@ export default async function WelcomePage() {
 
         {bracketIsLive ? (
           <>
-            {/* Deadline reminder */}
-            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl px-4 py-3 mb-6 flex items-center gap-3">
-              <Calendar className="h-4 w-4 text-orange-400 shrink-0" />
-              <p className="text-sm text-orange-300">
-                <span className="font-semibold">Picks deadline:</span> Thursday, March 19 · 12:15pm ET
-              </p>
+            {/* Countdown to picks deadline */}
+            <div className="mb-6">
+              <CountdownTimer
+                targetDate="2026-03-19T12:15:00-04:00"
+                label="Countdown to Tournament Tip Off"
+                subtitle="Make your selections before 12:15pm ET Thursday, March 19th"
+              />
             </div>
 
             {/* Primary CTA: Make My Picks */}
