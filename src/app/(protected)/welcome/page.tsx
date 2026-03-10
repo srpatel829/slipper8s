@@ -14,7 +14,7 @@ function ordinal(n: number): string {
   return n + (s[(v - 20) % 10] || s[v] || s[0])
 }
 
-const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "https://slipper8s.com"
+const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "https://www.slipper8s.com"
 
 export default async function WelcomePage() {
   const session = await auth()
