@@ -13,7 +13,8 @@
 import { useState } from "react"
 import { ChevronUp, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ export interface TeamRow {
 interface TeamsTableProps {
   teams: TeamRow[]
   totalEntries: number
+  isPreTournament?: boolean
 }
 
 type SortKey = "seed" | "name" | "region" | "pickerCount" | "pickerPct" | "wins" | "gamesLeft" | "score" | "maxScore"
@@ -51,7 +53,7 @@ function teamStats(team: TeamRow) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
+export function TeamsTable({ teams, totalEntries, isPreTournament = false }: TeamsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("pickerPct")
   const [sortDir, setSortDir] = useState<SortDir>("desc")
 
@@ -169,11 +171,11 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
                 </div>
 
                 {/* Team name + logo with callout */}
-                <TeamCallout team={{
-                  name: team.name, shortName: team.shortName, seed: team.seed,
-                  region: team.region, wins: team.wins, eliminated: team.eliminated,
-                  logoUrl: team.logoUrl, score,
-                }}>
+                <TeamCallout team={buildTeamCalloutData(
+                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                  isPreTournament,
+                  { selectedPct: totalEntries > 0 ? Math.round((team.pickerCount / totalEntries) * 1000) / 10 : null },
+                )}>
                   <div className="flex items-center gap-2 min-w-0 cursor-pointer">
                     {team.logoUrl ? (
                       <img src={team.logoUrl} alt="" className={cn("h-5 w-5 object-contain shrink-0", team.eliminated && "grayscale")} />
@@ -289,11 +291,11 @@ export function TeamsTable({ teams, totalEntries }: TeamsTableProps) {
             >
               {/* Top row: logo, name, seed, region */}
               <div className="flex items-center gap-2 mb-2">
-                <TeamCallout team={{
-                  name: team.name, shortName: team.shortName, seed: team.seed,
-                  region: team.region, wins: team.wins, eliminated: team.eliminated,
-                  logoUrl: team.logoUrl, score,
-                }}>
+                <TeamCallout team={buildTeamCalloutData(
+                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                  isPreTournament,
+                  { selectedPct: totalEntries > 0 ? Math.round((team.pickerCount / totalEntries) * 1000) / 10 : null },
+                )}>
                   <div className="flex items-center gap-2 cursor-pointer">
                     {team.logoUrl ? (
                       <img src={team.logoUrl} alt="" className={cn("h-7 w-7 object-contain shrink-0", team.eliminated && "grayscale")} />

@@ -24,6 +24,7 @@ import type { Role } from "@/generated/prisma"
 import { getTournamentData, AVAILABLE_YEARS, getAvailableTournaments } from "@/lib/tournament-data"
 import { DEMO_USER_SETS } from "@/lib/demo-data"
 import { computeOptimal8 } from "@/lib/scoring"
+import { computePickerPctMap } from "@/lib/team-callout-helpers"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import {
   generateDemoGameSequence,
@@ -107,6 +108,9 @@ interface DemoContextValue {
   // Precomputed chart data
   optimal8RollingScores: number[]
   optimal8FinalScores: number[]
+
+  // Picker % map (teamId → % of entries that picked this team)
+  pickerPctMap: Map<string, number>
 
   // Fake session for Navbar
   session: {
@@ -372,6 +376,11 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     [teamsData]
   )
 
+  const pickerPctMap = useMemo(
+    () => computePickerPctMap(demoUserPicks),
+    [demoUserPicks]
+  )
+
   const currentGameInfo = useMemo(
     () => (gameIndex >= 0 && gameIndex < gameSequence.length ? gameSequence[gameIndex] : null),
     [gameIndex, gameSequence]
@@ -496,6 +505,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     leaderboardHistory,
     optimal8RollingScores,
     optimal8FinalScores,
+    pickerPctMap,
     session,
   }
 

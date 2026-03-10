@@ -37,7 +37,7 @@ export const TEAM_CONFERENCE_2025: Record<string, string> = {
   "illinois": "Big Ten",
   "ucla": "Big Ten",
   "maryland": "Big Ten",
-  "iowa-st": "Big Ten",
+  "iowa-st": "Big 12",
 
   // Big 12
   "arizona": "Big 12",
@@ -46,8 +46,8 @@ export const TEAM_CONFERENCE_2025: Record<string, string> = {
   "kansas": "Big 12",
   "texas-tech": "Big 12",
   "houston": "Big 12",
-  "utah-st": "Big 12",
-  "colorado-st": "Big 12",
+  "utah-st": "MWC",
+  "colorado-st": "MWC",
 
   // Big East
   "st-johns": "Big East",
@@ -66,8 +66,10 @@ export const TEAM_CONFERENCE_2025: Record<string, string> = {
   // Atlantic 10
   "vcu": "A-10",
 
+  // Conference USA
+  "liberty": "CUSA",
+
   // ASUN
-  "liberty": "ASUN",
   "lipscomb": "ASUN",
 
   // MAC
@@ -83,9 +85,11 @@ export const TEAM_CONFERENCE_2025: Record<string, string> = {
   // MVC
   "drake": "MVC",
 
-  // WAC
+  // WAC (Grand Canyon's final WAC season before moving to WCC)
   "grand-canyon": "WAC",
-  "uc-san-diego": "WAC",
+
+  // Big West
+  "uc-san-diego": "Big West",
 
   // CAA
   "unc-wilmington": "CAA",
@@ -122,6 +126,12 @@ export const TEAM_CONFERENCE_2025: Record<string, string> = {
 
   // Mountain West
   "new-mexico": "MWC",
+
+  // First Four losers (not in main bracket)
+  "san-diego-st": "MWC",
+  "texas": "SEC",
+  "saint-francis": "NEC",
+  "american": "Patriot",
 }
 
 export function getConferenceForTeam(teamId: string): string | null {

@@ -14,6 +14,8 @@ import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 import { computeStateAtGame, type DemoGameEvent } from "@/lib/demo-game-sequence"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,6 +35,7 @@ interface TournamentBracketProps {
     teams: TeamLike[]
     gameSequence: DemoGameEvent[]
     gameIndex: number
+    isPreTournament?: boolean
 }
 
 const R64_ORDER = [[1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]] as const
@@ -48,12 +51,14 @@ function SlotCell({
     isCompleted,
     reversed,
     isChampion,
+    isPreTournament = false,
 }: {
     team: TeamLike | null
     isWinner: boolean
     isCompleted: boolean
     reversed?: boolean
     isChampion?: boolean
+    isPreTournament?: boolean
 }) {
     if (!team) {
         return (
@@ -69,9 +74,9 @@ function SlotCell({
 
     const dimmed = isCompleted && !isWinner
 
-    return (
+    const slot = (
         <div className={cn(
-            "h-7 flex items-center gap-1 px-1.5 rounded border text-[9px] font-medium select-none",
+            "h-7 flex items-center gap-1 px-1.5 rounded border text-[9px] font-medium select-none cursor-pointer",
             reversed && "flex-row-reverse",
             isChampion
                 ? "h-9 text-[10px] border-yellow-400/50 bg-yellow-400/8 font-bold"
@@ -109,6 +114,17 @@ function SlotCell({
                 <span className="shrink-0 ml-auto text-yellow-400 text-[10px]">🏆</span>
             )}
         </div>
+    )
+
+    return (
+        <TeamCallout
+            team={buildTeamCalloutData(
+                { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                isPreTournament,
+            )}
+        >
+            {slot}
+        </TeamCallout>
     )
 }
 

@@ -1,0 +1,410 @@
+{
+  "duke": {
+    "cinderellaWins": 1,
+    "upsetLosses": 3,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "houston": {
+    "cinderellaWins": 1,
+    "upsetLosses": 4,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "florida": {
+    "cinderellaWins": 6,
+    "upsetLosses": 3,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "auburn": {
+    "cinderellaWins": 1,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "tennessee": {
+    "cinderellaWins": 3,
+    "upsetLosses": 3,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "alabama": {
+    "cinderellaWins": 5,
+    "upsetLosses": 1,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "michigan-st": {
+    "cinderellaWins": 4,
+    "upsetLosses": 4,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "st-johns": {
+    "cinderellaWins": 0,
+    "upsetLosses": 4,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "texas-tech": {
+    "cinderellaWins": 2,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "iowa-st": {
+    "cinderellaWins": 3,
+    "upsetLosses": 7,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "wisconsin": {
+    "cinderellaWins": 4,
+    "upsetLosses": 6,
+    "gamesMatched": 35,
+    "gamesTotal": 35
+  },
+  "kentucky": {
+    "cinderellaWins": 10,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "maryland": {
+    "cinderellaWins": 6,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "arizona": {
+    "cinderellaWins": 5,
+    "upsetLosses": 6,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "purdue": {
+    "cinderellaWins": 0,
+    "upsetLosses": 9,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "texas-am": {
+    "cinderellaWins": 5,
+    "upsetLosses": 7,
+    "gamesMatched": 32,
+    "gamesTotal": 32
+  },
+  "michigan": {
+    "cinderellaWins": 5,
+    "upsetLosses": 5,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "clemson": {
+    "cinderellaWins": 2,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "oregon": {
+    "cinderellaWins": 4,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "memphis": {
+    "cinderellaWins": 3,
+    "upsetLosses": 3,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "illinois": {
+    "cinderellaWins": 8,
+    "upsetLosses": 7,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "missouri": {
+    "cinderellaWins": 4,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "ole-miss": {
+    "cinderellaWins": 5,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "byu": {
+    "cinderellaWins": 5,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "ucla": {
+    "cinderellaWins": 5,
+    "upsetLosses": 5,
+    "gamesMatched": 32,
+    "gamesTotal": 32
+  },
+  "kansas": {
+    "cinderellaWins": 8,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "saint-marys": {
+    "cinderellaWins": 3,
+    "upsetLosses": 4,
+    "gamesMatched": 32,
+    "gamesTotal": 33
+  },
+  "marquette": {
+    "cinderellaWins": 1,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "gonzaga": {
+    "cinderellaWins": 0,
+    "upsetLosses": 8,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "louisville": {
+    "cinderellaWins": 5,
+    "upsetLosses": 3,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "uconn": {
+    "cinderellaWins": 6,
+    "upsetLosses": 8,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "mississippi-st": {
+    "cinderellaWins": 4,
+    "upsetLosses": 7,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "baylor": {
+    "cinderellaWins": 2,
+    "upsetLosses": 5,
+    "gamesMatched": 32,
+    "gamesTotal": 33
+  },
+  "creighton": {
+    "cinderellaWins": 6,
+    "upsetLosses": 5,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "georgia": {
+    "cinderellaWins": 4,
+    "upsetLosses": 0,
+    "gamesMatched": 32,
+    "gamesTotal": 32
+  },
+  "oklahoma": {
+    "cinderellaWins": 8,
+    "upsetLosses": 1,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "arkansas": {
+    "cinderellaWins": 9,
+    "upsetLosses": 1,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "new-mexico": {
+    "cinderellaWins": 7,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 33
+  },
+  "vanderbilt": {
+    "cinderellaWins": 6,
+    "upsetLosses": 3,
+    "gamesMatched": 32,
+    "gamesTotal": 32
+  },
+  "utah-st": {
+    "cinderellaWins": 5,
+    "upsetLosses": 5,
+    "gamesMatched": 32,
+    "gamesTotal": 33
+  },
+  "north-carolina": {
+    "cinderellaWins": 5,
+    "upsetLosses": 5,
+    "gamesMatched": 35,
+    "gamesTotal": 35
+  },
+  "vcu": {
+    "cinderellaWins": 0,
+    "upsetLosses": 6,
+    "gamesMatched": 33,
+    "gamesTotal": 34
+  },
+  "xavier": {
+    "cinderellaWins": 4,
+    "upsetLosses": 3,
+    "gamesMatched": 32,
+    "gamesTotal": 32
+  },
+  "texas": {
+    "cinderellaWins": 5,
+    "upsetLosses": 9,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "san-diego-st": {
+    "cinderellaWins": 5,
+    "upsetLosses": 7,
+    "gamesMatched": 30,
+    "gamesTotal": 30
+  },
+  "drake": {
+    "cinderellaWins": 4,
+    "upsetLosses": 3,
+    "gamesMatched": 31,
+    "gamesTotal": 33
+  },
+  "uc-san-diego": {
+    "cinderellaWins": 5,
+    "upsetLosses": 3,
+    "gamesMatched": 33,
+    "gamesTotal": 34
+  },
+  "colorado-st": {
+    "cinderellaWins": 10,
+    "upsetLosses": 1,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "mcneese-st": {
+    "cinderellaWins": 1,
+    "upsetLosses": 3,
+    "gamesMatched": 31,
+    "gamesTotal": 33
+  },
+  "liberty": {
+    "cinderellaWins": 0,
+    "upsetLosses": 5,
+    "gamesMatched": 31,
+    "gamesTotal": 34
+  },
+  "yale": {
+    "cinderellaWins": 0,
+    "upsetLosses": 4,
+    "gamesMatched": 28,
+    "gamesTotal": 29
+  },
+  "high-point": {
+    "cinderellaWins": 2,
+    "upsetLosses": 5,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "akron": {
+    "cinderellaWins": 0,
+    "upsetLosses": 3,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "grand-canyon": {
+    "cinderellaWins": 1,
+    "upsetLosses": 5,
+    "gamesMatched": 32,
+    "gamesTotal": 33
+  },
+  "lipscomb": {
+    "cinderellaWins": 1,
+    "upsetLosses": 6,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "troy": {
+    "cinderellaWins": 3,
+    "upsetLosses": 5,
+    "gamesMatched": 31,
+    "gamesTotal": 33
+  },
+  "unc-wilmington": {
+    "cinderellaWins": 3,
+    "upsetLosses": 6,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "montana": {
+    "cinderellaWins": 7,
+    "upsetLosses": 2,
+    "gamesMatched": 31,
+    "gamesTotal": 34
+  },
+  "wofford": {
+    "cinderellaWins": 3,
+    "upsetLosses": 11,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "robert-morris": {
+    "cinderellaWins": 10,
+    "upsetLosses": 2,
+    "gamesMatched": 33,
+    "gamesTotal": 34
+  },
+  "bryant": {
+    "cinderellaWins": 1,
+    "upsetLosses": 7,
+    "gamesMatched": 32,
+    "gamesTotal": 34
+  },
+  "omaha": {
+    "cinderellaWins": 12,
+    "upsetLosses": 2,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "norfolk-st": {
+    "cinderellaWins": 3,
+    "upsetLosses": 6,
+    "gamesMatched": 31,
+    "gamesTotal": 34
+  },
+  "siu-edwardsville": {
+    "cinderellaWins": 5,
+    "upsetLosses": 6,
+    "gamesMatched": 31,
+    "gamesTotal": 33
+  },
+  "mount-st-marys": {
+    "cinderellaWins": 9,
+    "upsetLosses": 5,
+    "gamesMatched": 33,
+    "gamesTotal": 34
+  },
+  "american": {
+    "cinderellaWins": 7,
+    "upsetLosses": 7,
+    "gamesMatched": 33,
+    "gamesTotal": 34
+  },
+  "alabama-st": {
+    "cinderellaWins": 3,
+    "upsetLosses": 8,
+    "gamesMatched": 34,
+    "gamesTotal": 34
+  },
+  "saint-francis": {
+    "cinderellaWins": 8,
+    "upsetLosses": 4,
+    "gamesMatched": 31,
+    "gamesTotal": 33
+  }
+}

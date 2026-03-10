@@ -351,7 +351,7 @@ export function BracketView({
   disabled,
   activeRegion,
 }: BracketViewProps) {
-  const [zoomLevel, setZoomLevel] = useState(typeof window !== "undefined" && window.innerWidth < 640 ? 0.8 : 0.95)
+  const [zoomLevel, setZoomLevel] = useState(1.0)
 
   return (
     <div className="space-y-2">
@@ -365,7 +365,7 @@ export function BracketView({
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
-            onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.1))}
+            onClick={() => setZoomLevel(z => Math.max(0.5, z - 0.25))}
           >
             <ZoomOut className="h-3 w-3" />
           </Button>
@@ -376,7 +376,7 @@ export function BracketView({
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
-            onClick={() => setZoomLevel(z => Math.min(1.5, z + 0.1))}
+            onClick={() => setZoomLevel(z => Math.min(1.5, z + 0.25))}
           >
             <ZoomIn className="h-3 w-3" />
           </Button>
@@ -384,7 +384,7 @@ export function BracketView({
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
-            onClick={() => setZoomLevel(0.95)}
+            onClick={() => setZoomLevel(1.0)}
           >
             <Maximize2 className="h-3 w-3" />
           </Button>

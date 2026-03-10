@@ -9,7 +9,8 @@ import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
 import { getPrimaryArchetypeEmoji, getArchetypeByKey, ARCHETYPE_LEGEND } from "@/lib/archetypes"
 import { ArchetypePopover } from "@/components/archetype-popover"
-import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData, type TeamLikeForCallout } from "@/lib/team-callout-helpers"
 
 // ── Team pill status ─────────────────────────────────────────────────────────
 
@@ -81,7 +82,7 @@ function TeamPill({ pick }: { pick: ResolvedPickSummary }) {
 // Now with: region badge (top-left), seed badge with spec color (bottom-right),
 // thick status borders (green/yellow/red)
 
-function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?: number }) {
+function PicksLogoStrip({ picks, padTo, isPreTournament = false, pickerPctMap }: { picks: ResolvedPickSummary[], padTo?: number, isPreTournament?: boolean, pickerPctMap?: Map<string, number> }) {
   const activePicks = picks.filter(p => !p.eliminated)
   const eliminatedPicks = picks.filter(p => p.eliminated)
 
@@ -96,7 +97,8 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
     const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
     const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
-    const calloutData: TeamCalloutData = {
+    const teamLike: TeamLikeForCallout = {
+      id: pick.teamId,
       name: pick.name,
       shortName: pick.shortName,
       seed: pick.seed,
@@ -105,6 +107,9 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
       eliminated: pick.eliminated,
       logoUrl: pick.logoUrl,
     }
+    const calloutData = buildTeamCalloutData(teamLike, isPreTournament, {
+      selectedPct: pickerPctMap?.get(pick.teamId) ?? null,
+    })
 
     return (
       <TeamCallout key={pick.teamId} team={calloutData}>
@@ -166,7 +171,7 @@ function PicksLogoStrip({ picks, padTo }: { picks: ResolvedPickSummary[], padTo?
   )
 }
 
-function PickCard({ pick }: { pick: ResolvedPickSummary }) {
+function PickCard({ pick, isPreTournament = false, pickerPctMap }: { pick: ResolvedPickSummary, isPreTournament?: boolean, pickerPctMap?: Map<string, number> }) {
   const pts = pick.seed * pick.wins
   const status = getTeamPillStatus(pick)
   const statusColor = STATUS_BORDER_COLORS[status]
@@ -174,7 +179,8 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
   const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
   const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
-  const calloutData: TeamCalloutData = {
+  const teamLike: TeamLikeForCallout = {
+    id: pick.teamId,
     name: pick.name,
     shortName: pick.shortName,
     seed: pick.seed,
@@ -182,8 +188,10 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
     wins: pick.wins,
     eliminated: pick.eliminated,
     logoUrl: pick.logoUrl,
-    score: pts,
   }
+  const calloutData = buildTeamCalloutData(teamLike, isPreTournament, {
+    selectedPct: pickerPctMap?.get(pick.teamId) ?? null,
+  })
 
   return (
     <TeamCallout team={calloutData}>
@@ -231,7 +239,7 @@ function PickCard({ pick }: { pick: ResolvedPickSummary }) {
   )
 }
 
-export function ExpandedPicksGrid({ picks }: { picks: ResolvedPickSummary[] }) {
+export function ExpandedPicksGrid({ picks, isPreTournament = false, pickerPctMap }: { picks: ResolvedPickSummary[], isPreTournament?: boolean, pickerPctMap?: Map<string, number> }) {
   const regions = [
     { name: "West", id: "West" },
     { name: "East", id: "East" },
@@ -252,7 +260,7 @@ export function ExpandedPicksGrid({ picks }: { picks: ResolvedPickSummary[] }) {
 
             <div className="flex flex-wrap gap-4 mt-3">
               {regionPicks.length > 0 ? (
-                regionPicks.map(pick => <PickCard key={pick.teamId} pick={pick} />)
+                regionPicks.map(pick => <PickCard key={pick.teamId} pick={pick} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />)
               ) : (
                 <span className="text-[10px] text-muted-foreground/50 italic py-2 pl-1">No picks</span>
               )}
@@ -273,7 +281,7 @@ export interface Optimal8Data {
   picks: ResolvedPickSummary[]
 }
 
-function Optimal8Card({ data, label = "Optimal 8", description = "Best available picks by TPS potential", variant = "rolling" }: { data: Optimal8Data; label?: string; description?: string; variant?: "rolling" | "hindsight" }) {
+function Optimal8Card({ data, label = "Optimal 8", description = "Best available picks by TPS potential", variant = "rolling", isPreTournament = false, pickerPctMap }: { data: Optimal8Data; label?: string; description?: string; variant?: "rolling" | "hindsight"; isPreTournament?: boolean; pickerPctMap?: Map<string, number> }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const isHindsight = variant === "hindsight"
 
@@ -309,13 +317,13 @@ function Optimal8Card({ data, label = "Optimal 8", description = "Best available
         </div>
         {/* Team logos */}
         <div className="mt-2 pt-2 border-t border-primary/15">
-          <PicksLogoStrip picks={data.picks} padTo={8} />
+          <PicksLogoStrip picks={data.picks} padTo={8} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />
         </div>
       </button>
 
       {/* Expanded picks */}
       {isExpanded && (
-        <ExpandedPicksGrid picks={data.picks} />
+        <ExpandedPicksGrid picks={data.picks} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />
       )}
     </div>
   )
@@ -379,6 +387,8 @@ interface LeaderboardTableProps {
   optimal8Hindsight?: Optimal8Data
   userLeagues?: LeagueInfo[]
   userProfile?: UserProfile | null
+  isPreTournament?: boolean
+  pickerPctMap?: Map<string, number>
 }
 
 type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore"
@@ -449,6 +459,8 @@ function LeaderboardRow({
   rankStyle,
   onToggle,
   allEntries,
+  isPreTournament = false,
+  pickerPctMap,
 }: {
   entry: LeaderboardEntry
   isMe: boolean
@@ -456,6 +468,8 @@ function LeaderboardRow({
   rankStyle: (rank: number) => string
   onToggle: () => void
   allEntries: LeaderboardEntry[]
+  isPreTournament?: boolean
+  pickerPctMap?: Map<string, number>
 }) {
   const rankDisplay = formatRank(entry, allEntries)
   const allArchetypes = (entry.archetypes ?? []).map(k => getArchetypeByKey(k)).filter(Boolean) as { key: string; emoji: string; label: string; description: string }[]
@@ -505,7 +519,7 @@ function LeaderboardRow({
           </div>
           {entry.picks.length > 0 && (
             <div className="flex items-center gap-2">
-              <PicksLogoStrip picks={entry.picks} />
+              <PicksLogoStrip picks={entry.picks} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />
               <span className={`text-xs font-mono shrink-0 ${
                 entry.teamsRemaining >= 4 ? "text-green-400" : entry.teamsRemaining > 0 ? "text-amber-400" : "text-muted-foreground"
               }`}>
@@ -564,7 +578,7 @@ function LeaderboardRow({
                 {entry.charity}
               </div>
             )}
-            {entry.picks.length > 0 && <PicksLogoStrip picks={entry.picks} />}
+            {entry.picks.length > 0 && <PicksLogoStrip picks={entry.picks} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
           </div>
           <div className="text-right">
             <span className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0 ? "text-muted-foreground" : entry.teamsRemaining >= 4 ? "text-green-400" : "text-amber-400"}`}>
@@ -635,7 +649,7 @@ function LeaderboardRow({
               Show detailed view
             </summary>
             <div className="mt-2">
-              <ExpandedPicksGrid picks={entry.picks} />
+              <ExpandedPicksGrid picks={entry.picks} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />
             </div>
           </details>
         </div>
@@ -644,7 +658,7 @@ function LeaderboardRow({
   )
 }
 
-export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, optimal8Hindsight, userLeagues, userProfile }: LeaderboardTableProps) {
+export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal8, optimal8Hindsight, userLeagues, userProfile, isPreTournament = false, pickerPctMap }: LeaderboardTableProps) {
   const [data, setData] = useState<LeaderboardEntry[]>(initialData)
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>("rank")
@@ -822,8 +836,8 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       </div>
 
       {/* Optimal 8 cards (above real leaderboard) */}
-      {optimal8 && <Optimal8Card data={optimal8} label="Optimal 8 (Rolling)" description="Best 8 teams by current score at this moment" />}
-      {optimal8Hindsight && <Optimal8Card data={optimal8Hindsight} label="Optimal 8 (Hindsight)" description="Best possible 8 picks knowing all tournament results" variant="hindsight" />}
+      {optimal8 && <Optimal8Card data={optimal8} label="Optimal 8 (Rolling)" description="Best 8 teams by current score at this moment" isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
+      {optimal8Hindsight && <Optimal8Card data={optimal8Hindsight} label="Optimal 8 (Hindsight)" description="Best possible 8 picks knowing all tournament results" variant="hindsight" isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
 
       {/* Rows */}
       <div className="space-y-1.5">
@@ -896,6 +910,8 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                           setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                         }
                         allEntries={sorted}
+                        isPreTournament={isPreTournament}
+                        pickerPctMap={pickerPctMap}
                       />
                     ))}
                   </div>
@@ -929,6 +945,8 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                     setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
                   }
                   allEntries={sorted}
+                  isPreTournament={isPreTournament}
+                  pickerPctMap={pickerPctMap}
                 />
               ))}
               {showAll && sorted.length > 15 && (

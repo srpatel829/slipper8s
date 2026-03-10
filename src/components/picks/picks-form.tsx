@@ -13,6 +13,12 @@ import { SEED_TIERS } from "@/components/picks/picks-tracker"
 import { Target, Heart, Lock, CheckCircle2, Layers, Grid2x2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { getSeedColor } from "@/lib/colors"
+import { TeamLogoBox } from "@/components/team-logo-box"
+import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
+import { calculateEntryExpectedScore, SB_2025_MAP, pretournamentExpectedScore } from "@/lib/silver-bulletin-2025"
+import { getTeamExtendedData } from "@/lib/team-data-2025"
+import { getConferenceForTeam } from "@/lib/conference-map"
 import type { Team, PlayInSlot, Pick } from "@/generated/prisma"
 
 type PlayInSlotWithTeams = PlayInSlot & {
@@ -36,6 +42,7 @@ interface PicksFormProps {
   onDemoSubmit?: (picks: SelectedPick[], charity: string | null) => void
   matchupInfoMap?: Map<string, string>  // teamId → "vs #X Opp · Max Xpts" — for demo pre-tournament
   enableViewModes?: boolean             // shows region/seed view toggles + enhanced tracker
+  hideCharity?: boolean                 // hides inline charity section (render CharityInput externally)
   entryId?: string                      // current entry ID for updates
   seasonId?: string                     // current season ID for new entries
 }
@@ -56,6 +63,7 @@ export function PicksForm({
   onDemoSubmit,
   matchupInfoMap,
   enableViewModes,
+  hideCharity,
   entryId,
   seasonId,
 }: PicksFormProps) {
@@ -168,6 +176,22 @@ export function PicksForm({
     return currentScore + totalPPR
   }, [selectedTeamObjects])
 
+  // ── Expected score calculation ──
+  const expectedScore = useMemo(() => {
+    if (selectedTeamObjects.length === 0) return null
+    const teamIds = selectedTeamObjects.map(t => t.id)
+    const teamStates = new Map(
+      selectedTeamObjects.map(t => [t.id, {
+        wins: (t as { wins?: number }).wins ?? 0,
+        eliminated: (t as { eliminated?: boolean }).eliminated ?? false,
+      }])
+    )
+    // Pre-tournament when no team has wins yet
+    const allZeroWins = selectedTeamObjects.every(t => ((t as { wins?: number }).wins ?? 0) === 0)
+    const preTournament = allZeroWins && !selectedTeamObjects.some(t => (t as { eliminated?: boolean }).eliminated)
+    return calculateEntryExpectedScore(teamIds, teamStates, preTournament)
+  }, [selectedTeamObjects])
+
   // ── Team card renderer (shared between view modes) ──
   function renderTeamCard(team: Team) {
     return (
@@ -193,15 +217,21 @@ export function PicksForm({
           {/* Simple progress dots */}
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
-              {Array.from({ length: MAX_PICKS }, (_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-2.5 w-2.5 rounded-full transition-all",
-                    i < selected.length ? "bg-primary" : "bg-muted-foreground/20"
-                  )}
-                />
-              ))}
+              {Array.from({ length: MAX_PICKS }, (_, i) => {
+                const pick = i < selected.length ? selected[i] : null
+                const pickTeam = pick?.teamId ? teams.find(t => t.id === pick.teamId) : null
+                const dotColor = pickTeam ? getSeedColor(pickTeam.seed) : undefined
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "h-2.5 w-2.5 rounded-full transition-all",
+                      !pick && "bg-muted-foreground/20"
+                    )}
+                    style={dotColor ? { backgroundColor: dotColor } : undefined}
+                  />
+                )
+              })}
             </div>
             <span className="text-sm font-semibold">
               <span className="text-primary">{selected.length}</span>
@@ -236,37 +266,77 @@ export function PicksForm({
         </div>
       </div>
 
-      {/* 8-pick summary with TPS */}
+      {/* 8-pick summary with TPS + Expected Score */}
       <div className="bg-card border border-border rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold flex items-center gap-2">
             <Target className="h-4 w-4 text-primary" />
             Your Picks
           </h2>
-          {selected.length > 0 && bracketTPS > 0 && (
-            <div className="text-xs text-muted-foreground">
-              TPS: <span className="font-mono font-bold text-primary">{bracketTPS}</span>
+          {selected.length > 0 && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              {bracketTPS > 0 && (
+                <div>
+                  TPS: <span className="font-mono font-bold text-primary">{bracketTPS}</span>
+                </div>
+              )}
+              {expectedScore != null && (
+                <div>
+                  Expected: <span className="font-mono font-bold text-foreground">{expectedScore.toFixed(1)}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           {selected.map((pick) => {
             const team = teams.find(t => t.id === pick.teamId)
             if (!team) return null
+            const wins = (team as { wins?: number }).wins ?? 0
+            const eliminated = (team as { eliminated?: boolean }).eliminated ?? false
+            const allZero = wins === 0 && !eliminated
+            const isPreTournament = allZero && deadlinePassed === false
+            const ext = getTeamExtendedData(team.id)
+            const sb = SB_2025_MAP.get(team.id)
+            const expScore = isPreTournament ? pretournamentExpectedScore(team.id) : null
+            const calloutData: TeamCalloutData = {
+              name: team.name,
+              shortName: team.shortName ?? team.name,
+              seed: team.seed,
+              region: team.region ?? "",
+              wins,
+              eliminated,
+              logoUrl: (team as { logoUrl?: string | null }).logoUrl ?? null,
+              isPreTournament,
+              conference: getConferenceForTeam(team.id),
+              cumulativeProbabilities: sb?.cumulative ?? null,
+              expectedScore: expScore,
+              sCurveRank: ext?.sCurveRank ?? null,
+              kenpomRank: ext?.kenpomRank ?? null,
+              bpiRank: ext?.bpiRank ?? null,
+              record: ext?.record ?? null,
+              confRegSeasonChamp: ext?.confRegSeasonChamp ?? false,
+              confTourneyChamp: ext?.confTourneyChamp ?? false,
+              cinderellaWins: ext?.cinderellaWins ?? null,
+              upsetLosses: ext?.upsetLosses ?? null,
+            }
             return (
-              <span
-                key={team.id}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 border border-primary/20 text-foreground"
-              >
-                <span className="font-bold text-primary">#{team.seed}</span>
-                {team.shortName}
-              </span>
+              <TeamCallout key={team.id} team={calloutData}>
+                <TeamLogoBox
+                  seed={team.seed}
+                  region={team.region ?? ""}
+                  logoUrl={(team as { logoUrl?: string | null }).logoUrl ?? null}
+                  shortName={team.shortName ?? team.name}
+                  wins={(team as { wins?: number }).wins ?? 0}
+                  eliminated={(team as { eliminated?: boolean }).eliminated ?? false}
+                  size="md"
+                  className="cursor-pointer"
+                />
+              </TeamCallout>
             )
           })}
           {Array.from({ length: MAX_PICKS - selected.length }).map((_, i) => (
-            <span key={`empty-${i}`} className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] text-muted-foreground/40 border border-dashed border-border/30">
-              ???
-            </span>
+            <div key={`empty-${i}`} className="w-10 h-10 rounded-md border-2 border-dashed border-border/30 bg-muted/10 shrink-0" />
           ))}
         </div>
       </div>
@@ -368,30 +438,32 @@ export function PicksForm({
         </div>
       )}
 
-      {/* Charity */}
-      <div className="bg-card border border-border rounded-xl p-4 space-y-3 max-w-md">
-        <div className="flex items-center gap-2">
-          <Heart className="h-4 w-4 text-rose-400" />
-          <Label htmlFor="charity" className="text-sm font-semibold">
-            Charity preference
-            <span className="text-muted-foreground font-normal ml-1">(optional)</span>
-          </Label>
+      {/* Charity — hidden when parent renders it externally (e.g. below bracket) */}
+      {!hideCharity && (
+        <div className="bg-card border border-border rounded-xl p-4 space-y-3 max-w-md">
+          <div className="flex items-center gap-2">
+            <Heart className="h-4 w-4 text-rose-400" />
+            <Label htmlFor="charity" className="text-sm font-semibold">
+              Charity preference
+              <span className="text-muted-foreground font-normal ml-1">(optional)</span>
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Charities should be 501(c)(3) organizations.
+          </p>
+          <Input
+            id="charity"
+            placeholder="e.g. a 501(c)(3) organization"
+            value={charity}
+            onChange={(e) => setCharity(e.target.value)}
+            disabled={deadlinePassed}
+            className="bg-muted/50"
+          />
+          <p className="text-[10px] text-muted-foreground">
+            Top 4 finishers&apos; charities are shown on the leaderboard.
+          </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Charities should be 501(c)(3) organizations.
-        </p>
-        <Input
-          id="charity"
-          placeholder="e.g. a 501(c)(3) organization"
-          value={charity}
-          onChange={(e) => setCharity(e.target.value)}
-          disabled={deadlinePassed}
-          className="bg-muted/50"
-        />
-        <p className="text-[10px] text-muted-foreground">
-          Top 4 finishers&apos; charities are shown on the leaderboard.
-        </p>
-      </div>
+      )}
 
       {/* Mobile submit */}
       {!deadlinePassed && (

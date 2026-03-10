@@ -1,6 +1,8 @@
 import type { Team, PlayInSlot } from "@/generated/prisma"
 import { Badge } from "@/components/ui/badge"
 import { Check, Shuffle } from "lucide-react"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 type PlayInSlotWithTeams = PlayInSlot & {
   team1: Team
@@ -49,18 +51,26 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled }: PlayInSlo
       </div>
 
       {isResolved ? (
-        <div className="flex items-center gap-2">
-          {slot.winner!.logoUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={slot.winner!.logoUrl}
-              alt={slot.winner!.name}
-              className="h-6 w-6 object-contain"
-            />
+        <TeamCallout
+          team={buildTeamCalloutData(
+            { id: slot.winner!.id, name: slot.winner!.name, shortName: slot.winner!.shortName ?? "", seed: slot.winner!.seed, region: slot.winner!.region ?? "", wins: slot.winner!.wins, eliminated: slot.winner!.eliminated, logoUrl: slot.winner!.logoUrl },
+            true,
           )}
-          <p className="text-sm font-semibold">{slot.winner!.name}</p>
-          <span className="text-xs text-muted-foreground">(advanced)</span>
-        </div>
+          interactiveChild
+        >
+          <div className="flex items-center gap-2">
+            {slot.winner!.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={slot.winner!.logoUrl}
+                alt={slot.winner!.name}
+                className="h-6 w-6 object-contain"
+              />
+            )}
+            <p className="text-sm font-semibold">{slot.winner!.name}</p>
+            <span className="text-xs text-muted-foreground">(advanced)</span>
+          </div>
+        </TeamCallout>
       ) : (
         <div>
           <p className="text-sm font-medium">

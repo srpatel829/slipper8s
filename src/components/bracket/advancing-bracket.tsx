@@ -638,26 +638,26 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
     }, [mode, teams])
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [zoom, setZoom] = useState(typeof window !== "undefined" && window.innerWidth < 640 ? 0.65 : 0.85)
+    const [zoom, setZoom] = useState(1.0)
 
     const ZoomControls = () => (
         <div className="flex items-center gap-1 mb-2 justify-end">
             <button
                 className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                onClick={() => setZoom(z => Math.max(0.4, z - 0.1))}
+                onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
             >
                 <ZoomOut className="h-3 w-3" />
             </button>
             <span className="text-[10px] text-muted-foreground w-8 text-center">{Math.round(zoom * 100)}%</span>
             <button
                 className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
+                onClick={() => setZoom(z => Math.min(1.5, z + 0.25))}
             >
                 <ZoomIn className="h-3 w-3" />
             </button>
             <button
                 className="h-6 w-6 rounded border border-border/40 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
-                onClick={() => setZoom(0.85)}
+                onClick={() => setZoom(1.0)}
             >
                 <Maximize2 className="h-3 w-3" />
             </button>

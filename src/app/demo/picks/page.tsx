@@ -17,6 +17,7 @@ import { useDemoContext } from "@/lib/demo-context"
 import { getR64Matchups } from "@/lib/demo-game-sequence"
 import type { SelectedPick } from "@/components/picks/picks-form"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { CharityInput } from "@/components/picks/charity-input"
 import { Lock, Lightbulb, X, LayoutTemplate, Grid2X2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -36,6 +37,7 @@ export default function DemoPicksPage() {
   // Key for force-remounting PicksForm when QuickPickGenerator/bracket changes picks
   const [formKey, setFormKey] = useState(0)
   const [generatedPicks, setGeneratedPicks] = useState<SelectedPick[] | null>(null)
+  const [charity, setCharity] = useState("")
 
   const currentPicks = demoUserPicks.get(currentPersona.userId) ?? []
 
@@ -170,6 +172,7 @@ export default function DemoPicksPage() {
         onDemoSubmit={handleDemoSubmit}
         matchupInfoMap={matchupInfoMap}
         enableViewModes
+        hideCharity
       />
 
       {/* Bracket View — only shown pre-tournament */}
@@ -210,6 +213,15 @@ export default function DemoPicksPage() {
             />
           </TabsContent>
         </Tabs>
+      )}
+
+      {/* Charity — placed after the bracket */}
+      {!deadlinePassed && (
+        <CharityInput
+          charity={charity}
+          setCharity={setCharity}
+          disabled={deadlinePassed}
+        />
       )}
     </div>
   )
