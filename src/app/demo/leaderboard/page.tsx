@@ -213,6 +213,7 @@ export default function DemoLeaderboardPage() {
             currentUserId={currentPersona.userId}
             optimal8={optimal8}
             optimal8Final={optimal8Final}
+            isPreTournament={preTournament}
           />
         )}
       />

@@ -6,7 +6,7 @@ import { TeamsTable, type TeamRow } from "@/components/teams/teams-table"
 import { LeaderboardDimensionTabs } from "@/components/leaderboard/leaderboard-dimension-tabs"
 
 export default function DemoTeamsPage() {
-  const { teamsData, demoUserPicks, leaderboardData, currentPersona } = useDemoContext()
+  const { teamsData, demoUserPicks, leaderboardData, currentPersona, gameIndex } = useDemoContext()
 
   // Base team rows (without picker counts — those depend on dimension filter)
   const baseRows = useMemo(() => {
@@ -57,7 +57,7 @@ export default function DemoTeamsPage() {
             pickerCount: pickerCounts.get(r.id) ?? 0,
           }))
 
-          return <TeamsTable teams={rows} totalEntries={filteredIds.size} />
+          return <TeamsTable teams={rows} totalEntries={filteredIds.size} isPreTournament={gameIndex < 0} />
         }}
       />
     </div>

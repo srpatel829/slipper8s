@@ -173,6 +173,7 @@ export default function DemoPicksPage() {
         matchupInfoMap={matchupInfoMap}
         enableViewModes
         hideCharity
+        isPreTournament={gameIndex < 0}
       />
 
       {/* Bracket View — only shown pre-tournament */}
@@ -202,6 +203,7 @@ export default function DemoPicksPage() {
               gameSequence={gameSequence}
               gameIndex={gameIndex}
               disabled={deadlinePassed}
+              isPreTournament={!deadlinePassed}
             />
           </TabsContent>
           <TabsContent value="classic" className="mt-0">

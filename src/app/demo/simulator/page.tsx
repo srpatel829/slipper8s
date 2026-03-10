@@ -18,6 +18,7 @@ import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
 
 export default function DemoSimulatorPage() {
   const { leaderboardData, teamsData, gameSequence, gameIndex } = useDemoContext()
+  const isPreTournament = gameIndex < 0
 
   // ── Pick state ────────────────────────────────────────────────────────────
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
@@ -189,6 +190,7 @@ export default function DemoSimulatorPage() {
             onPickGame={pickGame}
             gameSequence={gameSequence}
             gameIndex={gameIndex}
+            isPreTournament={isPreTournament}
           />
         </div>
       </div>

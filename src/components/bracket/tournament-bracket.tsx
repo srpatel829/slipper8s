@@ -136,12 +136,14 @@ function MatchupPair({
     winnerId,
     isCompleted,
     reversed,
+    isPreTournament,
 }: {
     topTeam: TeamLike | null
     botTeam: TeamLike | null
     winnerId?: string
     isCompleted: boolean
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     return (
         <div className="flex flex-col gap-px">
@@ -150,12 +152,14 @@ function MatchupPair({
                 isWinner={isCompleted && winnerId === topTeam?.id}
                 isCompleted={isCompleted}
                 reversed={reversed}
+                isPreTournament={isPreTournament}
             />
             <SlotCell
                 team={botTeam}
                 isWinner={isCompleted && winnerId === botTeam?.id}
                 isCompleted={isCompleted}
                 reversed={reversed}
+                isPreTournament={isPreTournament}
             />
         </div>
     )
@@ -264,10 +268,12 @@ function RegionBracket({
     region,
     rounds,
     reversed,
+    isPreTournament,
 }: {
     region: string
     rounds: RoundData[]
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     const COL_W = 112
 
@@ -307,6 +313,7 @@ function RegionBracket({
                                                 winnerId={m.winnerId}
                                                 isCompleted={m.isCompleted}
                                                 reversed={reversed}
+                                                isPreTournament={isPreTournament}
                                             />
                                         </div>
                                         {rIdx < rounds.length - 1 && (
@@ -338,11 +345,13 @@ function CenterColumn({
     gameIndex,
     teamMap,
     e8Winners,
+    isPreTournament,
 }: {
     gameSequence: DemoGameEvent[]
     gameIndex: number
     teamMap: Map<string, TeamLike>
     e8Winners: Map<Region, string | null>
+    isPreTournament?: boolean
 }) {
     const f4Games = gameSequence.filter(g => g.round === 5)
     const champGame = gameSequence.find(g => g.round === 6)
@@ -379,7 +388,7 @@ function CenterColumn({
         isCompleted: boolean
         isChampion?: boolean
     }) {
-        return <SlotCell team={team} isWinner={isWinner} isCompleted={isCompleted} isChampion={isChampion} />
+        return <SlotCell team={team} isWinner={isWinner} isCompleted={isCompleted} isChampion={isChampion} isPreTournament={isPreTournament} />
     }
 
     return (
@@ -397,6 +406,7 @@ function CenterColumn({
                     botTeam={f4Data[0].botTeam}
                     winnerId={f4Data[0].winnerId}
                     isCompleted={f4Data[0].isCompleted}
+                    isPreTournament={isPreTournament}
                 />
             </div>
 
@@ -416,6 +426,7 @@ function CenterColumn({
                     botTeam={champBotTeam}
                     winnerId={champWinnerId}
                     isCompleted={champCompleted}
+                    isPreTournament={isPreTournament}
                 />
                 {/* Champion badge */}
                 {champWinnerId && champCompleted && (() => {
@@ -446,6 +457,7 @@ function CenterColumn({
                     botTeam={f4Data[1].botTeam}
                     winnerId={f4Data[1].winnerId}
                     isCompleted={f4Data[1].isCompleted}
+                    isPreTournament={isPreTournament}
                 />
             </div>
         </div>
@@ -454,7 +466,7 @@ function CenterColumn({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function TournamentBracket({ teams, gameSequence, gameIndex }: TournamentBracketProps) {
+export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournament = false }: TournamentBracketProps) {
     const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [teams])
 
     const { eastRounds, westRounds, southRounds, midwestRounds, e8Winners } = useMemo(() => {
@@ -516,7 +528,7 @@ export function TournamentBracket({ teams, gameSequence, gameIndex }: Tournament
                     {/* Top row */}
                     <div className="flex gap-2 justify-center items-start">
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="East" rounds={eastRounds} reversed={false} />
+                            <RegionBracket region="East" rounds={eastRounds} reversed={false} isPreTournament={isPreTournament} />
                         </div>
 
                         <div className="shrink-0 flex items-start justify-center pt-5">
@@ -525,11 +537,12 @@ export function TournamentBracket({ teams, gameSequence, gameIndex }: Tournament
                                 gameIndex={gameIndex}
                                 teamMap={teamMap}
                                 e8Winners={e8Winners}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="West" rounds={westRounds} reversed={true} />
+                            <RegionBracket region="West" rounds={westRounds} reversed={true} isPreTournament={isPreTournament} />
                         </div>
                     </div>
 
@@ -538,13 +551,13 @@ export function TournamentBracket({ teams, gameSequence, gameIndex }: Tournament
                     {/* Bottom row */}
                     <div className="flex gap-2 justify-center items-start">
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="South" rounds={southRounds} reversed={false} />
+                            <RegionBracket region="South" rounds={southRounds} reversed={false} isPreTournament={isPreTournament} />
                         </div>
 
                         <div className="shrink-0 min-w-[150px] px-2" /> {/* spacer matching center */}
 
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} />
+                            <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} isPreTournament={isPreTournament} />
                         </div>
                     </div>
                 </div>

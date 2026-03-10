@@ -14,7 +14,7 @@ interface TeamCardProps {
   isPreTournament?: boolean
 }
 
-export function TeamCard({ team, selected, onToggle, disabled, matchupInfo, isPreTournament = true }: TeamCardProps) {
+export function TeamCard({ team, selected, onToggle, disabled, matchupInfo, isPreTournament = false }: TeamCardProps) {
   const seedColor = getSeedColor(team.seed)
   const regionAbbrev = team.region ? REGION_ABBREV[team.region] ?? team.region.substring(0, 2) : ""
   const regionColor = team.region ? REGION_COLORS[team.region] ?? "#888" : "#888"

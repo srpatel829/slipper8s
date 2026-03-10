@@ -15,10 +15,9 @@ import { cn } from "@/lib/utils"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 import { getSeedColor } from "@/lib/colors"
 import { TeamLogoBox } from "@/components/team-logo-box"
-import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
-import { calculateEntryExpectedScore, SB_2025_MAP, pretournamentExpectedScore } from "@/lib/silver-bulletin-2025"
-import { getTeamExtendedData } from "@/lib/team-data-2025"
-import { getConferenceForTeam } from "@/lib/conference-map"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
+import { calculateEntryExpectedScore, SB_2025_MAP } from "@/lib/silver-bulletin-2025"
 import type { Team, PlayInSlot, Pick } from "@/generated/prisma"
 
 type PlayInSlotWithTeams = PlayInSlot & {
@@ -45,6 +44,7 @@ interface PicksFormProps {
   hideCharity?: boolean                 // hides inline charity section (render CharityInput externally)
   entryId?: string                      // current entry ID for updates
   seasonId?: string                     // current season ID for new entries
+  isPreTournament?: boolean             // timeline state: true when pre-tournament
 }
 
 export type SelectedPick = { teamId?: string; playInSlotId?: string }
@@ -66,6 +66,7 @@ export function PicksForm({
   hideCharity,
   entryId,
   seasonId,
+  isPreTournament = false,
 }: PicksFormProps) {
   const router = useRouter()
   const isEditing = existingPicks.length > 0
@@ -205,6 +206,7 @@ export function PicksForm({
           (selected.length >= MAX_PICKS && !selectedTeamIds.has(team.id))
         }
         matchupInfo={matchupInfoMap?.get(team.id)}
+        isPreTournament={isPreTournament}
       />
     )
   }
@@ -294,32 +296,10 @@ export function PicksForm({
             if (!team) return null
             const wins = (team as { wins?: number }).wins ?? 0
             const eliminated = (team as { eliminated?: boolean }).eliminated ?? false
-            const allZero = wins === 0 && !eliminated
-            const isPreTournament = allZero && deadlinePassed === false
-            const ext = getTeamExtendedData(team.id)
-            const sb = SB_2025_MAP.get(team.id)
-            const expScore = isPreTournament ? pretournamentExpectedScore(team.id) : null
-            const calloutData: TeamCalloutData = {
-              name: team.name,
-              shortName: team.shortName ?? team.name,
-              seed: team.seed,
-              region: team.region ?? "",
-              wins,
-              eliminated,
-              logoUrl: (team as { logoUrl?: string | null }).logoUrl ?? null,
+            const calloutData = buildTeamCalloutData(
+              { id: team.id, name: team.name, shortName: team.shortName ?? team.name, seed: team.seed, region: team.region ?? "", wins, eliminated, logoUrl: (team as { logoUrl?: string | null }).logoUrl ?? null },
               isPreTournament,
-              conference: getConferenceForTeam(team.id),
-              cumulativeProbabilities: sb?.cumulative ?? null,
-              expectedScore: expScore,
-              sCurveRank: ext?.sCurveRank ?? null,
-              kenpomRank: ext?.kenpomRank ?? null,
-              bpiRank: ext?.bpiRank ?? null,
-              record: ext?.record ?? null,
-              confRegSeasonChamp: ext?.confRegSeasonChamp ?? false,
-              confTourneyChamp: ext?.confTourneyChamp ?? false,
-              cinderellaWins: ext?.cinderellaWins ?? null,
-              upsetLosses: ext?.upsetLosses ?? null,
-            }
+            )
             return (
               <TeamCallout key={team.id} team={calloutData}>
                 <TeamLogoBox
@@ -357,6 +337,7 @@ export function PicksForm({
                 selected={selectedSlotIds.has(slot.id)}
                 onToggle={() => toggleSlot(slot.id)}
                 disabled={deadlinePassed || (selected.length >= MAX_PICKS && !selectedSlotIds.has(slot.id))}
+                isPreTournament={isPreTournament}
               />
             ))}
           </div>

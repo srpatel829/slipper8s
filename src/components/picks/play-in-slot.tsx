@@ -15,9 +15,10 @@ interface PlayInSlotCardProps {
   selected: boolean
   onToggle: () => void
   disabled: boolean
+  isPreTournament?: boolean
 }
 
-export function PlayInSlotCard({ slot, selected, onToggle, disabled }: PlayInSlotCardProps) {
+export function PlayInSlotCard({ slot, selected, onToggle, disabled, isPreTournament = false }: PlayInSlotCardProps) {
   const isResolved = !!slot.winner
 
   return (
@@ -54,7 +55,7 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled }: PlayInSlo
         <TeamCallout
           team={buildTeamCalloutData(
             { id: slot.winner!.id, name: slot.winner!.name, shortName: slot.winner!.shortName ?? "", seed: slot.winner!.seed, region: slot.winner!.region ?? "", wins: slot.winner!.wins, eliminated: slot.winner!.eliminated, logoUrl: slot.winner!.logoUrl },
-            true,
+            isPreTournament,
           )}
           interactiveChild
         >

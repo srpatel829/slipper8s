@@ -10,9 +10,10 @@ interface ScoresGridProps {
   initialGames: LiveGameData[]
   roundNames: Record<number, string>
   demoMode?: boolean
+  isPreTournament?: boolean
 }
 
-export function ScoresGrid({ initialGames, roundNames, demoMode }: ScoresGridProps) {
+export function ScoresGrid({ initialGames, roundNames, demoMode, isPreTournament = false }: ScoresGridProps) {
   const [games, setGames] = useState<LiveGameData[]>(initialGames)
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(new Date())

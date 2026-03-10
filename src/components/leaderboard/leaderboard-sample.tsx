@@ -18,7 +18,8 @@ import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
 import { getPrimaryArchetypeEmoji, getArchetypeByKey, ARCHETYPE_LEGEND } from "@/lib/archetypes"
 import { ArchetypePopover } from "@/components/archetype-popover"
-import { TeamCallout, type TeamCalloutData } from "@/components/team-callout"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -36,6 +37,7 @@ interface LeaderboardSampleProps {
   currentUserId?: string
   optimal8?: Optimal8Data
   optimal8Final?: Optimal8Data
+  isPreTournament?: boolean
 }
 
 // ── Archetype legend (imported from centralized definitions) ────────────────
@@ -76,22 +78,17 @@ function teamsLeftColor(count: number): string {
 
 // ── Team Logo (with circular badges) ────────────────────────────────────────
 
-function TeamLogo({ pick }: { pick: ResolvedPickSummary }) {
+function TeamLogo({ pick, isPreTournament }: { pick: ResolvedPickSummary; isPreTournament?: boolean }) {
   const status = getTeamStatus(pick)
   const statusColor = pick.eliminated ? "#6b7280" : STATUS_COLORS[status]
   const seedColor = getSeedColor(pick.seed)
   const regionAbbrev = pick.region ? REGION_ABBREV[pick.region] ?? pick.region.substring(0, 2) : ""
   const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
-  const calloutData: TeamCalloutData = {
-    name: pick.name,
-    shortName: pick.shortName,
-    seed: pick.seed,
-    region: pick.region ?? "",
-    wins: pick.wins,
-    eliminated: pick.eliminated,
-    logoUrl: pick.logoUrl,
-  }
+  const calloutData = buildTeamCalloutData(
+    { id: pick.teamId, name: pick.name, shortName: pick.shortName, seed: pick.seed, region: pick.region ?? "", wins: pick.wins, eliminated: pick.eliminated, logoUrl: pick.logoUrl },
+    isPreTournament ?? false,
+  )
 
   return (
     <TeamCallout team={calloutData}>
@@ -133,7 +130,7 @@ function TeamLogo({ pick }: { pick: ResolvedPickSummary }) {
 
 // ── Teams strip (alive | red divider | eliminated) ──────────────────────────
 
-function TeamsStrip({ picks }: { picks: ResolvedPickSummary[] }) {
+function TeamsStrip({ picks, isPreTournament }: { picks: ResolvedPickSummary[]; isPreTournament?: boolean }) {
   const alive = [...picks]
     .filter(p => !p.eliminated)
     .sort((a, b) => {
@@ -152,11 +149,11 @@ function TeamsStrip({ picks }: { picks: ResolvedPickSummary[] }) {
 
   return (
     <div className="flex items-center gap-1">
-      {alive.map(p => <TeamLogo key={p.teamId} pick={p} />)}
+      {alive.map(p => <TeamLogo key={p.teamId} pick={p} isPreTournament={isPreTournament} />)}
       {alive.length > 0 && eliminated.length > 0 && (
         <div className="w-[2px] h-7 bg-red-500 rounded-full mx-0.5 shrink-0" />
       )}
-      {eliminated.map(p => <TeamLogo key={p.teamId} pick={p} />)}
+      {eliminated.map(p => <TeamLogo key={p.teamId} pick={p} isPreTournament={isPreTournament} />)}
     </div>
   )
 }
@@ -204,9 +201,11 @@ function ArchetypeLegendRow() {
 function Optimal8Row({
   data,
   variant,
+  isPreTournament,
 }: {
   data: Optimal8Data
   variant: "rolling" | "final"
+  isPreTournament?: boolean
 }) {
   const isRolling = variant === "rolling"
   const teamsLeft = data.picks.filter(p => !p.eliminated).length
@@ -246,7 +245,7 @@ function Optimal8Row({
       </td>
       {/* Teams */}
       <td className="px-2 py-2.5 text-left">
-        <TeamsStrip picks={data.picks} />
+        <TeamsStrip picks={data.picks} isPreTournament={isPreTournament} />
       </td>
       {/* Left */}
       <td className="px-2 py-2.5 text-center">
@@ -264,6 +263,7 @@ function EntryRow({
   allMaxRanks,
   allFloorRanks,
   totalEntries,
+  isPreTournament,
 }: {
   entry: LeaderboardEntry
   isYou: boolean
@@ -273,6 +273,7 @@ function EntryRow({
   allMaxRanks: number[]
   allFloorRanks: number[]
   totalEntries: number
+  isPreTournament?: boolean
 }) {
   const allArchetypes = (entry.archetypes ?? []).map(k => getArchetypeByKey(k)).filter(Boolean) as { key: string; emoji: string; label: string; description: string }[]
   const teamsLeft = entry.teamsRemaining
@@ -343,7 +344,7 @@ function EntryRow({
       {/* Teams */}
       <td className="px-2 py-2.5 text-left">
         {entry.picks.length > 0 ? (
-          <TeamsStrip picks={entry.picks} />
+          <TeamsStrip picks={entry.picks} isPreTournament={isPreTournament} />
         ) : (
           <span className="text-xs text-muted-foreground/40 italic">No picks</span>
         )}
@@ -360,7 +361,7 @@ function EntryRow({
 
 const COLLAPSED_COUNT = 10
 
-export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Final }: LeaderboardSampleProps) {
+export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Final, isPreTournament }: LeaderboardSampleProps) {
   const totalEntries = entries.length
   const [showAll, setShowAll] = useState(false)
 
@@ -438,10 +439,10 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
             {/* ═══ Frozen rows ═══ */}
 
             {/* Optimal 8 (Rolling) */}
-            {optimal8 && <Optimal8Row data={optimal8} variant="rolling" />}
+            {optimal8 && <Optimal8Row data={optimal8} variant="rolling" isPreTournament={isPreTournament} />}
 
             {/* Optimal 8 (Final) */}
-            {optimal8Final && <Optimal8Row data={optimal8Final} variant="final" />}
+            {optimal8Final && <Optimal8Row data={optimal8Final} variant="final" isPreTournament={isPreTournament} />}
 
             {/* You row */}
             {youEntry && (
@@ -453,6 +454,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 allMaxRanks={allMaxRanks}
                 allFloorRanks={allFloorRanks}
                 totalEntries={totalEntries}
+                isPreTournament={isPreTournament}
               />
             )}
 
@@ -474,6 +476,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 allMaxRanks={allMaxRanks}
                 allFloorRanks={allFloorRanks}
                 totalEntries={totalEntries}
+                isPreTournament={isPreTournament}
               />
             ))}
 

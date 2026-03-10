@@ -5,13 +5,16 @@
  *
  * Two card layouts:
  *   - Pre-tournament: Rankings, record, conference, expected score, win probabilities
- *   - During/post-tournament: Wins, points, PPR, max, status, next game
+ *   - During/post-tournament: Status badge, wins/score/expected/TPS, rankings, record,
+ *     track record, next game, win probabilities with checkmarks
  *
  * Shows on hover (desktop) or tap/long-press (mobile).
+ * Uses Radix Popover for smart viewport-aware positioning.
  * Used across all views: leaderboard, picks, bracket, scores, simulator.
  */
 
 import { useState, useRef, useCallback, useEffect, type ReactNode } from "react"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV } from "@/lib/colors"
 
@@ -85,7 +88,6 @@ export function TeamCallout({ team, children, className, interactiveChild }: Tea
   const [open, setOpen] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
 
   const seedColor = getSeedColor(team.seed)
   const regionColor = REGION_COLORS[team.region] ?? "#888"
@@ -137,59 +139,51 @@ export function TeamCallout({ team, children, className, interactiveChild }: Tea
     }
   }, [])
 
-  // ── Close on outside click ──
-  useEffect(() => {
-    if (!open) return
-    function handleOutside(e: MouseEvent | TouchEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener("mousedown", handleOutside)
-    document.addEventListener("touchstart", handleOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleOutside)
-      document.removeEventListener("touchstart", handleOutside)
-    }
-  }, [open])
-
   return (
-    <div
-      ref={containerRef}
-      className={cn("relative inline-flex", className)}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      {...(!interactiveChild && { onClick: handleClick })}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchMove={handleTouchMove}
-    >
-      {children}
-
-      {open && (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
         <div
-          className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-1.5 pointer-events-none"
-          style={{ minWidth: 240 }}
+          className={cn("inline-flex", className)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          {...(!interactiveChild && { onClick: handleClick })}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchMove={handleTouchMove}
         >
-          <div className="bg-popover border border-border/60 rounded-lg shadow-lg text-xs whitespace-nowrap overflow-hidden">
-            {/* ── Shared Header ── */}
-            <CardHeader
-              team={team}
-              seedColor={seedColor}
-              regionColor={regionColor}
-              regionAbbrev={regionAbbrev}
-            />
-
-            {/* ── Pre-tournament vs live body ── */}
-            {team.isPreTournament ? (
-              <PreTournamentBody team={team} />
-            ) : (
-              <LiveBody team={team} />
-            )}
-          </div>
+          {children}
         </div>
-      )}
-    </div>
+      </PopoverTrigger>
+
+      <PopoverContent
+        side="top"
+        align="center"
+        sideOffset={6}
+        collisionPadding={12}
+        avoidCollisions
+        sticky="always"
+        className="w-auto min-w-[240px] max-h-[var(--radix-popper-available-height)] p-0 bg-popover border border-border/60 rounded-lg shadow-lg text-xs whitespace-nowrap overflow-y-auto overflow-x-hidden"
+        onOpenAutoFocus={e => e.preventDefault()}
+        onCloseAutoFocus={e => e.preventDefault()}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* ── Shared Header ── */}
+        <CardHeader
+          team={team}
+          seedColor={seedColor}
+          regionColor={regionColor}
+          regionAbbrev={regionAbbrev}
+        />
+
+        {/* ── Pre-tournament vs live body ── */}
+        {team.isPreTournament ? (
+          <PreTournamentBody team={team} />
+        ) : (
+          <LiveBody team={team} />
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -223,6 +217,18 @@ function CardHeader({
             #{team.seed}
           </span>
           <span className="font-semibold text-foreground truncate">{team.name}</span>
+          {/* Status badge — live only */}
+          {!team.isPreTournament && (
+            team.eliminated ? (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-500/15 text-red-400">
+                Eliminated
+              </span>
+            ) : (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-green-500/15 text-green-400">
+                Alive
+              </span>
+            )
+          )}
         </div>
         <div className="flex items-center gap-1 mt-0.5">
           <span
@@ -245,15 +251,133 @@ function CardHeader({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Shared sections (used by both pre-tournament and live)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function RankingsSection({ team }: { team: TeamCalloutData }) {
+  if (team.sCurveRank == null && team.kenpomRank == null && team.bpiRank == null) return null
+  return (
+    <div className="px-3 py-1.5 border-b border-border/20">
+      <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
+        Rankings
+      </div>
+      <div className="flex items-center gap-3 text-[11px]">
+        {team.sCurveRank != null && (
+          <div>
+            <span className="text-muted-foreground">S-Curve </span>
+            <span className="font-semibold text-foreground">#{team.sCurveRank}</span>
+          </div>
+        )}
+        {team.kenpomRank != null && (
+          <div>
+            <span className="text-muted-foreground">KenPom </span>
+            <span className="font-semibold text-foreground">#{team.kenpomRank}</span>
+          </div>
+        )}
+        {team.bpiRank != null && (
+          <div>
+            <span className="text-muted-foreground">BPI </span>
+            <span className="font-semibold text-foreground">#{team.bpiRank}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function RecordSection({ team }: { team: TeamCalloutData }) {
+  if (!team.record) return null
+  return (
+    <div className="px-3 py-1.5 border-b border-border/20">
+      <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
+        Record
+      </div>
+      <div className="text-[11px] font-semibold text-foreground">{team.record} overall</div>
+      {team.confRegSeasonChamp && (
+        <div className="text-[10px] text-muted-foreground mt-0.5">
+          <span className="mr-1">🏆</span>Conference reg. season champ
+        </div>
+      )}
+      {team.confTourneyChamp && (
+        <div className="text-[10px] text-muted-foreground mt-0.5">
+          <span className="mr-1">🏆</span>Conference tournament champ
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TrackRecordSection({ team }: { team: TeamCalloutData }) {
+  const hasCinderella = team.cinderellaWins != null && team.cinderellaWins > 0
+  const hasUpset = team.upsetLosses != null && team.upsetLosses > 0
+  if (!hasCinderella && !hasUpset) return null
+  return (
+    <div className="px-3 py-1.5 border-b border-border/20">
+      <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
+        Track Record
+      </div>
+      {hasCinderella && (
+        <div className="text-[10px] text-muted-foreground">
+          <span className="mr-1">🔮</span>
+          {team.cinderellaWins} cinderella win{team.cinderellaWins !== 1 ? "s" : ""}{" "}
+          <span className="text-muted-foreground/60">(KenPom underdog)</span>
+        </div>
+      )}
+      {hasUpset && (
+        <div className="text-[10px] text-muted-foreground mt-0.5">
+          <span className="mr-1">⚡</span>
+          {team.upsetLosses} upset loss{team.upsetLosses !== 1 ? "es" : ""}{" "}
+          <span className="text-muted-foreground/60">(KenPom favorite)</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function WinProbabilitiesSection({ team }: { team: TeamCalloutData }) {
+  const probs = team.cumulativeProbabilities
+  const roundLabels = ["R64", "R32", "S16", "E8", "F4", "Champ"]
+  if (!probs || probs.length < 7) return null
+
+  const isLive = !team.isPreTournament
+  return (
+    <div className="px-3 py-1.5">
+      <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-1">
+        Win Probabilities
+      </div>
+      <div className="grid grid-cols-6 gap-x-1 text-center">
+        {roundLabels.map((label, i) => {
+          const pct = (probs[i + 1] ?? 0) * 100
+          const isCompleted = isLive && i < team.wins
+          return (
+            <div key={label} className="flex flex-col items-center">
+              <span className="text-[7px] text-muted-foreground/60 font-medium">{label}</span>
+              <span className={cn(
+                "text-[10px] font-semibold",
+                isCompleted ? "text-green-400" :
+                pct >= 50 ? "text-green-400" :
+                pct >= 20 ? "text-foreground" :
+                pct >= 5 ? "text-muted-foreground" :
+                "text-muted-foreground/50"
+              )}>
+                {isCompleted ? "\u2713" :
+                 pct >= 1 ? `${Math.round(pct)}%` :
+                 pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Pre-tournament card body
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function PreTournamentBody({ team }: { team: TeamCalloutData }) {
   const maxPossible = team.seed * 6
-
-  // Derive marginal probabilities from cumulative for display
-  const probs = team.cumulativeProbabilities
-  const roundLabels = ["R64", "R32", "S16", "E8", "F4", "Champ"]
 
   return (
     <div className="space-y-0">
@@ -277,122 +401,22 @@ function PreTournamentBody({ team }: { team: TeamCalloutData }) {
         </div>
       </div>
 
-      {/* ── Rankings ── */}
-      {(team.sCurveRank != null || team.kenpomRank != null || team.bpiRank != null) && (
-        <div className="px-3 py-1.5 border-b border-border/20">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
-            Rankings
-          </div>
-          <div className="flex items-center gap-3 text-[11px]">
-            {team.sCurveRank != null && (
-              <div>
-                <span className="text-muted-foreground">S-Curve </span>
-                <span className="font-semibold text-foreground">#{team.sCurveRank}</span>
-              </div>
-            )}
-            {team.kenpomRank != null && (
-              <div>
-                <span className="text-muted-foreground">KenPom </span>
-                <span className="font-semibold text-foreground">#{team.kenpomRank}</span>
-              </div>
-            )}
-            {team.bpiRank != null && (
-              <div>
-                <span className="text-muted-foreground">BPI </span>
-                <span className="font-semibold text-foreground">#{team.bpiRank}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Record ── */}
-      {team.record && (
-        <div className="px-3 py-1.5 border-b border-border/20">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
-            Record
-          </div>
-          <div className="text-[11px] font-semibold text-foreground">{team.record} overall</div>
-          {team.confRegSeasonChamp && (
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              <span className="mr-1">🏆</span>Conference reg. season champ
-            </div>
-          )}
-          {team.confTourneyChamp && (
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              <span className="mr-1">🏆</span>Conference tournament champ
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Track Record ── */}
-      {(team.cinderellaWins != null || team.upsetLosses != null) && (
-        <div className="px-3 py-1.5 border-b border-border/20">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
-            Track Record
-          </div>
-          {team.cinderellaWins != null && team.cinderellaWins > 0 && (
-            <div className="text-[10px] text-muted-foreground">
-              <span className="mr-1">🔮</span>
-              {team.cinderellaWins} cinderella win{team.cinderellaWins !== 1 ? "s" : ""}{" "}
-              <span className="text-muted-foreground/60">(KenPom underdog)</span>
-            </div>
-          )}
-          {team.upsetLosses != null && team.upsetLosses > 0 && (
-            <div className="text-[10px] text-muted-foreground mt-0.5">
-              <span className="mr-1">⚡</span>
-              {team.upsetLosses} upset loss{team.upsetLosses !== 1 ? "es" : ""}{" "}
-              <span className="text-muted-foreground/60">(KenPom favorite)</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Win Probabilities ── */}
-      {probs && probs.length >= 7 && (
-        <div className="px-3 py-1.5">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-1">
-            Win Probabilities
-          </div>
-          <div className="grid grid-cols-6 gap-x-1 text-center">
-            {roundLabels.map((label, i) => {
-              const pct = (probs[i + 1] ?? 0) * 100
-              return (
-                <div key={label} className="flex flex-col items-center">
-                  <span className="text-[7px] text-muted-foreground/60 font-medium">{label}</span>
-                  <span className={cn(
-                    "text-[10px] font-semibold",
-                    pct >= 50 ? "text-green-400" :
-                    pct >= 20 ? "text-foreground" :
-                    pct >= 5 ? "text-muted-foreground" :
-                    "text-muted-foreground/50"
-                  )}>
-                    {pct >= 1 ? `${Math.round(pct)}%` : pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      <RankingsSection team={team} />
+      <RecordSection team={team} />
+      <TrackRecordSection team={team} />
+      <WinProbabilitiesSection team={team} />
     </div>
   )
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// During/post-tournament card body (existing layout)
+// During/post-tournament card body
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function LiveBody({ team }: { team: TeamCalloutData }) {
   const score = team.score ?? team.seed * team.wins
   const ppr = team.ppr ?? (team.eliminated ? 0 : team.seed * Math.max(0, 6 - team.wins))
   const maxScore = team.maxScore ?? score + ppr
-  const gamesRemaining = team.gamesRemaining ?? (team.eliminated ? 0 : 6 - team.wins)
-
-  // Derive marginal probabilities from cumulative for display
-  const probs = team.cumulativeProbabilities
-  const roundLabels = ["R64", "R32", "S16", "E8", "F4", "Champ"]
 
   return (
     <div className="space-y-0">
@@ -403,6 +427,10 @@ function LiveBody({ team }: { team: TeamCalloutData }) {
         </div>
         <div className="flex items-baseline gap-3 flex-wrap">
           <div className="flex items-baseline gap-1">
+            <span className="text-muted-foreground text-[10px]">Wins</span>
+            <span className="font-bold text-foreground text-sm">{team.wins}</span>
+          </div>
+          <div className="flex items-baseline gap-1">
             <span className="text-muted-foreground text-[10px]">Score</span>
             <span className="font-bold text-foreground text-sm">{score}</span>
           </div>
@@ -412,60 +440,23 @@ function LiveBody({ team }: { team: TeamCalloutData }) {
               <span className="font-semibold text-foreground text-[11px]">{team.expectedScore.toFixed(1)}</span>
             </div>
           )}
-          {team.selectedPct != null && (
+          {!team.eliminated && (
             <div className="flex items-baseline gap-1">
-              <span className="text-muted-foreground text-[10px]">Picked</span>
-              <span className="font-semibold text-foreground text-[11px]">{team.selectedPct.toFixed(1)}%</span>
+              <span className="text-muted-foreground text-[10px]">TPS</span>
+              <span className="font-mono font-bold text-primary text-[11px]">{maxScore}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* ── Scoring detail ── */}
-      <div className="px-3 py-1.5 border-b border-border/20">
-        <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
-          Scoring
-        </div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[11px]">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Wins</span>
-            <span className="font-semibold text-foreground">{team.wins}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Points</span>
-            <span className="font-mono font-semibold text-foreground">{score}</span>
-          </div>
-          {!team.eliminated && (
-            <>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">PPR</span>
-                <span className="font-mono text-muted-foreground">+{ppr}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Max</span>
-                <span className="font-mono font-bold text-primary">{maxScore}</span>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <RankingsSection team={team} />
+      <RecordSection team={team} />
+      <TrackRecordSection team={team} />
 
-      {/* ── Status ── */}
-      <div className="px-3 py-1.5 border-b border-border/20">
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="text-muted-foreground">Status</span>
-          {team.eliminated ? (
-            <span className="font-semibold text-red-400">Eliminated</span>
-          ) : (
-            <span className="font-semibold text-green-400">
-              Alive · {gamesRemaining} game{gamesRemaining !== 1 ? "s" : ""} left
-            </span>
-          )}
-        </div>
-
-        {/* Optional: next game */}
-        {team.nextOpponent && (
-          <div className="flex items-center justify-between text-[11px] mt-0.5">
+      {/* ── Next Game (live-only) ── */}
+      {team.nextOpponent && (
+        <div className="px-3 py-1.5 border-b border-border/20">
+          <div className="flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground">Next</span>
             <span className="font-semibold text-foreground">
               vs {team.nextOpponent}
@@ -474,70 +465,10 @@ function LiveBody({ team }: { team: TeamCalloutData }) {
               )}
             </span>
           </div>
-        )}
-      </div>
-
-      {/* ── Rankings (same as pre-tournament for context) ── */}
-      {(team.sCurveRank != null || team.kenpomRank != null || team.bpiRank != null) && (
-        <div className="px-3 py-1.5 border-b border-border/20">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-0.5">
-            Rankings
-          </div>
-          <div className="flex items-center gap-3 text-[11px]">
-            {team.sCurveRank != null && (
-              <div>
-                <span className="text-muted-foreground">S-Curve </span>
-                <span className="font-semibold text-foreground">#{team.sCurveRank}</span>
-              </div>
-            )}
-            {team.kenpomRank != null && (
-              <div>
-                <span className="text-muted-foreground">KenPom </span>
-                <span className="font-semibold text-foreground">#{team.kenpomRank}</span>
-              </div>
-            )}
-            {team.bpiRank != null && (
-              <div>
-                <span className="text-muted-foreground">BPI </span>
-                <span className="font-semibold text-foreground">#{team.bpiRank}</span>
-              </div>
-            )}
-          </div>
         </div>
       )}
 
-      {/* ── Win Probabilities ── */}
-      {probs && probs.length >= 7 && (
-        <div className="px-3 py-1.5">
-          <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-1">
-            Win Probabilities
-          </div>
-          <div className="grid grid-cols-6 gap-x-1 text-center">
-            {roundLabels.map((label, i) => {
-              const pct = (probs[i + 1] ?? 0) * 100
-              // Dim completed rounds (wins already achieved)
-              const isCompleted = i < team.wins
-              return (
-                <div key={label} className="flex flex-col items-center">
-                  <span className="text-[7px] text-muted-foreground/60 font-medium">{label}</span>
-                  <span className={cn(
-                    "text-[10px] font-semibold",
-                    isCompleted ? "text-green-400" :
-                    pct >= 50 ? "text-foreground" :
-                    pct >= 20 ? "text-muted-foreground" :
-                    pct >= 5 ? "text-muted-foreground/70" :
-                    "text-muted-foreground/50"
-                  )}>
-                    {isCompleted ? "\u2713" :
-                     pct >= 1 ? `${Math.round(pct)}%` :
-                     pct >= 0.1 ? `${pct.toFixed(1)}%` : "<0.1%"}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      <WinProbabilitiesSection team={team} />
     </div>
   )
 }

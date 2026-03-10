@@ -27,6 +27,8 @@ import type { LeaderboardEntry } from "@/types"
 import type { Team } from "@/generated/prisma"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
 import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -186,25 +188,19 @@ function TeamChip({
   teamId, shortName, seed, logo, wins,
   isSelected, isEliminated, isLocked,
   onClick,
+  teamLookup,
+  isPreTournament = false,
 }: {
   teamId: string; shortName: string; seed: number; logo: string | null; wins: number
   isSelected: boolean; isEliminated: boolean; isLocked: boolean
   onClick: () => void
+  teamLookup: Map<string, Team>
+  isPreTournament?: boolean
 }) {
-  return (
-    <button
-      className={`flex-1 flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all text-xs min-w-0 ${isLocked
-          ? isEliminated
-            ? "border-border/30 bg-muted/10 opacity-40 cursor-default"
-            : "border-primary/30 bg-primary/5 cursor-default"
-          : isSelected
-            ? "border-primary bg-primary/15 shadow-sm"
-            : "border-border/60 bg-card hover:border-border hover:bg-muted/30 cursor-pointer"
-        }`}
-      onClick={isLocked ? undefined : onClick}
-      disabled={isLocked}
-      type="button"
-    >
+  const team = teamLookup.get(teamId)
+
+  const chipContent = (
+    <>
       {logo ? (
         <img src={logo} alt="" className="h-5 w-5 object-contain shrink-0" />
       ) : (
@@ -222,7 +218,41 @@ function TeamChip({
       {isSelected && !isLocked && (
         <span className="text-primary text-[9px] font-bold shrink-0">▶</span>
       )}
+    </>
+  )
+
+  const button = (
+    <button
+      className={`flex-1 flex items-center gap-1.5 p-2 rounded-lg border text-left transition-all text-xs min-w-0 ${isLocked
+          ? isEliminated
+            ? "border-border/30 bg-muted/10 opacity-40 cursor-default"
+            : "border-primary/30 bg-primary/5 cursor-default"
+          : isSelected
+            ? "border-primary bg-primary/15 shadow-sm"
+            : "border-border/60 bg-card hover:border-border hover:bg-muted/30 cursor-pointer"
+        }`}
+      onClick={isLocked ? undefined : onClick}
+      disabled={isLocked}
+      type="button"
+    >
+      {chipContent}
     </button>
+  )
+
+  if (!team) {
+    return button
+  }
+
+  return (
+    <TeamCallout
+      team={buildTeamCalloutData(
+        { id: team.id, name: team.name, shortName: team.shortName ?? "", seed: team.seed, region: team.region ?? "", wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+        isPreTournament,
+      )}
+      interactiveChild
+    >
+      {button}
+    </TeamCallout>
   )
 }
 
@@ -239,12 +269,19 @@ export function SimulatorPanel({
   // Rounds that are collapsed (defaults: completed rounds)
   const [collapsedRounds, setCollapsedRounds] = useState<Set<number>>(() => new Set())
 
-  // ── Build logo lookup map ──────────────────────────────────────────────────
-  const logoMap = useMemo(() => {
-    const map = new Map<string, string | null>()
+  // ── Compute isPreTournament ─────────────────────────────────────────────────
+  const isPreTournament = gameIndex === undefined || gameIndex < 0
+
+  // ── Build logo lookup map and team lookup map ───────────────────────────────
+  const { logoMap, teamLookup } = useMemo(() => {
     const source = allTeams ?? aliveTeams
-    for (const t of source) map.set(t.id, t.logoUrl)
-    return map
+    const logos = new Map<string, string | null>()
+    const teams = new Map<string, Team>()
+    for (const t of source) {
+      logos.set(t.id, t.logoUrl)
+      teams.set(t.id, t)
+    }
+    return { logoMap: logos, teamLookup: teams }
   }, [allTeams, aliveTeams])
 
   // ── Build unified game list ────────────────────────────────────────────────
@@ -385,6 +422,7 @@ export function SimulatorPanel({
                   onPickGame={pickGame}
                   gameSequence={gameSequence}
                   gameIndex={gameIndex ?? -1}
+                  isPreTournament={isPreTournament}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground py-4 text-center">
@@ -462,6 +500,8 @@ export function SimulatorPanel({
                                   isEliminated={game.isLocked && !isAWinner}
                                   isLocked={game.isLocked}
                                   onClick={() => pickGame(game.gameId, game.teamAId)}
+                                  teamLookup={teamLookup}
+                                  isPreTournament={isPreTournament}
                                 />
                                 <span className="text-[10px] text-muted-foreground shrink-0">vs</span>
                                 <TeamChip
@@ -474,6 +514,8 @@ export function SimulatorPanel({
                                   isEliminated={game.isLocked && !isBWinner}
                                   isLocked={game.isLocked}
                                   onClick={() => pickGame(game.gameId, game.teamBId)}
+                                  teamLookup={teamLookup}
+                                  isPreTournament={isPreTournament}
                                 />
                               </div>
                             </div>

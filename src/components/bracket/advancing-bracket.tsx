@@ -18,6 +18,8 @@ import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
+import { TeamCallout } from "@/components/team-callout"
+import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,7 @@ type AdvancingBracketProps =
         disabled: boolean
         gameSequence: DemoGameEvent[]
         gameIndex: number
+        isPreTournament?: boolean
         gamePicks?: never
         onPickGame?: never
     }
@@ -52,6 +55,7 @@ type AdvancingBracketProps =
         onPickGame: (gameId: string, winnerId: string) => void
         gameSequence: DemoGameEvent[]
         gameIndex: number
+        isPreTournament?: boolean
         selectedTeamIds?: never
         onToggleTeam?: never
         disabled?: never
@@ -206,6 +210,7 @@ function TeamSlot({
     onClick,
     reversed,
     disabled,
+    isPreTournament = false,
 }: {
     team: TeamLike | null
     isLocked: boolean
@@ -215,6 +220,7 @@ function TeamSlot({
     onClick: () => void
     reversed?: boolean
     disabled?: boolean
+    isPreTournament?: boolean
 }) {
     if (!team) {
         return (
@@ -229,25 +235,8 @@ function TeamSlot({
 
     const notClickable = isLocked || disabled
 
-    return (
-        <button
-            type="button"
-            onClick={notClickable ? undefined : onClick}
-            disabled={notClickable}
-            className={cn(
-                "h-[26px] w-full px-1.5 flex items-center gap-1 rounded text-[8px] font-medium transition-all text-left border",
-                reversed && "flex-row-reverse",
-                notClickable
-                    ? isWinner
-                        ? "border-primary/40 bg-primary/10 text-foreground cursor-default"
-                        : isEliminated
-                            ? "border-border/12 bg-muted/5 text-muted-foreground/25 line-through cursor-default"
-                            : "border-border/15 bg-card/15 text-muted-foreground/40 cursor-default"
-                    : isActive
-                        ? "border-primary bg-primary/15 text-foreground shadow-sm cursor-pointer"
-                        : "border-border/30 bg-card/25 text-foreground/75 hover:border-border/60 hover:bg-muted/20 cursor-pointer"
-            )}
-        >
+    const slotContent = (
+        <>
             {team.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={team.logoUrl} alt="" className="h-3 w-3 object-contain shrink-0" />
@@ -266,7 +255,42 @@ function TeamSlot({
             {isWinner && isLocked && (
                 <span className={cn("ml-auto shrink-0 text-primary text-[7px]", reversed && "ml-0 mr-auto")}>✓</span>
             )}
+        </>
+    )
+
+    const button = (
+        <button
+            type="button"
+            onClick={notClickable ? undefined : onClick}
+            disabled={notClickable}
+            className={cn(
+                "h-[26px] w-full px-1.5 flex items-center gap-1 rounded text-[8px] font-medium transition-all text-left border",
+                reversed && "flex-row-reverse",
+                notClickable
+                    ? isWinner
+                        ? "border-primary/40 bg-primary/10 text-foreground cursor-default"
+                        : isEliminated
+                            ? "border-border/12 bg-muted/5 text-muted-foreground/25 line-through cursor-default"
+                            : "border-border/15 bg-card/15 text-muted-foreground/40 cursor-default"
+                    : isActive
+                        ? "border-primary bg-primary/15 text-foreground shadow-sm cursor-pointer"
+                        : "border-border/30 bg-card/25 text-foreground/75 hover:border-border/60 hover:bg-muted/20 cursor-pointer"
+            )}
+        >
+            {slotContent}
         </button>
+    )
+
+    return (
+        <TeamCallout
+            team={buildTeamCalloutData(
+                { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                isPreTournament,
+            )}
+            interactiveChild
+        >
+            {button}
+        </TeamCallout>
     )
 }
 
@@ -281,6 +305,7 @@ function SimMatchup({
     gamePicks,
     onPickGame,
     reversed,
+    isPreTournament,
 }: {
     gameId: string
     topTeam: TeamLike | null
@@ -290,6 +315,7 @@ function SimMatchup({
     gamePicks: Record<string, string>
     onPickGame: (gameId: string, teamId: string) => void
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     const picked = gamePicks[gameId]
 
@@ -303,6 +329,7 @@ function SimMatchup({
                 isActive={!isLocked && picked === topTeam?.id}
                 onClick={() => topTeam && onPickGame(gameId, topTeam.id)}
                 reversed={reversed}
+                isPreTournament={isPreTournament}
             />
             <TeamSlot
                 team={botTeam}
@@ -312,6 +339,7 @@ function SimMatchup({
                 isActive={!isLocked && picked === botTeam?.id}
                 onClick={() => botTeam && onPickGame(gameId, botTeam.id)}
                 reversed={reversed}
+                isPreTournament={isPreTournament}
             />
         </div>
     )
@@ -326,6 +354,7 @@ function PicksMatchup({
     onToggle,
     disabled,
     reversed,
+    isPreTournament,
 }: {
     topTeam: TeamLike | null
     botTeam: TeamLike | null
@@ -333,6 +362,7 @@ function PicksMatchup({
     onToggle: (id: string) => void
     disabled: boolean
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     return (
         <div className="flex flex-col gap-px">
@@ -345,6 +375,7 @@ function PicksMatchup({
                 onClick={() => topTeam && onToggle(topTeam.id)}
                 reversed={reversed}
                 disabled={disabled}
+                isPreTournament={isPreTournament}
             />
             <TeamSlot
                 team={botTeam}
@@ -355,6 +386,7 @@ function PicksMatchup({
                 onClick={() => botTeam && onToggle(botTeam.id)}
                 reversed={reversed}
                 disabled={disabled}
+                isPreTournament={isPreTournament}
             />
         </div>
     )
@@ -384,12 +416,14 @@ function SimRegionColumn({
     gamePicks,
     onPickGame,
     reversed,
+    isPreTournament,
 }: {
     region: string
     rounds: SimRoundColumn[]
     gamePicks: Record<string, string>
     onPickGame: (gameId: string, teamId: string) => void
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     return (
         <div className={cn("flex flex-col", reversed ? "items-end" : "items-start")}>
@@ -426,6 +460,7 @@ function SimRegionColumn({
                                                 gamePicks={gamePicks}
                                                 onPickGame={onPickGame}
                                                 reversed={reversed}
+                                                isPreTournament={isPreTournament}
                                             />
                                         </div>
                                         <div style={{ width: 12, height: CELL_H * 2 }} className="shrink-0">
@@ -455,6 +490,7 @@ function PicksRegionColumn({
     onToggle,
     disabled,
     reversed,
+    isPreTournament,
 }: {
     region: string
     round: PicksRoundColumn
@@ -462,6 +498,7 @@ function PicksRegionColumn({
     onToggle: (id: string) => void
     disabled: boolean
     reversed?: boolean
+    isPreTournament?: boolean
 }) {
     return (
         <div className={cn("flex flex-col", reversed ? "items-end" : "items-start")}>
@@ -481,6 +518,7 @@ function PicksRegionColumn({
                         onToggle={onToggle}
                         disabled={disabled}
                         reversed={reversed}
+                        isPreTournament={isPreTournament}
                     />
                 ))}
             </div>
@@ -495,11 +533,13 @@ function SimCenterColumn({
     gameSequence,
     gamePicks,
     onPickGame,
+    isPreTournament,
 }: {
     effectiveBracket: Map<string, { topTeam: TeamLike | null; botTeam: TeamLike | null; effectiveWinnerId: string | null; isLocked: boolean }>
     gameSequence: DemoGameEvent[]
     gamePicks: Record<string, string>
     onPickGame: (gameId: string, teamId: string) => void
+    isPreTournament?: boolean
 }) {
     const f4Games = gameSequence.filter(g => g.round === 5)
     const champGame = gameSequence.find(g => g.round === 6)
@@ -527,6 +567,7 @@ function SimCenterColumn({
                     effectiveWinnerId={data.effectiveWinnerId}
                     gamePicks={gamePicks}
                     onPickGame={onPickGame}
+                    isPreTournament={isPreTournament}
                 />
             </div>
         )
@@ -555,6 +596,7 @@ function SimCenterColumn({
                         effectiveWinnerId={champData?.effectiveWinnerId ?? null}
                         gamePicks={gamePicks}
                         onPickGame={onPickGame}
+                        isPreTournament={isPreTournament}
                     />
                 ) : (
                     <div className="space-y-px">
@@ -580,7 +622,7 @@ function SimCenterColumn({
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AdvancingBracket(props: AdvancingBracketProps) {
-    const { teams, mode, gameSequence, gameIndex } = props
+    const { teams, mode, gameSequence, gameIndex, isPreTournament = false } = props
     const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [teams])
 
     // ── Simulator mode: compute cascading bracket ─────────────────────────────
@@ -678,6 +720,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                                 gamePicks={props.gamePicks}
                                 onPickGame={props.onPickGame}
                                 reversed={false}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
                         <div className="shrink-0">
@@ -686,6 +729,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                                 gameSequence={gameSequence}
                                 gamePicks={props.gamePicks}
                                 onPickGame={props.onPickGame}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -695,6 +739,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                                 gamePicks={props.gamePicks}
                                 onPickGame={props.onPickGame}
                                 reversed={true}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
                     </div>
@@ -707,6 +752,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                                 gamePicks={props.gamePicks}
                                 onPickGame={props.onPickGame}
                                 reversed={false}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
                         <div className="shrink-0 min-w-[150px] px-3" />
@@ -717,6 +763,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                                 gamePicks={props.gamePicks}
                                 onPickGame={props.onPickGame}
                                 reversed={true}
+                                isPreTournament={isPreTournament}
                             />
                         </div>
                     </div>
@@ -741,6 +788,7 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
                         onToggle={props.onToggleTeam}
                         disabled={props.disabled}
                         reversed={false}
+                        isPreTournament={isPreTournament}
                     />
                 ))}
             </div>

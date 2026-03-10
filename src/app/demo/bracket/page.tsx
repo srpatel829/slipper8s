@@ -63,6 +63,7 @@ export default function DemoBracketPage() {
                 teams={teamsData}
                 gameSequence={gameSequence}
                 gameIndex={gameIndex}
+                isPreTournament={gameIndex < 0}
             />
         </div>
     )

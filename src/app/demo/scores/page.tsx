@@ -17,11 +17,12 @@ const ROUND_NAMES: Record<number, string> = {
 }
 
 export default function DemoScoresPage() {
-  const { scoresData } = useDemoContext()
+  const { scoresData, gameIndex } = useDemoContext()
+  const isPreTournament = gameIndex < 0
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl">
-      <ScoresGrid initialGames={scoresData} roundNames={ROUND_NAMES} demoMode />
+      <ScoresGrid initialGames={scoresData} roundNames={ROUND_NAMES} demoMode isPreTournament={isPreTournament} />
     </div>
   )
 }
