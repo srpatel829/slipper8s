@@ -60,9 +60,12 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  // Redirect if already registered
+  // Redirect if already registered or unauthenticated
   useEffect(() => {
-    if (status === "authenticated" && session?.user?.registrationComplete) {
+    if (status === "loading") return
+    if (status === "unauthenticated") {
+      router.replace("/login")
+    } else if (status === "authenticated" && session?.user?.registrationComplete) {
       router.replace("/leaderboard")
     }
   }, [status, session, router])
@@ -140,17 +143,12 @@ export default function RegisterPage() {
     }
   }
 
-  if (status === "loading") {
+  if (status === "loading" || status === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     )
-  }
-
-  if (status === "unauthenticated") {
-    router.replace("/login")
-    return null
   }
 
   return (
