@@ -130,8 +130,8 @@ export default function RegisterPage() {
         return
       }
 
-      // Force session refresh and redirect
-      router.replace("/leaderboard")
+      // Force session refresh and redirect to welcome page
+      router.replace("/welcome")
       router.refresh()
     } catch {
       setError("Something went wrong. Please try again.")
