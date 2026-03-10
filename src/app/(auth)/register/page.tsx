@@ -14,14 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Check, X, Loader2, Heart, Trophy } from "lucide-react"
-import { getSeedColor } from "@/lib/colors"
-
-interface TeamOption {
-  id: string
-  name: string
-  seed: number
-  conference: string | null
-}
+import { TeamCombobox } from "@/components/ui/team-combobox"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -63,18 +56,9 @@ export default function RegisterPage() {
   const [country, setCountry] = useState("")
   const [state, setState] = useState("")
   const [gender, setGender] = useState("")
-  const [favoriteTeamId, setFavoriteTeamId] = useState("")
-  const [teamOptions, setTeamOptions] = useState<TeamOption[]>([])
+  const [favoriteTeam, setFavoriteTeam] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
-
-  // Fetch teams for favorite team selector
-  useEffect(() => {
-    fetch("/api/teams")
-      .then(res => res.ok ? res.json() : [])
-      .then(data => setTeamOptions(Array.isArray(data) ? data : []))
-      .catch(() => {})
-  }, [])
 
   // Redirect if already registered
   useEffect(() => {
@@ -136,7 +120,7 @@ export default function RegisterPage() {
           country: country && country !== "none" ? country : null,
           state: state && state !== "none" ? state : null,
           gender: gender || null,
-          favoriteTeamId: favoriteTeamId && favoriteTeamId !== "none" ? favoriteTeamId : null,
+          favoriteTeam: favoriteTeam || null,
         }),
       })
 
@@ -302,46 +286,20 @@ export default function RegisterPage() {
                 <SelectContent>
                   <SelectItem value="MALE">Male</SelectItem>
                   <SelectItem value="FEMALE">Female</SelectItem>
-                  <SelectItem value="OTHER">Other</SelectItem>
-                  <SelectItem value="NO_RESPONSE">Prefer not to say</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">See how you rank among players of your gender</p>
             </div>
 
             {/* Favorite team */}
-            {teamOptions.length > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-sm flex items-center gap-1.5">
-                  <Heart className="h-3 w-3 text-rose-400" />
-                  Favorite team
-                </Label>
-                <Select value={favoriteTeamId} onValueChange={setFavoriteTeamId}>
-                  <SelectTrigger className="h-10 bg-muted/50 border-border">
-                    <SelectValue placeholder="Select your favorite team" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-64">
-                    {teamOptions.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="text-[9px] font-bold px-1 py-0.5 rounded text-white inline-block"
-                            style={{ backgroundColor: getSeedColor(t.seed) }}
-                          >
-                            {t.seed}
-                          </span>
-                          {t.name}
-                          {t.conference && (
-                            <span className="text-muted-foreground text-xs">({t.conference})</span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">See how you rank among fans of your team and conference</p>
-              </div>
-            )}
+            <div className="space-y-1.5">
+              <Label className="text-sm flex items-center gap-1.5">
+                <Heart className="h-3 w-3 text-rose-400" />
+                Favorite team
+              </Label>
+              <TeamCombobox value={favoriteTeam} onChange={setFavoriteTeam} />
+              <p className="text-xs text-muted-foreground">See how you rank among fans of your team and conference</p>
+            </div>
 
             {/* Error */}
             {error && (

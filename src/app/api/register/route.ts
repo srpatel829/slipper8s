@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
-  const { firstName, lastName, username, country, state, gender, favoriteTeamId } = body
+  const { firstName, lastName, username, country, state, gender, favoriteTeam } = body
 
   // Validate required fields
   if (!firstName?.trim() || !lastName?.trim() || !username?.trim()) {
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
       country: country?.trim() || null,
       state: state?.trim() || null,
       gender: gender || null,
-      favoriteTeamId: favoriteTeamId || null,
+      favoriteTeamName: favoriteTeam || null,
       registrationComplete: true,
     },
   })

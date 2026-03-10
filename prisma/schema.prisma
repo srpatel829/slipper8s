@@ -98,6 +98,7 @@ model User {
   phone              String?
   profilePhotoUrl    String?
   favoriteTeamId     String?
+  favoriteTeamName   String?   // stores D1 team name (used pre-bracket when Team table is empty)
   notificationsEnabled Boolean @default(true)
   registrationComplete Boolean @default(false)
 
