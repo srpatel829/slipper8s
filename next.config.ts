@@ -28,6 +28,16 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        // Serve the OG image from a non-/api/ path so social-media crawlers
+        // (especially Twitter) aren't blocked by robots.txt Disallow: /api/
+        source: "/og-image",
+        destination: "/api/og",
+      },
+    ]
+  },
 }
 
 export default withSentryConfig(nextConfig, {
