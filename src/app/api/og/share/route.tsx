@@ -3,6 +3,61 @@ import { NextRequest } from "next/server"
 
 export const runtime = "edge"
 
+// ── Font loading ────────────────────────────────────────────────────────────
+// Fetch Geist font weights from Fontsource CDN (TTF format, latin subset).
+// Satori (used by @vercel/og) only supports TTF/OTF/WOFF — NOT WOFF2.
+// We cache the raw Uint8Array so we can .slice() a fresh copy per request
+// (ArrayBuffers can be detached after Satori consumes them).
+
+const FONT_URLS = {
+  400: "https://cdn.jsdelivr.net/fontsource/fonts/geist@latest/latin-400-normal.ttf",
+  600: "https://cdn.jsdelivr.net/fontsource/fonts/geist@latest/latin-600-normal.ttf",
+  700: "https://cdn.jsdelivr.net/fontsource/fonts/geist@latest/latin-700-normal.ttf",
+  900: "https://cdn.jsdelivr.net/fontsource/fonts/geist@latest/latin-900-normal.ttf",
+} as const
+
+const fontCache: Promise<Record<number, Uint8Array>> = Promise.all(
+  Object.entries(FONT_URLS).map(async ([weight, url]) => {
+    const res = await fetch(url)
+    const buf = await res.arrayBuffer()
+    return [Number(weight), new Uint8Array(buf)] as const
+  }),
+).then((entries) => Object.fromEntries(entries) as Record<number, Uint8Array>)
+
+/** Return fresh ArrayBuffer copies of each font weight for ImageResponse */
+async function getFonts() {
+  const cache = await fontCache
+  return [
+    { name: "Geist", data: cache[400].slice().buffer, style: "normal" as const, weight: 400 as const },
+    { name: "Geist", data: cache[600].slice().buffer, style: "normal" as const, weight: 600 as const },
+    { name: "Geist", data: cache[700].slice().buffer, style: "normal" as const, weight: 700 as const },
+    { name: "Geist", data: cache[900].slice().buffer, style: "normal" as const, weight: 900 as const },
+  ]
+}
+
+// ── SVG Checkmark component for Satori ──────────────────────────────────────
+// Unicode ✓ doesn't render in Satori's default glyph set, so we use an SVG.
+function CheckIcon() {
+  return (
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ flexShrink: 0 }}
+    >
+      <circle cx="12" cy="12" r="12" fill="#00A9E0" opacity="0.15" />
+      <path
+        d="M7 12.5L10.5 16L17 9"
+        stroke="#00A9E0"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /**
  * GET /api/og/share — Square share card (1080×1080) for social platforms.
  *
@@ -24,9 +79,11 @@ export async function GET(req: NextRequest) {
   const leagueName = searchParams.get("league")
   const leagueRank = searchParams.get("leagueRank")
 
+  const fonts = await getFonts()
+
   if (type === "pre") {
     // ── Pre-tournament share card ─────────────────────────────────────────
-    // Matches the homepage visual style: light background, italic brand,
+    // Matches the homepage visual style: light background, Geist font,
     // checkmark pills, bold CTA
     return new ImageResponse(
       (
@@ -39,7 +96,7 @@ export async function GET(req: NextRequest) {
             alignItems: "center",
             justifyContent: "center",
             background: "linear-gradient(180deg, #e8f4f8 0%, #f0f9ff 30%, #ffffff 60%, #f0f9ff 100%)",
-            fontFamily: "sans-serif",
+            fontFamily: "Geist",
             padding: "48px 60px",
           }}
         >
@@ -72,7 +129,7 @@ export async function GET(req: NextRequest) {
             <span style={{ fontSize: 44 }}>🏀</span>
           </div>
 
-          {/* Brand — bold italic style */}
+          {/* Brand — bold style matching homepage */}
           <div
             style={{
               fontSize: 100,
@@ -89,7 +146,7 @@ export async function GET(req: NextRequest) {
 
           {/* Checkmark pills row — matches homepage */}
           <div style={{ display: "flex", gap: 32, marginBottom: 32 }}>
-            {["Pick 8 teams", "Seed × Wins = Score", "Highest Score Wins"].map((text) => (
+            {["Pick 8 teams", "Seed x Wins = Score", "Highest Score Wins"].map((text) => (
               <div
                 key={text}
                 style={{
@@ -101,14 +158,14 @@ export async function GET(req: NextRequest) {
                   fontWeight: 600,
                 }}
               >
-                <span style={{ color: "#00A9E0", fontSize: 28, fontWeight: 700 }}>✓</span>
+                <CheckIcon />
                 {text}
               </div>
             ))}
           </div>
 
           {/* Tagline */}
-          <div style={{ fontSize: 30, color: "#64748b", marginBottom: 36, textAlign: "center" }}>
+          <div style={{ fontSize: 30, color: "#64748b", marginBottom: 36, textAlign: "center", fontWeight: 400 }}>
             No bracket to bust. Just pick 8 sleepers and root for chaos!
           </div>
 
@@ -119,7 +176,7 @@ export async function GET(req: NextRequest) {
               alignItems: "center",
               gap: 16,
               fontSize: 48,
-              fontWeight: 800,
+              fontWeight: 700,
               color: "white",
               background: "linear-gradient(135deg, #00A9E0, #0088cc)",
               padding: "24px 64px",
@@ -129,7 +186,15 @@ export async function GET(req: NextRequest) {
             }}
           >
             Sign Up &amp; Play!
-            <span style={{ fontSize: 40 }}>→</span>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M5 12h14M13 5l7 7-7 7"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
 
           {/* Player invite card */}
@@ -159,12 +224,16 @@ export async function GET(req: NextRequest) {
           </div>
 
           {/* Footer */}
-          <div style={{ position: "absolute", bottom: 32, fontSize: 22, color: "#94a3b8", fontWeight: 500 }}>
+          <div style={{ position: "absolute", bottom: 32, fontSize: 22, color: "#94a3b8", fontWeight: 400 }}>
             slipper8s.com
           </div>
         </div>
       ),
-      { width: 1080, height: 1080 },
+      {
+        width: 1080,
+        height: 1080,
+        fonts,
+      },
     )
   }
 
@@ -182,7 +251,7 @@ export async function GET(req: NextRequest) {
           alignItems: "center",
           justifyContent: "center",
           background: "linear-gradient(180deg, #001a4d 0%, #0a0a1a 40%, #001a4d 100%)",
-          fontFamily: "sans-serif",
+          fontFamily: "Geist",
           padding: "60px",
         }}
       >
@@ -214,10 +283,10 @@ export async function GET(req: NextRequest) {
           >
             <span style={{ fontSize: 32 }}>🏀</span>
           </div>
-          <div style={{ fontSize: 48, fontWeight: 800, color: "#00A9E0", letterSpacing: "-1px" }}>
+          <div style={{ fontSize: 48, fontWeight: 700, color: "#00A9E0", letterSpacing: "-1px" }}>
             Slipper8s
           </div>
-          <div style={{ fontSize: 20, color: "#71717a", marginLeft: 8 }}>2026</div>
+          <div style={{ fontSize: 20, color: "#71717a", marginLeft: 8, fontWeight: 400 }}>2026</div>
         </div>
 
         {/* Player name */}
@@ -243,61 +312,59 @@ export async function GET(req: NextRequest) {
         <div
           style={{
             display: "flex",
-            flexWrap: "wrap",
-            gap: 24,
+            gap: 48,
             justifyContent: "center",
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(0,169,224,0.15)",
             borderRadius: 24,
             padding: "36px 48px",
             marginBottom: 24,
-            maxWidth: 900,
           }}
         >
-          {rank && (
+          {rank ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 140 }}>
-              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8, fontWeight: 600 }}>
                 {isPostTournament ? "Final Rank" : "Global Rank"}
               </div>
-              <div style={{ fontSize: 56, fontWeight: 800, color: "#00A9E0" }}>
+              <div style={{ fontSize: 56, fontWeight: 700, color: "#00A9E0" }}>
                 #{rank}
               </div>
             </div>
-          )}
-          {percentile && (
+          ) : null}
+          {percentile ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 140 }}>
-              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8, fontWeight: 600 }}>
                 Percentile
               </div>
-              <div style={{ fontSize: 56, fontWeight: 800, color: "#e4e4e7" }}>
+              <div style={{ fontSize: 56, fontWeight: 700, color: "#e4e4e7" }}>
                 Top {percentile}%
               </div>
             </div>
-          )}
-          {score && (
+          ) : null}
+          {score ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 140 }}>
-              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8, fontWeight: 600 }}>
                 Score
               </div>
-              <div style={{ fontSize: 56, fontWeight: 800, color: "#e4e4e7" }}>
+              <div style={{ fontSize: 56, fontWeight: 700, color: "#e4e4e7" }}>
                 {score}
               </div>
             </div>
-          )}
-          {teamsAlive && !isPostTournament && (
+          ) : null}
+          {teamsAlive && !isPostTournament ? (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 140 }}>
-              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8 }}>
+              <div style={{ fontSize: 14, color: "#71717a", textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8, fontWeight: 600 }}>
                 Teams Alive
               </div>
-              <div style={{ fontSize: 56, fontWeight: 800, color: parseInt(teamsAlive) > 0 ? "#27AE60" : "#C0392B" }}>
+              <div style={{ fontSize: 56, fontWeight: 700, color: parseInt(teamsAlive) > 0 ? "#27AE60" : "#C0392B" }}>
                 {teamsAlive}/8
               </div>
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* League info */}
-        {leagueName && leagueRank && (
+        {leagueName && leagueRank ? (
           <div
             style={{
               display: "flex",
@@ -314,21 +381,25 @@ export async function GET(req: NextRequest) {
               {leagueName}: #{leagueRank}
             </div>
           </div>
-        )}
+        ) : null}
 
         {/* Total entries */}
-        {totalEntries && (
-          <div style={{ fontSize: 18, color: "#52525b" }}>
+        {totalEntries ? (
+          <div style={{ fontSize: 18, color: "#52525b", fontWeight: 400 }}>
             Out of {totalEntries} entries
           </div>
-        )}
+        ) : null}
 
         {/* Footer */}
-        <div style={{ position: "absolute", bottom: 36, fontSize: 18, color: "#3f3f46" }}>
+        <div style={{ position: "absolute", bottom: 36, fontSize: 18, color: "#3f3f46", fontWeight: 400 }}>
           slipper8s.com
         </div>
       </div>
     ),
-    { width: 1080, height: 1080 },
+    {
+      width: 1080,
+      height: 1080,
+      fonts,
+    },
   )
 }
