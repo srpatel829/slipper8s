@@ -5,12 +5,25 @@ const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  // Create AppSettings singleton
+  // Create 2026 season
+  const season2026 = await prisma.season.upsert({
+    where: { year: 2026 },
+    create: {
+      year: 2026,
+      status: "REGISTRATION",
+      // March 19, 2026 12:00pm EDT = 16:00 UTC (DST starts March 8)
+      entryDeadlineUtc: new Date("2026-03-19T16:00:00.000Z"),
+    },
+    update: {},
+  })
+
+  // Create AppSettings singleton and link to 2026 season
   await prisma.appSettings.upsert({
     where: { id: "main" },
     create: {
       id: "main",
-      picksDeadline: null,
+      currentSeasonId: season2026.id,
+      picksDeadline: new Date("2026-03-19T16:00:00.000Z"),
       payoutStructure: [
         { place: 1, label: "Champion", amount: "" },
         { place: 2, label: "Runner-Up", amount: "" },
@@ -21,7 +34,10 @@ async function main() {
       ],
       defaultCharities: [],
     },
-    update: {},
+    update: {
+      currentSeasonId: season2026.id,
+      picksDeadline: new Date("2026-03-19T16:00:00.000Z"),
+    },
   })
 
   // Create default content pages
@@ -82,7 +98,9 @@ $25 per entry is donated to charity. The top 4 finishers choose the charity.
     })
   }
 
-  console.log("✓ Seeded AppSettings and default content pages")
+  console.log(`✓ Created 2026 season (id: ${season2026.id})`)
+  console.log("✓ Seeded AppSettings with currentSeasonId and picks deadline (Mar 19 12pm EDT)")
+  console.log("✓ Seeded default content pages")
 }
 
 main()
