@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
 
   if (type === "pre") {
     // ── Pre-tournament share card ─────────────────────────────────────────
+    // Matches the homepage visual style: light background, italic brand,
+    // checkmark pills, bold CTA
     return new ImageResponse(
       (
         <div
@@ -36,7 +38,7 @@ export async function GET(req: NextRequest) {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            background: "linear-gradient(180deg, #001a4d 0%, #0a0a1a 50%, #001a4d 100%)",
+            background: "linear-gradient(180deg, #e8f4f8 0%, #f0f9ff 30%, #ffffff 60%, #f0f9ff 100%)",
             fontFamily: "sans-serif",
             padding: "48px 60px",
           }}
@@ -53,109 +55,111 @@ export async function GET(req: NextRequest) {
             }}
           />
 
-          {/* Logo + Brand row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 20 }}>
-            <div
-              style={{
-                width: 88,
-                height: 88,
-                borderRadius: "22px",
-                background: "#00A9E0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow: "0 0 60px rgba(0,169,224,0.4)",
-              }}
-            >
-              <span style={{ fontSize: 48 }}>🏀</span>
-            </div>
-            <div
-              style={{
-                fontSize: 88,
-                fontWeight: 800,
-                color: "#00A9E0",
-                letterSpacing: "-3px",
-              }}
-            >
-              Slipper8s
-            </div>
-          </div>
-
-          {/* Subtitle */}
-          <div style={{ fontSize: 28, color: "#71717a", marginBottom: 24 }}>
-            College Basketball Tournament Pool · 2026
-          </div>
-
-          {/* Sign Up CTA */}
+          {/* Basketball icon */}
           <div
             style={{
-              fontSize: 64,
-              fontWeight: 800,
-              color: "#F47920",
-              marginBottom: 36,
-              textAlign: "center",
-              lineHeight: 1.1,
-            }}
-          >
-            Sign Up &amp; Play!
-          </div>
-
-          {/* Player card */}
-          <div
-            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "20px",
+              background: "#00A9E0",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              background: "rgba(255,255,255,0.05)",
-              border: "2px solid rgba(0,169,224,0.25)",
-              borderRadius: 28,
-              padding: "32px 72px",
-              marginBottom: 40,
+              justifyContent: "center",
+              marginBottom: 16,
+              boxShadow: "0 8px 30px rgba(0,169,224,0.3)",
             }}
           >
-            <div style={{ fontSize: 48, fontWeight: 700, color: "white", marginBottom: 12 }}>
-              {name}
-            </div>
-            <div
-              style={{
-                fontSize: 26,
-                color: "#00A9E0",
-                background: "rgba(0,169,224,0.12)",
-                padding: "10px 28px",
-                borderRadius: 14,
-                fontWeight: 600,
-              }}
-            >
-              I&apos;m in for 2026 — join me!
-            </div>
+            <span style={{ fontSize: 44 }}>🏀</span>
           </div>
 
-          {/* How it works — larger pills */}
-          <div style={{ display: "flex", gap: 20 }}>
-            {["Pick 8 Teams", "Seed x Wins = Score", "Highest Score Wins"].map((text) => (
+          {/* Brand — bold italic style */}
+          <div
+            style={{
+              fontSize: 100,
+              fontWeight: 900,
+              fontStyle: "italic",
+              color: "#00A9E0",
+              letterSpacing: "-3px",
+              marginBottom: 20,
+              textShadow: "2px 2px 0 rgba(0,48,135,0.1)",
+            }}
+          >
+            Slipper8s
+          </div>
+
+          {/* Checkmark pills row — matches homepage */}
+          <div style={{ display: "flex", gap: 32, marginBottom: 32 }}>
+            {["Pick 8 teams", "Seed × Wins = Score", "Highest Score Wins"].map((text) => (
               <div
                 key={text}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 12,
-                  fontSize: 24,
-                  color: "#d4d4d8",
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  borderRadius: 99,
-                  padding: "14px 28px",
-                  fontWeight: 500,
+                  gap: 10,
+                  fontSize: 26,
+                  color: "#334155",
+                  fontWeight: 600,
                 }}
               >
-                <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#00A9E0" }} />
+                <span style={{ color: "#00A9E0", fontSize: 28, fontWeight: 700 }}>✓</span>
                 {text}
               </div>
             ))}
           </div>
 
+          {/* Tagline */}
+          <div style={{ fontSize: 30, color: "#64748b", marginBottom: 36, textAlign: "center" }}>
+            No bracket to bust. Just pick 8 sleepers and root for chaos!
+          </div>
+
+          {/* Sign Up CTA button */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              fontSize: 48,
+              fontWeight: 800,
+              color: "white",
+              background: "linear-gradient(135deg, #00A9E0, #0088cc)",
+              padding: "24px 64px",
+              borderRadius: 20,
+              marginBottom: 40,
+              boxShadow: "0 8px 30px rgba(0,169,224,0.35)",
+            }}
+          >
+            Sign Up &amp; Play!
+            <span style={{ fontSize: 40 }}>→</span>
+          </div>
+
+          {/* Player invite card */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              background: "rgba(0,169,224,0.06)",
+              border: "2px solid rgba(0,169,224,0.15)",
+              borderRadius: 24,
+              padding: "28px 64px",
+            }}
+          >
+            <div style={{ fontSize: 42, fontWeight: 700, color: "#1e293b", marginBottom: 8 }}>
+              {name}
+            </div>
+            <div
+              style={{
+                fontSize: 24,
+                color: "#00A9E0",
+                fontWeight: 600,
+              }}
+            >
+              invited you to play!
+            </div>
+          </div>
+
           {/* Footer */}
-          <div style={{ position: "absolute", bottom: 32, fontSize: 22, color: "#52525b", fontWeight: 500 }}>
+          <div style={{ position: "absolute", bottom: 32, fontSize: 22, color: "#94a3b8", fontWeight: 500 }}>
             slipper8s.com
           </div>
         </div>
