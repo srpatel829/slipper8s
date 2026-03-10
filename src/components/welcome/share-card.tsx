@@ -65,7 +65,7 @@ export function ShareCard({ shareUrl, firstName }: ShareCardProps) {
   }
 
   async function handleCopy() {
-    await copyToClipboard(`${shareText} ${shareUrl}`)
+    await copyToClipboard(`${shareText}\n${shareUrl}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
