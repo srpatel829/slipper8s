@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 import { prisma } from "@/lib/prisma"
+import { signIn } from "@/lib/auth"
 
 export async function GET(request: Request) {
   // Block in production
@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       data: {
         email,
         emailVerified: new Date(),
+        name: "Dev User",
       },
     })
 
@@ -42,7 +43,7 @@ export async function GET(request: Request) {
     }
   }
 
-  // Create a session token
+  // Create a session token using NextAuth's Prisma adapter format
   const sessionToken = crypto.randomUUID()
   const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
@@ -54,9 +55,14 @@ export async function GET(request: Request) {
     },
   })
 
-  // Set the NextAuth session cookie
-  const cookieStore = await cookies()
-  cookieStore.set("authjs.session-token", sessionToken, {
+  // Redirect based on registration status
+  const redirectUrl = user.registrationComplete ? "/picks" : "/register"
+
+  // Use server-side redirect that preserves cookies
+  const response = NextResponse.redirect(new URL(redirectUrl, request.url))
+
+  // Set the session cookie manually
+  response.cookies.set("authjs.session-token", sessionToken, {
     expires,
     path: "/",
     httpOnly: true,
@@ -64,7 +70,5 @@ export async function GET(request: Request) {
     secure: false, // dev only — no HTTPS locally
   })
 
-  // Redirect based on registration status
-  const redirectUrl = user.registrationComplete ? "/picks" : "/register"
-  return NextResponse.redirect(new URL(redirectUrl, request.url))
+  return response
 }

@@ -100,9 +100,30 @@ $25 per entry is donated to charity. The top 4 finishers choose the charity.
     })
   }
 
+  // Create dev user for testing (registrationComplete = true so they skip registration)
+  const devUser = await prisma.user.upsert({
+    where: { email: "dev@slipper8s.com" },
+    create: {
+      email: "dev@slipper8s.com",
+      name: "Dev User",
+      emailVerified: new Date(),
+      registrationComplete: true,
+      username: "DevUser",
+      firstName: "Dev",
+      lastName: "User",
+      country: "United States",
+      state: "California",
+      gender: "Other",
+    },
+    update: {
+      registrationComplete: true,
+    },
+  })
+
   console.log(`✓ Created 2026 season (id: ${season2026.id})`)
   console.log("✓ Seeded AppSettings with currentSeasonId and picks deadline (Mar 19 12pm EDT)")
   console.log("✓ Seeded default content pages")
+  console.log(`✓ Seeded dev user (id: ${devUser.id})`)
 }
 
 main()
