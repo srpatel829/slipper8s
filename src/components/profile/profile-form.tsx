@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input"
 import { User, Mail, AtSign, Globe, Heart, Bell, Shield, Loader2, Save, LogOut, Calendar, Phone } from "lucide-react"
 import { signOut } from "next-auth/react"
 import type { Gender } from "@/generated/prisma"
-import { getSeedColor } from "@/lib/colors"
+import { TeamCombobox } from "@/components/ui/team-combobox"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -58,25 +58,17 @@ interface ProfileUser {
   favoriteTeam: { id: string; name: string; seed: number; conference: string | null } | null
 }
 
-interface TeamOption {
-  id: string
-  name: string
-  seed: number
-  conference: string | null
-}
-
 interface ProfileFormProps {
   user: ProfileUser
-  teams: TeamOption[]
 }
 
-export function ProfileForm({ user, teams }: ProfileFormProps) {
+export function ProfileForm({ user }: ProfileFormProps) {
   const router = useRouter()
   const [country, setCountry] = useState(user.country ?? "")
   const [state, setState] = useState(user.state ?? "")
   const [gender, setGender] = useState(user.gender ?? "")
-  const [favoriteTeamId, setFavoriteTeamId] = useState(
-    user.favoriteTeamId || user.favoriteTeamName || ""
+  const [favoriteTeamName, setFavoriteTeamName] = useState(
+    user.favoriteTeamName || ""
   )
   const [notifications, setNotifications] = useState(user.notificationsEnabled)
   const [dateOfBirth, setDateOfBirth] = useState(
@@ -84,8 +76,6 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
   )
   const [phone, setPhone] = useState(user.phone ?? "")
   const [saving, setSaving] = useState(false)
-
-  const selectedTeam = teams.find(t => t.id === favoriteTeamId)
 
   async function handleSave() {
     setSaving(true)
@@ -97,7 +87,7 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
           country: country && country !== "none" ? country : null,
           state: state && state !== "none" ? state : null,
           gender: gender || null,
-          favoriteTeamId: favoriteTeamId && favoriteTeamId !== "none" ? favoriteTeamId : null,
+          favoriteTeamName: favoriteTeamName || null,
           notificationsEnabled: notifications,
           dateOfBirth: dateOfBirth || null,
           phone: phone || null,
@@ -223,47 +213,10 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
           Favorite Team
         </h2>
         <div className="space-y-1.5">
-          <Select value={favoriteTeamId} onValueChange={setFavoriteTeamId}>
-            <SelectTrigger className="h-10 bg-muted/50 border-border">
-              <SelectValue placeholder="Select your favorite team" />
-            </SelectTrigger>
-            <SelectContent className="max-h-64">
-              <SelectItem value="none">No favorite</SelectItem>
-              {teams.map(t => (
-                <SelectItem key={t.id} value={t.id}>
-                  <span className="flex items-center gap-2">
-                    <span
-                      className="text-[9px] font-bold px-1 py-0.5 rounded text-white"
-                      style={{ backgroundColor: getSeedColor(t.seed) }}
-                    >
-                      {t.seed}
-                    </span>
-                    {t.name}
-                    {t.conference && (
-                      <span className="text-muted-foreground text-xs">({t.conference})</span>
-                    )}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TeamCombobox value={favoriteTeamName} onChange={setFavoriteTeamName} />
           <p className="text-xs text-muted-foreground">
             See how you rank among fans of your team and conference
           </p>
-          {selectedTeam && (
-            <div className="flex items-center gap-2 mt-2 p-2 bg-muted/30 rounded-lg">
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded text-white"
-                style={{ backgroundColor: getSeedColor(selectedTeam.seed) }}
-              >
-                #{selectedTeam.seed}
-              </span>
-              <span className="text-sm font-medium">{selectedTeam.name}</span>
-              {selectedTeam.conference && (
-                <span className="text-xs text-muted-foreground">· {selectedTeam.conference}</span>
-              )}
-            </div>
-          )}
         </div>
       </div>
 

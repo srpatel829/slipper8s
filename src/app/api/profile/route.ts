@@ -16,7 +16,7 @@ export async function PUT(request: Request) {
   }
 
   const body = await request.json()
-  const { country, state, gender, favoriteTeamId, notificationsEnabled, dateOfBirth, phone } = body
+  const { country, state, gender, favoriteTeamId, favoriteTeamName, notificationsEnabled, dateOfBirth, phone } = body
 
   // Validate gender if provided
   if (gender && !VALID_GENDERS.includes(gender)) {
@@ -53,11 +53,22 @@ export async function PUT(request: Request) {
     }
   }
 
-  // Validate favoriteTeamId if provided
-  if (favoriteTeamId && favoriteTeamId !== "none") {
+  // Resolve favorite team: accept name (from TeamCombobox) or ID (from DB-driven select)
+  let resolvedTeamId: string | null = null
+  let resolvedTeamName: string | null = null
+
+  if (favoriteTeamName && favoriteTeamName !== "none") {
+    resolvedTeamName = favoriteTeamName
+    // Try to find matching team in DB (will exist once tournament is synced)
+    const team = await prisma.team.findFirst({ where: { name: favoriteTeamName } })
+    if (team) {
+      resolvedTeamId = team.id
+    }
+  } else if (favoriteTeamId && favoriteTeamId !== "none") {
     const team = await prisma.team.findUnique({ where: { id: favoriteTeamId } })
-    if (!team) {
-      return NextResponse.json({ error: "Invalid team" }, { status: 400 })
+    if (team) {
+      resolvedTeamId = team.id
+      resolvedTeamName = team.name
     }
   }
 
@@ -67,7 +78,8 @@ export async function PUT(request: Request) {
       country: country === "none" ? null : (country ?? null),
       state: country !== "United States" ? null : (state === "none" ? null : (state ?? null)),
       gender: gender === "NO_RESPONSE" ? "NO_RESPONSE" as Gender : (gender ? gender as Gender : null),
-      favoriteTeamId: favoriteTeamId === "none" ? null : (favoriteTeamId ?? null),
+      favoriteTeamId: resolvedTeamId,
+      favoriteTeamName: resolvedTeamName,
       notificationsEnabled: typeof notificationsEnabled === "boolean" ? notificationsEnabled : undefined,
       ...(dateOfBirth !== undefined && { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null }),
       ...(phone !== undefined && { phone: phone || null }),

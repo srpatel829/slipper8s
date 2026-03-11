@@ -9,35 +9,28 @@ export default async function ProfilePage() {
   const session = await auth()
   if (!session?.user) redirect("/login")
 
-  const [user, teams] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        username: true,
-        email: true,
-        country: true,
-        state: true,
-        gender: true,
-        favoriteTeamId: true,
-        favoriteTeamName: true,
-        notificationsEnabled: true,
-        dateOfBirth: true,
-        phone: true,
-        role: true,
-        isPaid: true,
-        createdAt: true,
-        favoriteTeam: { select: { id: true, name: true, seed: true, conference: true } },
-      },
-    }),
-    prisma.team.findMany({
-      where: { isPlayIn: false },
-      select: { id: true, name: true, seed: true, conference: true },
-      orderBy: [{ name: "asc" }],
-    }),
-  ])
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      username: true,
+      email: true,
+      country: true,
+      state: true,
+      gender: true,
+      favoriteTeamId: true,
+      favoriteTeamName: true,
+      notificationsEnabled: true,
+      dateOfBirth: true,
+      phone: true,
+      role: true,
+      isPaid: true,
+      createdAt: true,
+      favoriteTeam: { select: { id: true, name: true, seed: true, conference: true } },
+    },
+  })
 
   if (!user) redirect("/login")
 
@@ -49,7 +42,7 @@ export default async function ProfilePage() {
           Manage your account and preferences
         </p>
       </div>
-      <ProfileForm user={user} teams={teams} />
+      <ProfileForm user={user} />
     </div>
   )
 }
