@@ -7,6 +7,7 @@ import { ScoreHistorySection } from "@/components/leaderboard/score-history-sect
 import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
+import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
 
 export const dynamic = "force-dynamic"
 
@@ -82,6 +83,13 @@ async function getUserLeagues(userId: string) {
   return leagues
 }
 
+function lookupConference(teamName: string): string | null {
+  for (const group of D1_TEAMS_BY_CONFERENCE) {
+    if (group.teams.includes(teamName)) return group.conference
+  }
+  return null
+}
+
 async function getUserProfile(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -89,17 +97,23 @@ async function getUserProfile(userId: string) {
       country: true,
       state: true,
       gender: true,
+      favoriteTeamName: true,
       favoriteTeam: { select: { name: true, conference: true } },
     },
   })
-  // Flatten conference and favoriteTeam name for the dimension tabs
-  return user ? {
+  if (!user) return null
+
+  // Use DB relation if available, otherwise fall back to name + D1 data lookup
+  const teamName = user.favoriteTeam?.name ?? user.favoriteTeamName ?? null
+  const conference = user.favoriteTeam?.conference ?? (teamName ? lookupConference(teamName) : null)
+
+  return {
     country: user.country,
     state: user.state,
     gender: user.gender,
-    favoriteTeam: user.favoriteTeam?.name ?? null,
-    conference: user.favoriteTeam?.conference ?? null,
-  } : null
+    favoriteTeam: teamName,
+    conference,
+  }
 }
 
 async function getSeasonStatus(): Promise<string | null> {
