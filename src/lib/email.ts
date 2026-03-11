@@ -5,50 +5,67 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Slipper8s <noreply@slipper8
 const APP_URL = process.env.AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"
 
 // ─── Welcome Email (mandatory — sends on first registration) ────────────────
+// Two variants: pre-bracket (before selections are live) and live (bracket is out)
 
-export async function sendWelcomeEmail(to: string, firstName: string) {
+export async function sendWelcomeEmail(to: string, firstName: string, variant: "pre-bracket" | "live" = "pre-bracket") {
+  const timingBlock = variant === "pre-bracket"
+    ? `
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        The committee will announce the bracket at 6pm ET on Sunday, March 15th. Slipper8s will go live shortly thereafter. Please log back in then to make your selections.
+      </p>
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        You can update your picks as many times as you want before the entry deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).
+      </p>`
+    : `
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
+        The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry deadline.
+      </p>`
+
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "Welcome to Slipper8s! 🏀",
+      subject: "Welcome to Slipper8s 2026! 🏀",
       html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:32px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#ffffff;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
-      <p style="color:#a1a1aa;font-size:14px;margin:0;">Where sleeper picks become glass slippers</p>
+      <h1 style="color:#111;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
+      <p style="color:#888;font-size:14px;margin:0;">Where sleeper picks become glass slippers</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! You're all set for the 2026 college basketball tournament pool.
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Hey ${firstName}! You&rsquo;re all set for the 2026 college basketball tournament pool.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        <strong style="color:#e4e4e7;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed x wins. Higher seeds are worth more when they win, so those sleeper picks can pay off big.
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        <strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        You can update your picks as many times as you want before the entry deadline.
-      </p>
+      ${timingBlock}
       <div style="text-align:center;">
         <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
           Make Your Picks
         </a>
       </div>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 12px;">
-        <strong style="color:#e4e4e7;">Playing with friends?</strong> Create a private league and share the invite code.
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 12px;">
+        <strong style="color:#222;">Playing with friends?</strong> Create a private league and share the invite link.
       </p>
       <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
-        Create a Private League →
+        Create a Private League &rarr;
       </a>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#555;font-size:13px;line-height:1.6;margin:0;">
+        <strong style="color:#222;">Most importantly,</strong> please share this game with your family, friends, colleagues, and on your social media &mdash; this game only grows with your help!
+      </p>
+    </div>
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
+      Slipper8s &mdash; slipper8s.com
     </p>
   </div>
 </body>

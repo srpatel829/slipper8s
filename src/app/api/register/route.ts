@@ -112,9 +112,26 @@ export async function POST(request: Request) {
     },
   })
 
+  // Determine welcome email variant based on season status
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "main" },
+    select: { currentSeasonId: true },
+  })
+  let emailVariant: "pre-bracket" | "live" = "pre-bracket"
+  if (settings?.currentSeasonId) {
+    const season = await prisma.season.findUnique({
+      where: { id: settings.currentSeasonId },
+      select: { status: true },
+    })
+    // REGISTRATION means bracket is out and picks are open; LOCKED/ACTIVE/COMPLETED means games are live
+    if (season?.status === "REGISTRATION" || season?.status === "LOCKED" || season?.status === "ACTIVE" || season?.status === "COMPLETED") {
+      emailVariant = "live"
+    }
+  }
+
   // Send welcome email (mandatory — fire and forget, don't block registration)
   if (updatedUser.email && updatedUser.firstName) {
-    sendWelcomeEmail(updatedUser.email, updatedUser.firstName).catch((err) =>
+    sendWelcomeEmail(updatedUser.email, updatedUser.firstName, emailVariant).catch((err) =>
       console.error("[register] Welcome email failed:", err)
     )
   }
