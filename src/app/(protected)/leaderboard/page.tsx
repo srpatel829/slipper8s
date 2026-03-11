@@ -73,7 +73,7 @@ async function getUserLeagues(userId: string) {
     where: {
       OR: [
         { adminId: userId },
-        { entries: { some: { userId } } },
+        { leagueEntries: { some: { entry: { userId } } } },
       ],
     },
     select: { id: true, name: true },

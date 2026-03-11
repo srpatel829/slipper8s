@@ -188,7 +188,7 @@ export async function createDimensionSnapshots(checkpointId: string, seasonId: s
     select: {
       id: true,
       score: true,
-      leagueId: true,
+      leagueEntries: { select: { leagueId: true } },
       user: {
         select: {
           country: true,
@@ -309,12 +309,13 @@ export async function createDimensionSnapshots(checkpointId: string, seasonId: s
     })
   }
 
-  // 6. Private league dimension
+  // 6. Private league dimension (many-to-many via leagueEntries)
   const byLeague = new Map<string, typeof entries>()
   for (const e of entries) {
-    if (!e.leagueId) continue
-    if (!byLeague.has(e.leagueId)) byLeague.set(e.leagueId, [])
-    byLeague.get(e.leagueId)!.push(e)
+    for (const le of (e.leagueEntries ?? [])) {
+      if (!byLeague.has(le.leagueId)) byLeague.set(le.leagueId, [])
+      byLeague.get(le.leagueId)!.push(e)
+    }
   }
   for (const [leagueId, leagueEntries] of byLeague) {
     const { leaderId, medianId } = findLeaderAndMedian(leagueEntries)

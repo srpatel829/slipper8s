@@ -36,7 +36,7 @@ async function getPicksData(userId: string, seasonId: string, entryId?: string) 
             playInSlot: { include: { team1: true, team2: true, winner: true } },
           },
         },
-        league: { select: { id: true, name: true } },
+        leagueEntries: { select: { league: { select: { id: true, name: true } } } },
       },
       orderBy: { entryNumber: "asc" },
     }),

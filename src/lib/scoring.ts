@@ -17,7 +17,7 @@ export type EntryWithRelations = {
   entryNumber: number
   nickname: string | null
   charityPreference: string | null
-  leagueId?: string | null
+  leagueEntries?: { leagueId: string }[]
   score?: number | null
   maxPossibleScore?: number | null
   expectedScore?: number | null
@@ -195,7 +195,7 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     state: entry.user.state ?? null,
     gender: entry.user.gender ?? null,
     conference: entry.user.favoriteTeam?.conference ?? null,
-    leagueId: entry.leagueId ?? null,
+    leagueIds: (entry.leagueEntries ?? []).map(le => le.leagueId),
     currentScore,
     ppr,
     tps: currentScore + ppr,

@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
             email: true,
           },
         },
-        league: { select: { name: true } },
+        leagueEntries: { select: { league: { select: { name: true } } } },
         entryPicks: {
           include: {
             team: { select: { name: true, shortName: true, seed: true, eliminated: true } },

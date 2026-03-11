@@ -1,14 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import Link from "next/link"
 
 export function JoinLeagueForm() {
   const [inviteCode, setInviteCode] = useState("")
   const [joining, setJoining] = useState(false)
+  const [joinedLeague, setJoinedLeague] = useState<{ id: string; name: string } | null>(null)
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
@@ -28,12 +30,38 @@ export function JoinLeagueForm() {
         return
       }
       toast.success(`Joined "${data.name}"!`)
+      setJoinedLeague({ id: data.id, name: data.name })
       setInviteCode("")
     } catch {
       toast.error("Something went wrong")
     } finally {
       setJoining(false)
     }
+  }
+
+  if (joinedLeague) {
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Check className="h-4 w-4 text-green-500" />
+          <p className="text-sm font-medium text-foreground">
+            Joined &quot;{joinedLeague.name}&quot;!
+          </p>
+        </div>
+        <Link
+          href={`/leagues/${joinedLeague.id}`}
+          className="text-sm text-primary hover:underline"
+        >
+          View League &rarr;
+        </Link>
+        <button
+          onClick={() => setJoinedLeague(null)}
+          className="block text-xs text-muted-foreground hover:text-foreground mt-2 transition-colors"
+        >
+          Join another league
+        </button>
+      </div>
+    )
   }
 
   return (

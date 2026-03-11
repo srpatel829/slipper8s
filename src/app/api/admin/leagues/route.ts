@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         },
       },
       season: { select: { year: true } },
-      _count: { select: { entries: true } },
+      _count: { select: { leagueEntries: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       inviteCode: l.inviteCode,
       admin: l.admin,
       seasonYear: l.season.year,
-      memberCount: l._count.entries,
+      memberCount: l._count.leagueEntries,
       createdAt: l.createdAt,
     })),
   })
@@ -77,26 +77,20 @@ export async function DELETE(req: NextRequest) {
 
   const league = await prisma.league.findUnique({
     where: { id: leagueId },
-    include: { _count: { select: { entries: true } } },
+    include: { _count: { select: { leagueEntries: true } } },
   })
 
   if (!league) {
     return NextResponse.json({ error: "League not found" }, { status: 404 })
   }
 
-  // Remove league association from entries (don't delete entries)
-  await prisma.entry.updateMany({
-    where: { leagueId },
-    data: { leagueId: null },
-  })
-
-  // Delete the league
+  // Delete the league (LeagueEntry rows cascade-delete; entries are preserved)
   await prisma.league.delete({ where: { id: leagueId } })
 
   await prisma.auditLog.create({
     data: {
       adminId: session.user.id!,
-      action: `Deleted league "${league.name}" (${league._count.entries} members)`,
+      action: `Deleted league "${league.name}" (${league._count.leagueEntries} members)`,
       details: { leagueId, leagueName: league.name, reason: reason ?? "Admin deleted league" },
     },
   })

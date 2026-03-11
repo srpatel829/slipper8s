@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { seasonId, leagueId, nickname } = body
+  const { seasonId, nickname } = body
 
   if (!seasonId) {
     return NextResponse.json({ error: "seasonId required" }, { status: 400 })
@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     data: {
       userId: session.user.id,
       seasonId,
-      leagueId: leagueId ?? null,
       nickname: nickname ?? null,
       entryNumber,
       draftInProgress: true,

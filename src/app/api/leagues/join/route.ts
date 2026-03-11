@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 // POST /api/leagues/join — join a league by invite code
+// Many-to-many: adds all user's entries for that season into the league via LeagueEntry
 export async function POST(request: NextRequest) {
   const rateLimitResponse = rateLimit(getClientIp(request))
   if (rateLimitResponse) return rateLimitResponse
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
   const league = await prisma.league.findUnique({
     where: { inviteCode: code },
     include: {
-      _count: { select: { entries: true } },
+      _count: { select: { leagueEntries: true } },
     },
   })
 
@@ -31,36 +32,55 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid invite code" }, { status: 404 })
   }
 
-  // Check if user already has an entry in this league
-  const existingEntry = await prisma.entry.findFirst({
-    where: {
-      userId: session.user.id,
-      leagueId: league.id,
-    },
+  // Find all of user's entries for this season
+  const userEntries = await prisma.entry.findMany({
+    where: { userId: session.user.id, seasonId: league.seasonId },
+    select: { id: true },
   })
 
-  if (existingEntry) {
-    return NextResponse.json({ error: "You're already in this league" }, { status: 409 })
+  if (userEntries.length === 0) {
+    return NextResponse.json({ error: "You don't have any entries for this season yet" }, { status: 400 })
   }
 
-  // Create an entry for this user in the league
-  // Find the user's next entry number for this season
-  const entryCount = await prisma.entry.count({
-    where: { userId: session.user.id, seasonId: league.seasonId },
+  // Find which entries are already in this league
+  const existingLeagueEntries = await prisma.leagueEntry.findMany({
+    where: {
+      leagueId: league.id,
+      entryId: { in: userEntries.map((e) => e.id) },
+    },
+    select: { entryId: true },
   })
 
-  await prisma.entry.create({
-    data: {
-      userId: session.user.id,
-      seasonId: league.seasonId,
+  const alreadyInLeague = new Set(existingLeagueEntries.map((le) => le.entryId))
+  const newEntryIds = userEntries.filter((e) => !alreadyInLeague.has(e.id)).map((e) => e.id)
+
+  if (newEntryIds.length === 0) {
+    return NextResponse.json({ error: "All your entries are already in this league" }, { status: 409 })
+  }
+
+  // Check max entries cap
+  if (league.maxEntries != null) {
+    const currentCount = league._count.leagueEntries
+    if (currentCount + newEntryIds.length > league.maxEntries) {
+      return NextResponse.json(
+        { error: `This league is full (${currentCount}/${league.maxEntries} entries)` },
+        { status: 400 }
+      )
+    }
+  }
+
+  // Create LeagueEntry rows for all eligible entries
+  await prisma.leagueEntry.createMany({
+    data: newEntryIds.map((entryId) => ({
       leagueId: league.id,
-      entryNumber: entryCount + 1,
-    },
+      entryId,
+    })),
   })
 
   return NextResponse.json({
     id: league.id,
     name: league.name,
-    memberCount: league._count.entries + 1,
+    entriesAdded: newEntryIds.length,
+    memberCount: league._count.leagueEntries + newEntryIds.length,
   })
 }

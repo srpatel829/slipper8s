@@ -11,7 +11,7 @@ interface EntryInfo {
   id: string
   entryNumber: number
   nickname: string | null
-  league: { id: string; name: string } | null
+  leagueEntries: { league: { id: string; name: string } }[]
   entryPicks: { id: string }[]
 }
 
@@ -74,7 +74,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
 
   function getEntryLabel(entry: EntryInfo) {
     if (entry.nickname) return entry.nickname
-    if (entry.league) return `${entry.league.name} entry`
+    if (entry.leagueEntries.length > 0) return `${entry.leagueEntries[0].league.name} entry`
     if (entries.length > 1) return `Entry #${entry.entryNumber}`
     return "My Entry"
   }

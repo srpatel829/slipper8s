@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
           playInSlot: { include: { team1: true, team2: true, winner: true } },
         },
       },
-      league: { select: { id: true, name: true } },
+      leagueEntries: { select: { league: { select: { id: true, name: true } } } },
     },
     orderBy: { entryNumber: "asc" },
   })
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { picks, seasonId: requestSeasonId, leagueId, nickname, charityPreference } = body
+  const { picks, seasonId: requestSeasonId, nickname, charityPreference } = body
 
   const validation = validatePicks(picks)
   if (validation) return NextResponse.json({ error: validation }, { status: 400 })
@@ -99,21 +99,12 @@ export async function POST(req: NextRequest) {
   })
   const entryNumber = existingEntries + 1
 
-  // Validate league exists if provided
-  if (leagueId) {
-    const league = await prisma.league.findUnique({ where: { id: leagueId } })
-    if (!league || league.seasonId !== seasonId) {
-      return NextResponse.json({ error: "Invalid league" }, { status: 400 })
-    }
-  }
-
   // Create entry + picks in a transaction
   const entry = await prisma.$transaction(async (tx) => {
     const newEntry = await tx.entry.create({
       data: {
         userId: session.user.id,
         seasonId,
-        leagueId: leagueId ?? null,
         nickname: nickname ?? null,
         entryNumber,
         charityPreference: charityPreference ?? null,

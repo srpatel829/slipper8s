@@ -110,7 +110,7 @@ export interface LeaderboardEntry {
   gender?: string | null
   favoriteTeam?: string | null
   conference?: string | null
-  leagueId?: string | null
+  leagueIds?: string[]
   archetypes?: string[]
   picks: ResolvedPickSummary[]
 }

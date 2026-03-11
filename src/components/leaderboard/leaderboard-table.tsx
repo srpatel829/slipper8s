@@ -417,7 +417,7 @@ function filterByDimension(
     return data.filter((e) => e.conference === userProfile.conference)
   }
   if (dim === "league" && leagueId) {
-    return data.filter((e) => e.leagueId === leagueId)
+    return data.filter((e) => e.leagueIds?.includes(leagueId))
   }
   return data
 }

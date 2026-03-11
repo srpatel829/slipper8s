@@ -19,17 +19,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // Find leagues where the user is admin OR has an entry
+  // Find leagues where the user is admin OR has an entry via LeagueEntry
   const leagues = await prisma.league.findMany({
     where: {
       OR: [
         { adminId: session.user.id },
-        { entries: { some: { userId: session.user.id } } },
+        { leagueEntries: { some: { entry: { userId: session.user.id } } } },
       ],
     },
     include: {
       admin: { select: { id: true, name: true, username: true } },
-      _count: { select: { entries: true } },
+      _count: { select: { leagueEntries: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -39,9 +39,12 @@ export async function GET(req: NextRequest) {
       id: l.id,
       name: l.name,
       inviteCode: l.inviteCode,
+      description: l.description,
+      maxEntries: l.maxEntries,
+      trackPayments: l.trackPayments,
       isAdmin: l.adminId === session.user.id,
       adminName: l.admin.username ?? l.admin.name ?? "Unknown",
-      memberCount: l._count.entries,
+      memberCount: l._count.leagueEntries,
       createdAt: l.createdAt,
     }))
   )
@@ -64,6 +67,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
   const name = (body.name as string)?.trim()
+  const description = (body.description as string)?.trim() || null
+  const maxEntries = body.maxEntries != null ? Number(body.maxEntries) : null
+  const trackPayments = Boolean(body.trackPayments)
 
   if (!name || name.length < 3 || name.length > 50) {
     return NextResponse.json(
@@ -105,6 +111,9 @@ export async function POST(request: NextRequest) {
     const league = await prisma.league.create({
       data: {
         name,
+        description,
+        maxEntries,
+        trackPayments,
         inviteCode: generateInviteCode(),
         adminId: session.user.id,
         seasonId: season.id,

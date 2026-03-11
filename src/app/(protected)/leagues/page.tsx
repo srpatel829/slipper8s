@@ -6,15 +6,20 @@ import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
-  Users, Plus, LogIn, Copy, Check, Loader2, Trophy, Crown, Trash2,
+  Users, Plus, LogIn, Copy, Check, Loader2, Trophy, Crown, ChevronRight,
 } from "lucide-react"
 import { toast } from "sonner"
+import Link from "next/link"
 
 interface LeagueListItem {
   id: string
   name: string
   inviteCode: string
+  description: string | null
+  maxEntries: number | null
+  trackPayments: boolean
   isAdmin: boolean
   adminName: string
   memberCount: number
@@ -31,6 +36,8 @@ export default function LeaguesPage() {
   const [creating, setCreating] = useState(false)
   const [joining, setJoining] = useState(false)
   const [newLeagueName, setNewLeagueName] = useState("")
+  const [newDescription, setNewDescription] = useState("")
+  const [newMaxEntries, setNewMaxEntries] = useState("")
   const [inviteCode, setInviteCode] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -56,17 +63,19 @@ export default function LeaguesPage() {
       const res = await fetch("/api/leagues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newLeagueName.trim() }),
+        body: JSON.stringify({
+          name: newLeagueName.trim(),
+          description: newDescription.trim() || undefined,
+          maxEntries: newMaxEntries ? Number(newMaxEntries) : undefined,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
         toast.error(data.error || "Failed to create league")
         return
       }
-      toast.success(`League "${data.name}" created! Invite code: ${data.inviteCode}`)
-      setNewLeagueName("")
-      setShowCreate(false)
-      fetchLeagues()
+      toast.success(`League "${data.name}" created!`)
+      router.push(`/leagues/${data.id}`)
     } catch {
       toast.error("Something went wrong")
     } finally {
@@ -89,9 +98,7 @@ export default function LeaguesPage() {
         return
       }
       toast.success(`Joined "${data.name}"!`)
-      setInviteCode("")
-      setShowJoin(false)
-      fetchLeagues()
+      router.push(`/leagues/${data.id}`)
     } catch {
       toast.error("Something went wrong")
     } finally {
@@ -99,23 +106,9 @@ export default function LeaguesPage() {
     }
   }
 
-  async function handleDelete(leagueId: string, leagueName: string) {
-    if (!confirm(`Delete "${leagueName}"? This will remove all members.`)) return
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}`, { method: "DELETE" })
-      if (res.ok) {
-        toast.success("League deleted")
-        fetchLeagues()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || "Failed to delete league")
-      }
-    } catch {
-      toast.error("Something went wrong")
-    }
-  }
-
-  function copyInviteCode(code: string, leagueId: string) {
+  function copyInviteCode(e: React.MouseEvent, code: string, leagueId: string) {
+    e.preventDefault()
+    e.stopPropagation()
     navigator.clipboard.writeText(code)
     setCopiedId(leagueId)
     toast.success("Invite code copied!")
@@ -160,9 +153,9 @@ export default function LeaguesPage() {
       {showCreate && (
         <div className="bg-card border border-border rounded-xl p-5">
           <h3 className="font-semibold mb-3">Create a New League</h3>
-          <form onSubmit={handleCreate} className="flex gap-3 items-end">
-            <div className="flex-1 space-y-1.5">
-              <Label htmlFor="leagueName" className="text-sm">League name</Label>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="leagueName" className="text-sm">League name *</Label>
               <Input
                 id="leagueName"
                 value={newLeagueName}
@@ -174,12 +167,37 @@ export default function LeaguesPage() {
                 className="h-10 bg-muted/50"
               />
             </div>
-            <Button type="submit" disabled={creating || !newLeagueName.trim()}>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
-            </Button>
-            <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>
-              Cancel
-            </Button>
+            <div className="space-y-1.5">
+              <Label htmlFor="newDescription" className="text-sm">Description (optional)</Label>
+              <Textarea
+                id="newDescription"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Add details about your league..."
+                className="bg-muted/50 min-h-[60px]"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="newMaxEntries" className="text-sm">Max entries (optional)</Label>
+              <Input
+                id="newMaxEntries"
+                type="number"
+                min={1}
+                value={newMaxEntries}
+                onChange={(e) => setNewMaxEntries(e.target.value)}
+                placeholder="Unlimited"
+                className="h-10 bg-muted/50 max-w-[200px]"
+              />
+              <p className="text-xs text-muted-foreground">Leave blank for unlimited.</p>
+            </div>
+            <div className="flex gap-3">
+              <Button type="submit" disabled={creating || !newLeagueName.trim()}>
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>
+                Cancel
+              </Button>
+            </div>
           </form>
         </div>
       )}
@@ -226,14 +244,15 @@ export default function LeaguesPage() {
       ) : (
         <div className="space-y-3">
           {leagues.map((league) => (
-            <div
+            <Link
               key={league.id}
-              className="bg-card border border-border rounded-xl p-5 hover:border-border/80 transition-colors"
+              href={`/leagues/${league.id}`}
+              className="block bg-card border border-border rounded-xl p-5 hover:border-primary/30 hover:bg-muted/20 transition-colors group"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg truncate">{league.name}</h3>
+                    <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">{league.name}</h3>
                     {league.isAdmin && (
                       <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
                         <Crown className="h-2.5 w-2.5" />
@@ -241,15 +260,18 @@ export default function LeaguesPage() {
                       </span>
                     )}
                   </div>
+                  {league.description && (
+                    <p className="text-xs text-muted-foreground mb-1 line-clamp-1">{league.description}</p>
+                  )}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{league.memberCount} member{league.memberCount !== 1 ? "s" : ""}</span>
-                    <span>Created by {league.adminName}</span>
+                    <span>{league.memberCount} entr{league.memberCount !== 1 ? "ies" : "y"}</span>
+                    <span>Admin: {league.adminName}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {/* Invite code */}
                   <button
-                    onClick={() => copyInviteCode(league.inviteCode, league.id)}
+                    onClick={(e) => copyInviteCode(e, league.inviteCode, league.id)}
                     className="flex items-center gap-1.5 text-xs font-mono bg-muted/50 hover:bg-muted px-3 py-1.5 rounded-lg border border-border transition-colors"
                     title="Copy invite code"
                   >
@@ -260,19 +282,10 @@ export default function LeaguesPage() {
                     )}
                     {league.inviteCode}
                   </button>
-                  {league.isAdmin && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
-                      onClick={() => handleDelete(league.id, league.name)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

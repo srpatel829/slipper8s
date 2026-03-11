@@ -86,7 +86,7 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     type: "privateLeague",
     label: "Private Leagues",
     shortLabel: "Leagues",
-    getValue: (e) => e.leagueId ?? null,
+    getValue: (e) => e.leagueIds?.[0] ?? null,
     searchable: false,
   },
 ]
@@ -109,6 +109,15 @@ export function getDimensionValues(
   let hasNulls = false
 
   for (const entry of entries) {
+    // Special case: privateLeague is multi-valued
+    if (dimension.type === "privateLeague") {
+      if (!entry.leagueIds || entry.leagueIds.length === 0) {
+        hasNulls = true
+      } else {
+        for (const lid of entry.leagueIds) values.add(lid)
+      }
+      continue
+    }
     const val = dimension.getValue(entry)
     if (val === null) {
       hasNulls = true
@@ -155,8 +164,12 @@ export function filterAndRerank(
 ): LeaderboardEntry[] {
   if (dimension.type === "global") return entries
 
-  // Filter
+  // Filter — privateLeague is multi-valued
   const filtered = entries.filter(e => {
+    if (dimension.type === "privateLeague") {
+      if (value === NO_RESPONSE) return !e.leagueIds || e.leagueIds.length === 0
+      return e.leagueIds?.includes(value) ?? false
+    }
     const v = dimension.getValue(e)
     if (value === NO_RESPONSE) return v === null
     return v === value
