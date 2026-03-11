@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
+import { isProfane } from "@/lib/profanity"
 
 // POST — Create a new empty entry for a season (user picks teams later via the form)
 export async function POST(req: NextRequest) {
@@ -22,6 +23,11 @@ export async function POST(req: NextRequest) {
 
   if (!seasonId) {
     return NextResponse.json({ error: "seasonId required" }, { status: 400 })
+  }
+
+  // Profanity check on nickname
+  if (nickname && isProfane(nickname)) {
+    return NextResponse.json({ error: "Entry name contains inappropriate language" }, { status: 400 })
   }
 
   // Check season status — only allow new entries during REGISTRATION
@@ -76,4 +82,45 @@ export async function POST(req: NextRequest) {
     entryId: entry.id,
     entryNumber: entry.entryNumber,
   })
+}
+
+// PATCH — Rename an entry (update nickname)
+export async function PATCH(req: NextRequest) {
+  const rateLimitResponse = rateLimit(getClientIp(req))
+  if (rateLimitResponse) return rateLimitResponse
+
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const body = await req.json()
+  const { entryId, nickname } = body
+
+  if (!entryId || !nickname) {
+    return NextResponse.json({ error: "entryId and nickname required" }, { status: 400 })
+  }
+
+  const trimmed = String(nickname).trim().slice(0, 30)
+  if (!trimmed) {
+    return NextResponse.json({ error: "Nickname cannot be empty" }, { status: 400 })
+  }
+
+  if (isProfane(trimmed)) {
+    return NextResponse.json({ error: "Entry name contains inappropriate language" }, { status: 400 })
+  }
+
+  // Verify entry belongs to user
+  const entry = await prisma.entry.findUnique({
+    where: { id: entryId },
+    select: { userId: true },
+  })
+  if (!entry || entry.userId !== session.user.id) {
+    return NextResponse.json({ error: "Entry not found" }, { status: 404 })
+  }
+
+  await prisma.entry.update({
+    where: { id: entryId },
+    data: { nickname: trimmed },
+  })
+
+  return NextResponse.json({ success: true, nickname: trimmed })
 }
