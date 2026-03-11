@@ -8,6 +8,14 @@ const APP_URL = process.env.AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "http
 // Two variants: pre-bracket (before selections are live) and live (bracket is out)
 
 export async function sendWelcomeEmail(to: string, firstName: string, variant: "pre-bracket" | "live" = "pre-bracket") {
+  // Build social share URLs for the "share with friends" section
+  const shareUrl = APP_URL
+  const shareText = `I'm registered to play Slipper8s for 2026!\nYou should sign up and see if you can beat me!\nPick 8 Teams | Seed x Wins = Score | Highest Score Wins!`
+  const bareUrl = shareUrl.replace(/^https?:\/\//, "")
+  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(bareUrl)}`
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
+  const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+
   const timingBlock = variant === "pre-bracket"
     ? `
       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
@@ -35,11 +43,10 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
     <div style="text-align:center;margin-bottom:32px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
       <h1 style="color:#111;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
-      <p style="color:#888;font-size:14px;margin:0;">Where sleeper picks become glass slippers</p>
     </div>
     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! You&rsquo;re all set for the 2026 college basketball tournament pool.
+        Hey ${firstName}! You&rsquo;re all set for the 2026 edition of Slipper8s!
       </p>
       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
         <strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.
@@ -60,9 +67,32 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
       </a>
     </div>
     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#555;font-size:13px;line-height:1.6;margin:0;">
+      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 16px;">
         <strong style="color:#222;">Most importantly,</strong> please share this game with your family, friends, colleagues, and on your social media &mdash; this game only grows with your help!
       </p>
+      <p style="color:#888;font-size:12px;margin:0 0 12px;">Share the link directly:</p>
+      <div style="background:#f5f6fa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
+        <a href="${shareUrl}" style="color:#00A9E0;font-size:13px;text-decoration:none;word-break:break-all;">${shareUrl}</a>
+      </div>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <tr>
+          <td style="padding:0 6px 0 0;">
+            <a href="${twitterShareUrl}" target="_blank" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
+              &#x1D54F; Post
+            </a>
+          </td>
+          <td style="padding:0 6px;">
+            <a href="${facebookShareUrl}" target="_blank" style="display:inline-block;background:#1877F2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
+              Facebook
+            </a>
+          </td>
+          <td style="padding:0 0 0 6px;">
+            <a href="${linkedInShareUrl}" target="_blank" style="display:inline-block;background:#0A66C2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
+              LinkedIn
+            </a>
+          </td>
+        </tr>
+      </table>
     </div>
     <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s &mdash; slipper8s.com
