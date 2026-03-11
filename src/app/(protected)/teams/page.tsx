@@ -1,34 +1,75 @@
+import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { TeamsTable, type TeamRow } from "@/components/teams/teams-table"
+import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
+import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
+import { TeamsWithDimensions } from "@/components/teams/teams-with-dimensions"
+import type { TeamRow } from "@/components/teams/teams-table"
 
 export const dynamic = "force-dynamic"
 
-export default async function TeamsPage() {
-  // Get current season
+async function getLeaderboard() {
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
   const seasonId = settings?.currentSeasonId
+  if (!seasonId) return []
 
-  const [teams, entryPickCounts, totalEntries] = await Promise.all([
+  const cached = await getCachedLeaderboard(seasonId)
+  if (cached) return cached
+
+  const entries = await prisma.entry.findMany({
+    where: {
+      seasonId,
+      draftInProgress: false,
+      entryPicks: { some: {} },
+    },
+    select: {
+      id: true,
+      userId: true,
+      entryNumber: true,
+      nickname: true,
+      charityPreference: true,
+      score: true,
+      maxPossibleScore: true,
+      expectedScore: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          isPaid: true,
+          username: true,
+          country: true,
+          state: true,
+          gender: true,
+          favoriteTeam: { select: { conference: true } },
+        },
+      },
+      entryPicks: {
+        include: {
+          team: true,
+          playInSlot: { include: { team1: true, team2: true, winner: true } },
+        },
+      },
+      leagueEntries: { select: { leagueId: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  }) as EntryWithRelations[]
+
+  const leaderboard = computeLeaderboardFromEntries(entries)
+  await setCachedLeaderboard(seasonId, leaderboard)
+  return leaderboard
+}
+
+export default async function TeamsPage() {
+  const session = await auth()
+
+  const [teams, leaderboard] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
-    // Count how many entries picked each team (using EntryPick, not legacy Pick)
-    prisma.entryPick.groupBy({
-      by: ["teamId"],
-      _count: { teamId: true },
-      where: {
-        teamId: { not: null },
-        ...(seasonId ? { entry: { seasonId } } : {}),
-      },
-    }),
-    // Total entries for percentage calculation
-    prisma.entry.count({
-      where: seasonId ? { seasonId } : {},
-    }),
+    getLeaderboard(),
   ])
-
-  const countMap = new Map(entryPickCounts.map(p => [p.teamId!, p._count.teamId]))
 
   const rows: TeamRow[] = teams.map(t => ({
     id: t.id,
@@ -40,18 +81,25 @@ export default async function TeamsPage() {
     wins: t.wins,
     logoUrl: t.logoUrl,
     conference: t.conference,
-    pickerCount: countMap.get(t.id) ?? 0,
+    pickerCount: 0, // computed per-dimension on client
   }))
+
+  const teamOptions = teams.map(t => ({ id: t.id, name: t.name }))
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Tournament Teams</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          All {teams.length} teams · {totalEntries} entries · Default sort: % Selected
+          All {teams.length} teams · {leaderboard.length} entries · Default sort: % Selected
         </p>
       </div>
-      <TeamsTable teams={rows} totalEntries={totalEntries} />
+      <TeamsWithDimensions
+        baseTeams={rows}
+        leaderboard={leaderboard}
+        currentUserId={session?.user?.id ?? ""}
+        teams={teamOptions}
+      />
     </div>
   )
 }
