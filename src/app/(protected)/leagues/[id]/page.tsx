@@ -515,7 +515,7 @@ export default function LeagueDetailPage() {
         ) : (
           <div className="divide-y divide-border">
             {/* Table header */}
-            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_6rem_2rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_6rem_2rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_6rem]" : "grid-cols-[2rem_1fr_4rem_6rem]"} gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
+            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_4rem_5rem]"} gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
               <span>#</span>
               <span>Player</span>
               <span className="text-right">Score</span>
@@ -532,7 +532,7 @@ export default function LeagueDetailPage() {
               return (
                 <div
                   key={member.leagueMemberId}
-                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_6rem_2rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_6rem_2rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_6rem]" : "grid-cols-[2rem_1fr_4rem_6rem]"} gap-3 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
+                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_4rem_5rem]"} gap-3 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
                 >
                   <span className="text-sm font-mono text-muted-foreground">{rank}</span>
                   <div className="min-w-0">
