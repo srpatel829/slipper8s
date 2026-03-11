@@ -158,7 +158,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "What is Max Score?",
-                  a: "Max Score is the highest score your entry could theoretically achieve if all your remaining alive teams win every future game. Importantly, it accounts for bracket collisions — if two of your picks are in the same region and would eventually meet, only one can advance. The higher-seeded pick (larger seed number) is assumed to survive because it earns more points per win.",
+                  a: "Max Score is the highest score your entry could theoretically achieve if all your remaining alive teams win every future game. Importantly, it accounts for bracket collisions — if two of your picks would eventually meet, only one can advance. The team with larger seed number is assumed to survive because it earns more points per win.",
                 },
                 {
                   q: "What is Expected Score?",
@@ -188,11 +188,11 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "How are rankings determined?",
-                  a: "Before the tournament, entries are ranked by Total Potential Score (TPS) — your current score (0) plus the maximum additional points your remaining alive picks could earn. During the tournament entries are ranked by actual score and if there are multiple entries with the same score then the rank has \u201CT\u201D in front of it. In terms of display order for tied entries, the entry with higher TPS is shown first. If TPS is tied, then alphabetically by name. After the tournament ends, TPS equals current score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
+                  a: "Before the tournament, entries are ranked by Max Score. During the tournament entries are ranked by actual score and if there are multiple entries with the same score then the rank has \u201CT\u201D in front of it. In terms of display order for tied entries, the entry with higher Max Score is shown first. If Max Score is tied, then alphabetically by name. After the tournament ends, Max Score equals Current Score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
                 },
                 {
                   q: "What are the archetype names and definitions?",
-                  a: "Each entry is assigned one or more archetypes based on pick patterns. \uD83D\uDC60 Cinderella Chaser: all 8 picks are seeds 10+. \uD83C\uDFAF Sweet Spotter: all 8 picks are seeds 5\u201312. \uD83E\uDDE0 Strategist: balanced spread across seed tiers and regions. \uD83C\uDF2A\uFE0F Chaos Agent: 2+ picks are seeds 13\u201316. \uD83D\uDDFA\uFE0F Regional Purist: 5+ picks from the same region. \u270F\uFE0F Chalk Artist: 4+ picks are seeds 1\u20134. \uD83D\uDD04 Contrarian: picks from the top and bottom of the bracket, skipping the middle. \uD83C\uDFB2 Mixer: no single strategy \u2014 just vibes. Archetypes are shown as emoji badges next to your name on the leaderboard.",
+                  a: "Each entry is assigned one or more archetypes based on pick patterns. \uD83D\uDC60 Cinderella Chaser: all 8 picks are seeds 10+. \uD83C\uDFAF Sweet Spotter: all 8 picks are seeds 5\u201312. \uD83E\uDDE0 Strategist: balanced spread across seed tiers and regions. \uD83C\uDF2A\uFE0F Chaos Agent: 2+ picks are seeds 13\u201316. \uD83D\uDDFA\uFE0F Regional Purist: 5+ picks from the same region. \u270F\uFE0F Chalk Artist: 4+ picks are seeds 1\u20134. \uD83D\uDD04 Contrarian: picks from the top and bottom of the bracket, skipping the middle. \uD83D\uDC9B Loyalist: 3+ picks from your favorite team\u2019s conference. \uD83C\uDFB2 Mixer: no single strategy \u2014 just vibes. Archetypes are shown as emoji badges next to your name on the leaderboard.",
                 },
                 {
                   q: "What is the percentile ranking?",
