@@ -1,8 +1,18 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { BracketViewer } from "@/components/bracket/bracket-viewer"
+import { GitBranch } from "lucide-react"
 
 export const dynamic = "force-dynamic"
+
+const ROUND_NAMES: Record<number, string> = {
+  1: "Round of 64",
+  2: "Round of 32",
+  3: "Sweet 16",
+  4: "Elite 8",
+  5: "Final Four",
+  6: "Championship",
+}
 
 export default async function BracketPage() {
   const session = await auth()
@@ -42,14 +52,69 @@ export default async function BracketPage() {
 
   const regions = [...new Set(teams.map(t => t.region))].sort()
 
+  // Game progress info
+  const completedGames = games.filter(g => g.isComplete).length
+  const totalGames = games.length
+  const allComplete = totalGames > 0 && completedGames === totalGames
+
+  // Determine current round
+  const currentRoundNum = totalGames === 0
+    ? 0
+    : allComplete
+      ? 6
+      : Math.min(...games.filter(g => !g.isComplete).map(g => g.round))
+  const currentRound = totalGames === 0
+    ? "Pre-Tournament"
+    : allComplete
+      ? "Tournament Complete"
+      : ROUND_NAMES[currentRoundNum] ?? `Round ${currentRoundNum}`
+
+  // Last completed game
+  const lastGame = [...games]
+    .filter(g => g.isComplete && g.winner)
+    .sort((a, b) => (b.startTime?.getTime() ?? 0) - (a.startTime?.getTime() ?? 0))[0]
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Tournament Bracket</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          {games.filter(g => g.isComplete).length} of {games.length} games complete
-          {userPickTeamIds.length > 0 && " · Your picks highlighted in blue"}
-        </p>
+    <div className="space-y-4">
+      {/* Header with game progress badges */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2">
+          <GitBranch className="h-5 w-5 text-primary" />
+          <h1 className="text-xl font-bold">Tournament Bracket</h1>
+        </div>
+
+        {totalGames > 0 && (
+          <div className="flex flex-wrap items-center gap-2 sm:ml-4">
+            <div className="px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-[11px] font-medium text-primary">
+              {currentRound}
+            </div>
+            <div className="px-2.5 py-1 rounded-md bg-muted/60 border border-border/30 text-[11px] text-muted-foreground font-mono">
+              {completedGames} / {totalGames} games
+            </div>
+            {lastGame?.winner && lastGame.team1 && lastGame.team2 && (
+              <div className="px-2.5 py-1 rounded-md bg-card/60 border border-border/30 text-[11px] text-muted-foreground">
+                Last: <span className="text-foreground font-medium">
+                  #{lastGame.winner.seed} {lastGame.winner.shortName}
+                </span>
+                {" "}def.{" "}
+                <span>
+                  #{lastGame.winner.id === lastGame.team1.id ? lastGame.team2.seed : lastGame.team1.seed}{" "}
+                  {lastGame.winner.id === lastGame.team1.id ? lastGame.team2.shortName : lastGame.team1.shortName}
+                </span>
+                {lastGame.team1Score != null && lastGame.team2Score != null && (
+                  <span className="ml-1.5 text-muted-foreground/60">
+                    ({Math.max(lastGame.team1Score, lastGame.team2Score)}–{Math.min(lastGame.team1Score, lastGame.team2Score)})
+                  </span>
+                )}
+              </div>
+            )}
+            {userPickTeamIds.length > 0 && (
+              <div className="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400">
+                Your picks highlighted
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {games.length === 0 ? (
