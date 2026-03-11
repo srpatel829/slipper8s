@@ -28,7 +28,7 @@ export function LeaderboardLive({
   const [entries, setEntries] = useState(initialData)
   const [loading, setLoading] = useState(false)
   const [lastUpdated, setLastUpdated] = useState(new Date())
-  const intervalRef = useRef<NodeJS.Timeout>(null)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -51,7 +51,9 @@ export function LeaderboardLive({
   // Auto-refresh every 30 seconds
   useEffect(() => {
     intervalRef.current = setInterval(refresh, 30_000)
-    return () => clearInterval(intervalRef.current)
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current)
+    }
   }, [refresh])
 
   return (
