@@ -46,13 +46,13 @@ export default async function HomePage() {
         </div>
         <div className="flex items-center gap-3">
           <Link href="/how-to-play">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground hidden sm:flex">
-              How to Play
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
+              How to Play / FAQ
             </Button>
           </Link>
-          <Link href="/how-to-play#faq">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground">
-              FAQ
+          <Link href="/commissioner">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground hidden sm:flex">
+              Letter from the Commissioner
             </Button>
           </Link>
           <ThemeToggle />
@@ -196,7 +196,8 @@ export default async function HomePage() {
       <footer className="relative z-10 border-t border-border">
         <div className="max-w-6xl mx-auto px-6 py-6 flex justify-center sm:justify-end">
           <div className="flex gap-4 text-xs text-muted-foreground">
-            <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play</Link>
+            <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
+            <Link href="/commissioner" className="hover:text-foreground transition-colors">Commissioner</Link>
             <Link href="/demo" className="hover:text-foreground transition-colors">Demo</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>

@@ -192,19 +192,19 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "How are rankings determined?",
-                  a: "Entries are ranked by total score (seed x wins summed across all 8 picks). In the event of a tie, the tiebreaker is current score, then alphabetical by name. Rankings update after every completed game.",
+                  a: "During the tournament, entries are ranked by Total Potential Score (TPS) — your current score plus the maximum additional points your remaining alive picks could earn. This rewards entries that still have upside. If TPS is tied, the tiebreaker is current score (higher is better), then alphabetically by name. After the tournament ends, TPS equals current score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
                 },
                 {
                   q: "What are the tier names?",
-                  a: "Based on your finishing position: Champion (1st), Runner Up (2nd), Final 4 (3rd-4th), Elite 8 (5th-8th), Sweet 16 (9th-16th), Worthy 32 (17th-32nd), Dancing 64 (33rd-64th), and Play In 68 (65th-68th). Your tier name and percentile are shown on the leaderboard.",
+                  a: "The top 68 finishers earn a tier name based on their finishing position: Champion (1st), Runner Up (2nd), Final 4 (3rd-4th), Elite 8 (5th-8th), Sweet 16 (9th-16th), Worthy 32 (17th-32nd), Dancing 64 (33rd-64th), and Play In 68 (65th-68th). Your tier name (if applicable) and percentile are shown on the leaderboard.",
                 },
                 {
                   q: "What is the percentile ranking?",
-                  a: "Percentile shows where you stand relative to all entries. \"Top 5%\" means you scored better than 95% of all entries. Percentile is shown alongside your absolute rank everywhere in the app — on the leaderboard, your dashboard, and in notifications.",
+                  a: "Percentile shows where you stand relative to all entries. \"Top 5%\" means you scored better than 95% of all entries. Percentile is shown alongside your absolute rank on the leaderboard, your scores page, share cards, and in email notifications.",
                 },
                 {
                   q: "What are the leaderboard dimensions?",
-                  a: "You can view rankings filtered by different dimensions: Global (everyone), Country, State (US only), Gender, and Conference (based on your favorite team). Each dimension has its own independent rankings and percentiles. Fill in your profile to appear in dimension-specific views.",
+                  a: "You can view rankings filtered by different dimensions: Global (everyone), Country, State (US only), Gender, Conference (based on your favorite team), and League (private league). Each dimension has its own independent rankings and percentiles. Fill in your profile to appear in dimension-specific views.",
                 },
                 {
                   q: "What are Max Rank and Floor Rank?",
@@ -230,7 +230,7 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "What are private leagues?",
-                  a: "Private leagues let you compete with friends, family, or coworkers. Create a league, share the invite code, and your group gets its own leaderboard. You still appear on the global leaderboard too. There is no limit on how many leagues you can join.",
+                  a: "Private leagues let you compete with friends, family, or coworkers. Create a league and share the invite link — you can copy a direct join link, share to Twitter/X, Facebook, LinkedIn, or Instagram, or give out the raw invite code for manual entry. Your group gets its own leaderboard while you still appear on the global leaderboard too. League admins can optionally enable payment tracking. There is no limit on how many leagues you can join.",
                 },
                 {
                   q: "How does the score history chart work?",
@@ -272,7 +272,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "Do I need to fill in all my profile fields?",
-                  a: "No. Only your first name, last name, email, and username are required. Optional fields like country, state, gender, and favorite team unlock additional leaderboard dimensions — for example, filling in your state lets you see how you rank among players in your state.",
+                  a: "No. Only your first name, last name, and username are required. Optional fields like country, state, gender, favorite team, date of birth, and phone number are there for additional features — for example, filling in your state lets you see how you rank among players in your state, and adding your phone number opts you in for future score-update text notifications.",
                 },
                 {
                   q: "Can I change my username after registration?",
@@ -284,7 +284,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "Where can I see past results?",
-                  a: "Historical tournament results are available in the app for past seasons. You can browse leaderboards, see who won, and explore the score history charts for previous years.",
+                  a: "Check out Demo mode to explore past tournament results. You can browse the full leaderboard, simulate game outcomes, view the bracket, and see how scores played out — all with real data from previous seasons.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-card border border-border rounded-xl p-5">
