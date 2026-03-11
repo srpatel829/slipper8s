@@ -116,7 +116,7 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "How many teams do I pick?",
-                  a: "Exactly 8. You can pick from any region and any seed — there are no restrictions on how you build your roster.",
+                  a: "Exactly 8. You can pick from any region and any seed — there are no restrictions other than you can not pick a team more than once.",
                 },
                 {
                   q: "When is the entry deadline?",
@@ -153,12 +153,8 @@ export default function HowToPlayPage() {
             <div className="space-y-3">
               {[
                 {
-                  q: "How is the score calculated?",
-                  a: "Score = seed x wins for each of your 8 teams, summed together. A #12 seed with 2 wins earns 24 points (12 x 2). A #1 seed with 6 wins (national champion) earns only 6 points (1 x 6). Play-in game wins do not count toward scoring.",
-                },
-                {
                   q: "What are play-in games and how do they work?",
-                  a: "Some seeds (typically 11 and 16) have play-in games before the main bracket begins. When you pick one of these play-in slots, the winner of the play-in game automatically becomes your pick. The seed value stays the same regardless of which team wins the play-in.",
+                  a: "Some seeds (typically 11/12 and 15/16) have play-in games before the main bracket begins. When you pick one of these play-in slots, the winner of the play-in game automatically becomes your pick. The seed value stays the same regardless of which team wins the play-in.",
                 },
                 {
                   q: "What is Max Score?",
@@ -170,7 +166,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "What is the Optimal 8?",
-                  a: "The Optimal 8 is the set of 8 teams with the highest combined score at any given point in the tournament. It represents the theoretical ceiling — the best possible picks given results so far. After the tournament ends, a Hindsight Optimal 8 shows the true best picks knowing all final results.",
+                  a: "The Optimal 8 (Rolling) is the set of 8 teams with the highest combined score at any given point in the tournament. It represents the theoretical ceiling — the best possible picks given results so far. After the tournament ends, a Optimal 8 (Final) shows the true best picks knowing all final results.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-card border border-border rounded-xl p-5">
@@ -192,19 +188,19 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "How are rankings determined?",
-                  a: "During the tournament, entries are ranked by Total Potential Score (TPS) — your current score plus the maximum additional points your remaining alive picks could earn. This rewards entries that still have upside. If TPS is tied, the tiebreaker is current score (higher is better), then alphabetically by name. After the tournament ends, TPS equals current score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
+                  a: "Before the tournament, entries are ranked by Total Potential Score (TPS) — your current score (0) plus the maximum additional points your remaining alive picks could earn. During the tournament entries are ranked by actual score and if there are multiple entries with the same score then the rank has \u201CT\u201D in front of it. In terms of display order for tied entries, the entry with higher TPS is shown first. If TPS is tied, then alphabetically by name. After the tournament ends, TPS equals current score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
                 },
                 {
-                  q: "What are the tier names?",
-                  a: "The top 68 finishers earn a tier name based on their finishing position: Champion (1st), Runner Up (2nd), Final 4 (3rd-4th), Elite 8 (5th-8th), Sweet 16 (9th-16th), Worthy 32 (17th-32nd), Dancing 64 (33rd-64th), and Play In 68 (65th-68th). Your tier name (if applicable) and percentile are shown on the leaderboard.",
+                  q: "What are the archetype names and definitions?",
+                  a: "Each entry is assigned one or more archetypes based on pick patterns. \uD83D\uDC60 Cinderella Chaser: all 8 picks are seeds 10+. \uD83C\uDFAF Sweet Spotter: all 8 picks are seeds 5\u201312. \uD83E\uDDE0 Strategist: balanced spread across seed tiers and regions. \uD83C\uDF2A\uFE0F Chaos Agent: 2+ picks are seeds 13\u201316. \uD83D\uDDFA\uFE0F Regional Purist: 5+ picks from the same region. \u270F\uFE0F Chalk Artist: 4+ picks are seeds 1\u20134. \uD83D\uDD04 Contrarian: picks from the top and bottom of the bracket, skipping the middle. \uD83C\uDFB2 Mixer: no single strategy \u2014 just vibes. Archetypes are shown as emoji badges next to your name on the leaderboard.",
                 },
                 {
                   q: "What is the percentile ranking?",
-                  a: "Percentile shows where you stand relative to all entries. \"Top 5%\" means you scored better than 95% of all entries. Percentile is shown alongside your absolute rank on the leaderboard, your scores page, share cards, and in email notifications.",
+                  a: "Percentile shows where you stand relative to all entries. So if your entry is in the 95th percentile, it means your score is better than 95% of all entries. Percentile is shown alongside your absolute rank on the leaderboard, your scores page, share cards, and in email notifications.",
                 },
                 {
                   q: "What are the leaderboard dimensions?",
-                  a: "You can view rankings filtered by different dimensions: Global (everyone), Country, State (US only), Gender, Conference (based on your favorite team), and League (private league). Each dimension has its own independent rankings and percentiles. Fill in your profile to appear in dimension-specific views.",
+                  a: "You can view rankings filtered by different dimensions: Global (everyone), Country, State (US only), Gender, Fan Base (based on your favorite team), Conference (also based on your favorite team), and League (private league). Each dimension has its own independent rankings and percentiles. Fill in your profile to appear in dimension-specific views.",
                 },
                 {
                   q: "What are Max Rank and Floor Rank?",
@@ -238,7 +234,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "How does the simulator work?",
-                  a: "The simulator lets you explore \"what if\" scenarios. Completed game results are locked, but you can change the outcomes of future games to see how the leaderboard would change. The right side panel updates in real time as you modify scenarios.",
+                  a: "The simulator lets you explore \"what if\" scenarios. Completed game results are locked, but you can change the outcomes of future games to see how the leaderboard would change. The leaderboard panel updates in real time as you modify scenarios.",
                 },
                 {
                   q: "What email notifications will I receive?",
@@ -272,7 +268,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "Do I need to fill in all my profile fields?",
-                  a: "No. Only your first name, last name, and username are required. Optional fields like country, state, gender, favorite team, date of birth, and phone number are there for additional features — for example, filling in your state lets you see how you rank among players in your state, and adding your phone number opts you in for future score-update text notifications.",
+                  a: "No. Only your first name, last name, and username are required. Optional fields like country, state, gender, favorite team, date of birth, and phone number are there for additional features — for example, filling in your state lets you see how you rank among players in your state, and adding your phone number opts you in for future score-update text notifications (likely to be rolled out in future years).",
                 },
                 {
                   q: "Can I change my username after registration?",
@@ -284,7 +280,11 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "Where can I see past results?",
-                  a: "Check out Demo mode to explore past tournament results. You can browse the full leaderboard, simulate game outcomes, view the bracket, and see how scores played out — all with real data from previous seasons.",
+                  a: "Check out Demo mode to explore tournament results 2025. You can browse the full leaderboard, simulate game outcomes, view the bracket, and see how scores played out — all with real data from previous seasons.",
+                },
+                {
+                  q: "Are there more features coming?",
+                  a: "Yes, the Commissioner has plenty of ideas that he still needs to code & deploy (e.g. Hall of Champions) but your suggestions are welcome and can be submitted via the feedback button.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-card border border-border rounded-xl p-5">
