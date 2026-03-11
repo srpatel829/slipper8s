@@ -1,8 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { PicksForm } from "@/components/picks/picks-form"
-import { EntrySelector } from "@/components/picks/entry-selector"
-import { CountdownTimer } from "@/components/landing/countdown-timer"
+import { PicksLive } from "@/components/picks/picks-live"
 
 export const dynamic = "force-dynamic"
 
@@ -84,66 +82,18 @@ export default async function PicksPage({
 
   const defaultCharities = (settings?.defaultCharities as Array<{ name: string; url?: string }>) ?? []
 
-  // Convert active entry's picks to the legacy format the form expects
-  const existingPicks = activeEntry
-    ? activeEntry.entryPicks.map((ep) => ({
-        id: ep.id,
-        userId: session!.user.id,
-        teamId: ep.teamId,
-        playInSlotId: ep.playInSlotId,
-        charityPreference: activeEntry.charityPreference ?? null,
-        createdAt: ep.createdAt,
-        updatedAt: ep.updatedAt,
-        team: ep.team,
-        playInSlot: ep.playInSlot,
-      }))
-    : []
-
   return (
-    <div className="space-y-6 max-w-5xl">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">My Picks</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Select exactly 8 teams.{" "}
-            {deadlinePassed
-              ? "Picks are locked."
-              : "Edit anytime before the deadline."}
-          </p>
-        </div>
-        {!deadlinePassed && settings?.picksDeadline && (
-          <div className="shrink-0">
-            <CountdownTimer
-              deadline={new Date(settings.picksDeadline).toISOString()}
-              compact
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Entry selector — shows when user has multiple entries */}
-      <EntrySelector
-        entries={entries}
-        activeEntryId={activeEntry?.id ?? null}
-        seasonId={season.id}
-        deadlinePassed={deadlinePassed}
-      />
-
-      {deadlinePassed && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          The picks deadline has passed. Your picks are locked.
-        </div>
-      )}
-
-      <PicksForm
+    <div className="max-w-5xl">
+      <PicksLive
         teams={teams}
         playInSlots={playInSlots}
-        existingPicks={existingPicks}
-        deadlinePassed={deadlinePassed}
-        defaultCharities={defaultCharities}
-        enableViewModes={true}
-        entryId={activeEntry?.id ?? undefined}
+        entries={entries}
+        activeEntry={activeEntry}
+        userId={session!.user.id}
         seasonId={season.id}
+        deadlinePassed={deadlinePassed}
+        picksDeadline={settings?.picksDeadline ? new Date(settings.picksDeadline).toISOString() : null}
+        defaultCharities={defaultCharities}
       />
     </div>
   )
