@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Pencil } from "lucide-react"
@@ -13,11 +12,18 @@ import type { Role } from "@/generated/prisma"
 interface UserRow {
   id: string
   name: string | null
+  firstName: string | null
+  lastName: string | null
   email: string
   username?: string | null
   role: Role
-  isPaid: boolean
   registrationComplete?: boolean
+  country: string | null
+  state: string | null
+  gender: string | null
+  dateOfBirth: Date | string | null
+  phone: string | null
+  favoriteTeamName: string | null
   createdAt: Date
   _count: { picks: number; entries?: number }
 }
@@ -26,7 +32,18 @@ interface UserTableProps {
   users: UserRow[]
   currentUserRole: Role
   demoMode?: boolean
-  onDemoPatch?: (userId: string, data: { isPaid?: boolean; role?: Role }) => void
+  onDemoPatch?: (userId: string, data: { role?: Role }) => void
+}
+
+function formatGender(gender: string | null): string {
+  if (!gender || gender === "NO_RESPONSE") return "—"
+  return gender.charAt(0) + gender.slice(1).toLowerCase()
+}
+
+function formatDob(dob: Date | string | null): string {
+  if (!dob) return "—"
+  const d = new Date(dob)
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
 export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDemoPatch }: UserTableProps) {
@@ -40,7 +57,7 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
     if (demoMode) setUsers(initialUsers)
   }, [demoMode, initialUsers])
 
-  async function patch(userId: string, data: { isPaid?: boolean; role?: Role; username?: string }) {
+  async function patch(userId: string, data: { role?: Role; username?: string }) {
     if (demoMode && onDemoPatch) {
       onDemoPatch(userId, data)
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...data } : u))
@@ -89,7 +106,12 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
             <TableHead>Name / Username</TableHead>
             <TableHead>Role</TableHead>
             <TableHead className="text-center">Entries</TableHead>
-            <TableHead className="text-center">Paid</TableHead>
+            <TableHead>Country</TableHead>
+            <TableHead>State</TableHead>
+            <TableHead>Gender</TableHead>
+            <TableHead>DOB</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Fav Team</TableHead>
             <TableHead className="text-center">Status</TableHead>
             <TableHead>Joined</TableHead>
           </TableRow>
@@ -177,12 +199,23 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                     {user._count.entries ?? user._count.picks}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-center">
-                  <Switch
-                    checked={user.isPaid}
-                    onCheckedChange={(val) => patch(user.id, { isPaid: val })}
-                    disabled={isUpdating}
-                  />
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {user.country || "—"}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {user.state || "—"}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatGender(user.gender)}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {formatDob(user.dateOfBirth)}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  {user.phone || "—"}
+                </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap max-w-[120px] truncate" title={user.favoriteTeamName ?? undefined}>
+                  {user.favoriteTeamName || "—"}
                 </TableCell>
                 <TableCell className="text-center">
                   {user.registrationComplete !== false ? (
@@ -195,7 +228,7 @@ export function UserTable({ users: initialUsers, currentUserRole, demoMode, onDe
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(user.createdAt).toLocaleDateString()}
                 </TableCell>
               </TableRow>

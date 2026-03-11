@@ -10,13 +10,20 @@ import { useDemoContext } from "@/lib/demo-context"
 export default function DemoAdminUsersPage() {
   const { demoUsers, updateDemoUser, currentPersona } = useDemoContext()
 
-  // Build shape UserTable expects: { id, name, email, role, isPaid, _count: { picks } }[]
+  // Build shape UserTable expects
   const tableUsers = demoUsers.map(u => ({
     id: u.id,
     name: u.name,
+    firstName: null as string | null,
+    lastName: null as string | null,
     email: u.email,
     role: (u.role ?? "USER") as "USER" | "ADMIN" | "SUPERADMIN",
-    isPaid: u.isPaid,
+    country: null as string | null,
+    state: null as string | null,
+    gender: null as string | null,
+    dateOfBirth: null as Date | null,
+    phone: null as string | null,
+    favoriteTeamName: null as string | null,
     _count: { picks: u.picks.length },
     createdAt: new Date(),
   }))

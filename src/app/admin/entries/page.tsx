@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import {
   ClipboardList, Loader2, Search, ChevronLeft, ChevronRight,
-  Trash2, PlusCircle, MinusCircle,
+  Trash2, PlusCircle, MinusCircle, Download,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -153,14 +153,23 @@ export default function AdminEntriesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <ClipboardList className="h-5 w-5 text-primary" />
-          <h1 className="text-2xl font-bold tracking-tight">Entry Management</h1>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">Entry Management</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            View, search, and manage player entries. Void entries or adjust scores if needed.
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          View, search, and manage player entries. Void entries or adjust scores if needed.
-        </p>
+        <a
+          href="/api/admin/export"
+          className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shrink-0"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </a>
       </div>
 
       {/* Search */}
