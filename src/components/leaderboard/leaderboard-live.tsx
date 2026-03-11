@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react"
-import { LeaderboardSample } from "@/components/leaderboard/leaderboard-sample"
+import { LeaderboardSample, type Optimal8Data } from "@/components/leaderboard/leaderboard-sample"
 import { LeaderboardDimensionTabs } from "@/components/leaderboard/leaderboard-dimension-tabs"
 import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ interface LeaderboardLiveProps {
   currentUserId?: string
   teams: Array<{ id: string; name: string }>
   userLeagues?: Array<{ id: string; name: string }>
+  optimal8?: Optimal8Data
 }
 
 export function LeaderboardLive({
@@ -26,6 +27,7 @@ export function LeaderboardLive({
   currentUserId,
   teams,
   userLeagues,
+  optimal8,
 }: LeaderboardLiveProps) {
   const [entries, setEntries] = useState(initialData)
   const [loading, setLoading] = useState(false)
@@ -81,6 +83,7 @@ export function LeaderboardLive({
           <LeaderboardSample
             entries={filteredEntries}
             currentUserId={currentUserId}
+            optimal8={optimal8}
             isPreTournament={entries.length === 0}
           />
         )}

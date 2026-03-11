@@ -1,13 +1,15 @@
 import { auth } from "@/lib/auth"
 import { LeaderboardLive } from "@/components/leaderboard/leaderboard-live"
 import { prisma } from "@/lib/prisma"
-import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
+import { computeLeaderboardFromEntries, computeOptimal8, type EntryWithRelations } from "@/lib/scoring"
+import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
 import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
 import { BarChart3, Info } from "lucide-react"
 import Link from "next/link"
 import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
+import type { Optimal8Data } from "@/components/leaderboard/leaderboard-sample"
 
 export const dynamic = "force-dynamic"
 
@@ -128,14 +130,65 @@ async function getSeasonStatus(): Promise<string | null> {
   return season?.status ?? null
 }
 
+async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
+  const allTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: {
+      id: true,
+      name: true,
+      shortName: true,
+      seed: true,
+      region: true,
+      wins: true,
+      eliminated: true,
+      logoUrl: true,
+      isPlayIn: true,
+      sCurveRank: true,
+    },
+  })
+
+  if (allTeams.length === 0) return undefined
+
+  const teamInfoMap = new Map<string, TeamBracketInfo>()
+  for (const t of allTeams) {
+    teamInfoMap.set(t.id, {
+      seed: t.seed,
+      region: t.region,
+      wins: t.wins,
+      eliminated: t.eliminated,
+    })
+  }
+
+  const result = computeOptimal8(allTeams, teamInfoMap)
+  if (result.teamIds.length === 0) return undefined
+
+  const picks = result.teamIds
+    .map(id => allTeams.find(t => t.id === id))
+    .filter(Boolean)
+    .map(t => ({
+      teamId: t!.id,
+      name: t!.name,
+      shortName: t!.shortName,
+      seed: t!.seed,
+      region: t!.region,
+      wins: t!.wins,
+      eliminated: t!.eliminated,
+      logoUrl: t!.logoUrl,
+      isPlayIn: false as const,
+    }))
+
+  return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
+}
+
 export default async function LeaderboardPage() {
   const session = await auth()
-  const [leaderboard, userLeagues, userProfile, seasonStatus, teams] = await Promise.all([
+  const [leaderboard, userLeagues, userProfile, seasonStatus, teams, optimal8] = await Promise.all([
     getLeaderboard(),
     session?.user?.id ? getUserLeagues(session.user.id) : Promise.resolve([]),
     session?.user?.id ? getUserProfile(session.user.id) : Promise.resolve(null),
     getSeasonStatus(),
     prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    computeOptimal8Data(),
   ])
 
   // Find the current user's best entry for share card
@@ -183,6 +236,7 @@ export default async function LeaderboardPage() {
         currentUserId={session?.user?.id}
         teams={teams}
         userLeagues={userLeagues}
+        optimal8={optimal8}
       />
 
       {/* Score history chart — collapsible */}
