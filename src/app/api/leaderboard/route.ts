@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
           country: true,
           state: true,
           gender: true,
+          favoriteTeam: { select: { conference: true } },
         },
       },
       entryPicks: {

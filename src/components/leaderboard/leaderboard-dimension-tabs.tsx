@@ -47,6 +47,8 @@ interface LeaderboardDimensionTabsProps {
   currentUserId: string
   /** Teams array for resolving fan base IDs → display names */
   teams: Array<{ id: string; name: string }>
+  /** User's leagues for Private Leagues tab */
+  userLeagues?: Array<{ id: string; name: string }>
   /** Render callback for the leaderboard content */
   renderLeaderboard: (filteredEntries: LeaderboardEntry[]) => ReactNode
   /** Called whenever the filtered set of user IDs changes (for chart sync) */
@@ -144,6 +146,7 @@ export function LeaderboardDimensionTabs({
   entries,
   currentUserId,
   teams,
+  userLeagues = [],
   renderLeaderboard,
   onFilterChange,
 }: LeaderboardDimensionTabsProps) {
@@ -168,7 +171,13 @@ export function LeaderboardDimensionTabs({
   // default to the logged-in player's own value for that dimension.
   const selectedValue = useMemo(() => {
     if (activeDimension === "global") return "global"
-    if (activeDimension === "privateLeague") return ""
+
+    // Private Leagues: use userLeagues for selector (independent of entry data)
+    if (activeDimension === "privateLeague") {
+      const explicit = subSelections[activeDimension]
+      if (explicit && userLeagues.some(l => l.id === explicit)) return explicit
+      return userLeagues.length > 0 ? userLeagues[0].id : ""
+    }
 
     // User already made an explicit selection for this tab
     const explicit = subSelections[activeDimension]
@@ -176,7 +185,7 @@ export function LeaderboardDimensionTabs({
 
     // Default to the logged-in player's own value
     return getDefaultDimensionValue(currentUserId, entries, activeConfig, dimensionValues)
-  }, [activeDimension, subSelections, currentUserId, entries, activeConfig, dimensionValues])
+  }, [activeDimension, subSelections, currentUserId, entries, activeConfig, dimensionValues, userLeagues])
 
   // Filter and re-rank entries
   const filteredEntries = useMemo(
@@ -199,10 +208,15 @@ export function LeaderboardDimensionTabs({
     [entries, activeConfig]
   )
 
-  // Format function for display names (memoized for fan base)
-  const formatOption = useMemo(() => {
-    return (value: string) => formatDimensionValue(value, activeConfig, teams)
-  }, [activeConfig, teams])
+  // Format function for display names (memoized for fan base / leagues)
+  const formatOption = useCallback((value: string) => {
+    // For privateLeague: resolve league IDs to names
+    if (activeConfig.type === "privateLeague") {
+      const league = userLeagues.find(l => l.id === value)
+      return league?.name ?? value
+    }
+    return formatDimensionValue(value, activeConfig, teams)
+  }, [activeConfig, teams, userLeagues])
 
   const handleSubChange = (value: string) => {
     setSubSelections(prev => ({ ...prev, [activeDimension]: value }))
@@ -261,19 +275,55 @@ export function LeaderboardDimensionTabs({
         </div>
       )}
 
-      {/* ── Private Leagues Empty State ── */}
+      {/* ── Private Leagues Sub-Selector + Content ── */}
       {activeDimension === "privateLeague" && (
-        <div className="text-center py-12 space-y-2">
-          <p className="text-sm text-muted-foreground">
-            Private league leaderboards will appear here when leagues are created.
-          </p>
-          <p className="text-xs text-muted-foreground/60">
-            Create or join a league to compete with friends.
-          </p>
-        </div>
+        <>
+          {userLeagues.length === 0 ? (
+            <div className="text-center py-12 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                You haven&apos;t joined any leagues yet.
+              </p>
+              <p className="text-xs text-muted-foreground/60">
+                Create or join a league to see league leaderboards here.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Select value={selectedValue} onValueChange={handleSubChange}>
+                  <SelectTrigger size="sm" className="min-w-[160px]">
+                    <SelectValue>{formatOption(selectedValue)}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {userLeagues.map(league => (
+                      <SelectItem key={league.id} value={league.id}>
+                        {league.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-xs text-muted-foreground">
+                  {filteredEntries.length} {filteredEntries.length === 1 ? "entry" : "entries"}
+                </span>
+              </div>
+              {filteredEntries.length === 0 ? (
+                <div className="text-center py-8 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    No entries in this league yet.
+                  </p>
+                  <p className="text-xs text-muted-foreground/60">
+                    League leaderboards will populate once entries have picks submitted.
+                  </p>
+                </div>
+              ) : (
+                renderLeaderboard(filteredEntries)
+              )}
+            </>
+          )}
+        </>
       )}
 
-      {/* ── Filtered Leaderboard ── */}
+      {/* ── Filtered Leaderboard (non-league dimensions) ── */}
       {activeDimension !== "privateLeague" && renderLeaderboard(filteredEntries)}
     </div>
   )

@@ -57,6 +57,7 @@ async function getLeaderboard() {
           playInSlot: { include: { team1: true, team2: true, winner: true } },
         },
       },
+      leagueEntries: { select: { leagueId: true } },
     },
     orderBy: { createdAt: "asc" },
   }) as EntryWithRelations[]
@@ -74,6 +75,7 @@ async function getUserLeagues(userId: string) {
     where: {
       OR: [
         { adminId: userId },
+        { members: { some: { userId } } },
         { leagueEntries: { some: { entry: { userId } } } },
       ],
     },
@@ -180,6 +182,7 @@ export default async function LeaderboardPage() {
         initialData={leaderboard}
         currentUserId={session?.user?.id}
         teams={teams}
+        userLeagues={userLeagues}
       />
 
       {/* Score history chart — collapsible */}

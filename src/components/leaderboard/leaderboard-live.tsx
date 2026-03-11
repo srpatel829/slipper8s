@@ -18,12 +18,14 @@ interface LeaderboardLiveProps {
   initialData: LeaderboardEntry[]
   currentUserId?: string
   teams: Array<{ id: string; name: string }>
+  userLeagues?: Array<{ id: string; name: string }>
 }
 
 export function LeaderboardLive({
   initialData,
   currentUserId,
   teams,
+  userLeagues,
 }: LeaderboardLiveProps) {
   const [entries, setEntries] = useState(initialData)
   const [loading, setLoading] = useState(false)
@@ -74,6 +76,7 @@ export function LeaderboardLive({
         entries={entries}
         currentUserId={currentUserId ?? ""}
         teams={teams}
+        userLeagues={userLeagues}
         renderLeaderboard={(filteredEntries) => (
           <LeaderboardSample
             entries={filteredEntries}
