@@ -6,8 +6,40 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
     conference: "ACC",
     teams: [
       "Boston College", "California", "Clemson", "Duke", "Florida State",
-      "Georgia Tech", "Louisville", "Miami (FL)", "NC State", "Notre Dame",
-      "Pitt", "SMU", "Stanford", "Syracuse", "Virginia", "Virginia Tech", "Wake Forest",
+      "Georgia Tech", "Louisville", "Miami (FL)", "NC State", "North Carolina",
+      "Notre Dame", "Pitt", "SMU", "Stanford", "Syracuse", "Virginia",
+      "Virginia Tech", "Wake Forest",
+    ],
+  },
+  {
+    conference: "American Athletic",
+    teams: [
+      "Charlotte", "East Carolina", "FAU", "Memphis", "North Texas",
+      "Rice", "South Florida", "Temple", "Tulane", "Tulsa", "UAB", "UTSA",
+      "Wichita State",
+    ],
+  },
+  {
+    conference: "America East",
+    teams: [
+      "Albany", "Binghamton", "Bryant", "Maine", "New Hampshire", "NJIT",
+      "UMBC", "UMass Lowell", "Vermont",
+    ],
+  },
+  {
+    conference: "ASUN",
+    teams: [
+      "Austin Peay", "Bellarmine", "Central Arkansas", "Eastern Kentucky",
+      "Florida Gulf Coast", "Jacksonville", "Lipscomb", "North Alabama",
+      "North Florida", "Queens", "Stetson", "West Georgia",
+    ],
+  },
+  {
+    conference: "Atlantic 10",
+    teams: [
+      "Davidson", "Dayton", "Duquesne", "Fordham", "George Mason",
+      "George Washington", "La Salle", "Loyola Chicago", "Rhode Island",
+      "Richmond", "Saint Joseph's", "Saint Louis", "St. Bonaventure", "VCU",
     ],
   },
   {
@@ -26,6 +58,21 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
     ],
   },
   {
+    conference: "Big Sky",
+    teams: [
+      "Eastern Washington", "Idaho", "Idaho State", "Montana",
+      "Montana State", "Northern Arizona", "Northern Colorado", "Portland State",
+      "Sacramento State", "Weber State",
+    ],
+  },
+  {
+    conference: "Big South",
+    teams: [
+      "Charleston Southern", "Gardner-Webb", "High Point", "Longwood",
+      "Presbyterian", "Radford", "UNC Asheville", "USC Upstate", "Winthrop",
+    ],
+  },
+  {
     conference: "Big Ten",
     teams: [
       "Illinois", "Indiana", "Iowa", "Maryland", "Michigan", "Michigan State",
@@ -34,88 +81,35 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
     ],
   },
   {
-    conference: "SEC",
-    teams: [
-      "Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky",
-      "LSU", "Mississippi State", "Missouri", "Ole Miss", "Oklahoma",
-      "South Carolina", "Tennessee", "Texas", "Texas A&M", "Vanderbilt",
-    ],
-  },
-  {
-    conference: "American Athletic",
-    teams: [
-      "Charlotte", "East Carolina", "FAU", "Memphis", "North Texas",
-      "Rice", "South Florida", "Temple", "Tulane", "Tulsa", "UAB", "UTSA", "Wichita State",
-    ],
-  },
-  {
-    conference: "Atlantic 10",
-    teams: [
-      "Davidson", "Dayton", "Duquesne", "Fordham", "George Mason",
-      "George Washington", "La Salle", "Loyola Chicago", "Massachusetts",
-      "Rhode Island", "Richmond", "Saint Joseph's", "Saint Louis", "VCU",
-    ],
-  },
-  {
-    conference: "ASUN",
-    teams: [
-      "Austin Peay", "Bellarmine", "Central Arkansas", "Eastern Kentucky",
-      "Florida Gulf Coast", "Jacksonville", "Kennesaw State", "Liberty",
-      "Lipscomb", "North Alabama", "Northern Kentucky", "Queens", "Stetson", "UTEP",
-    ],
-  },
-  {
-    conference: "America East",
-    teams: [
-      "Albany", "Binghamton", "Bryant", "Maine", "Maryland Eastern Shore",
-      "Merrimack", "New Hampshire", "NJIT", "UMBC", "UMass Lowell", "Vermont",
-    ],
-  },
-  {
-    conference: "Big Sky",
-    teams: [
-      "Cal Poly", "Eastern Washington", "Idaho", "Idaho State", "Montana",
-      "Montana State", "Northern Arizona", "Northern Colorado", "Portland State",
-      "Sacramento State", "UC Davis", "Weber State",
-    ],
-  },
-  {
-    conference: "Big South",
-    teams: [
-      "Campbell", "Charleston Southern", "Gardner-Webb", "High Point",
-      "Longwood", "Monmouth", "Morehead State", "Radford", "USC Upstate",
-      "UNC Asheville", "Winthrop",
-    ],
-  },
-  {
     conference: "Big West",
     teams: [
-      "Cal State Bakersfield", "Cal State Fullerton", "Cal State Northridge",
-      "Hawaii", "Long Beach State", "UC Irvine", "UC Riverside",
-      "UC San Diego", "UC Santa Barbara", "UNLV",
+      "Cal Poly", "Cal State Bakersfield", "Cal State Fullerton",
+      "Cal State Northridge", "Hawaii", "Long Beach State", "UC Davis",
+      "UC Irvine", "UC Riverside", "UC San Diego", "UC Santa Barbara",
     ],
   },
   {
-    conference: "Colonial Athletic",
+    conference: "CAA",
     teams: [
-      "Campbell", "Charleston", "Delaware", "Drexel", "Elon",
-      "Hampton", "Hofstra", "Monmouth", "NC A&T", "Northeastern",
-      "Stony Brook", "Towson", "UNC Wilmington", "William & Mary",
+      "Campbell", "Charleston", "Drexel", "Elon", "Hampton", "Hofstra",
+      "Monmouth", "North Carolina A&T", "Northeastern", "Stony Brook",
+      "Towson", "UNC Wilmington", "William & Mary",
     ],
   },
   {
     conference: "Conference USA",
     teams: [
-      "FIU", "Jacksonville State", "Louisiana Tech", "Middle Tennessee",
-      "New Mexico State", "Sam Houston", "UTEP", "Western Kentucky",
+      "Delaware", "FIU", "Jacksonville State", "Kennesaw State", "Liberty",
+      "Louisiana Tech", "Middle Tennessee", "Missouri State", "New Mexico State",
+      "Sam Houston", "UTEP", "Western Kentucky",
     ],
   },
   {
     conference: "Horizon League",
     teams: [
       "Cleveland State", "Detroit Mercy", "Green Bay", "IU Indianapolis",
-      "Milwaukee", "Northern Kentucky", "Oakland", "Robert Morris",
-      "Wright State", "Youngstown State",
+      "Milwaukee", "Northern Kentucky", "Oakland", "Purdue Fort Wayne",
+      "Robert Morris", "Wright State", "Youngstown State",
     ],
   },
   {
@@ -128,8 +122,9 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
   {
     conference: "MAAC",
     teams: [
-      "Canisius", "Fairfield", "Iona", "Marist", "Manhattan",
-      "Niagara", "Quinnipiac", "Rider", "Saint Peter's", "Siena",
+      "Canisius", "Fairfield", "Iona", "Manhattan", "Marist", "Merrimack",
+      "Mount St. Mary's", "Niagara", "Quinnipiac", "Rider", "Sacred Heart",
+      "Saint Peter's", "Siena",
     ],
   },
   {
@@ -137,89 +132,94 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
     teams: [
       "Akron", "Ball State", "Bowling Green", "Buffalo", "Central Michigan",
       "Eastern Michigan", "Kent State", "Miami (OH)", "Northern Illinois",
-      "Ohio", "Toledo", "Western Michigan",
+      "Ohio", "Toledo", "UMass", "Western Michigan",
     ],
   },
   {
     conference: "MEAC",
     teams: [
       "Coppin State", "Delaware State", "Howard", "Maryland Eastern Shore",
-      "Morgan State", "Norfolk State", "North Carolina Central", "South Carolina State",
+      "Morgan State", "Norfolk State", "North Carolina Central",
+      "South Carolina State",
     ],
   },
   {
     conference: "Missouri Valley",
     teams: [
-      "Bradley", "Drake", "Evansville", "Illinois State", "Indiana State",
-      "Missouri State", "Murray State", "Northern Iowa", "Southern Illinois",
-      "Valparaiso",
+      "Belmont", "Bradley", "Drake", "Evansville", "Illinois State",
+      "Indiana State", "Murray State", "Northern Iowa", "Southern Illinois",
+      "UIC", "Valparaiso",
     ],
   },
   {
     conference: "Mountain West",
     teams: [
       "Air Force", "Boise State", "Colorado State", "Fresno State",
-      "Nevada", "New Mexico", "San Diego State", "San Jose State",
-      "Utah State", "Wyoming",
+      "Grand Canyon", "Nevada", "New Mexico", "San Diego State",
+      "San Jose State", "UNLV", "Utah State", "Wyoming",
     ],
   },
   {
-    conference: "Northeast Conference",
+    conference: "NEC",
     teams: [
-      "Central Connecticut", "Fairleigh Dickinson", "LIU", "Merrimack",
-      "Sacred Heart", "Saint Francis (PA)", "Stonehill", "Wagner",
+      "Central Connecticut", "Chicago State", "FDU", "Le Moyne", "LIU",
+      "Mercyhurst", "New Haven", "Saint Francis (PA)", "Stonehill", "Wagner",
     ],
   },
   {
     conference: "Ohio Valley",
     teams: [
-      "Belmont", "Eastern Illinois", "Jacksonville State", "Little Rock",
-      "Southeast Missouri State", "Tennessee State", "Tennessee Tech", "UT Martin",
+      "Eastern Illinois", "Lindenwood", "Little Rock", "Morehead State",
+      "SE Missouri State", "SIUE", "Southern Indiana", "Tennessee State",
+      "Tennessee Tech", "UT Martin", "Western Illinois",
     ],
   },
   {
     conference: "Patriot League",
     teams: [
       "American", "Army", "Boston University", "Bucknell", "Colgate",
-      "Holy Cross", "Lafayette", "Lehigh", "Loyola (MD)", "Navy",
+      "Holy Cross", "Lafayette", "Lehigh", "Loyola Maryland", "Navy",
     ],
   },
   {
-    conference: "Pioneer League",
+    conference: "SEC",
     teams: [
-      "Butler", "Davidson", "Dayton", "Denver", "Drake", "Duquesne",
-      "Evansville", "Jacksonville", "Morehead State", "Sacramento State",
-      "San Diego", "Stetson", "Valparaiso",
+      "Alabama", "Arkansas", "Auburn", "Florida", "Georgia", "Kentucky",
+      "LSU", "Mississippi State", "Missouri", "Ole Miss", "Oklahoma",
+      "South Carolina", "Tennessee", "Texas", "Texas A&M", "Vanderbilt",
     ],
   },
   {
     conference: "Southern Conference",
     teams: [
-      "The Citadel", "East Tennessee State", "Furman", "Mercer",
-      "Samford", "UNC Greensboro", "VMI", "Western Carolina", "Wofford",
+      "Chattanooga", "East Tennessee State", "Furman", "Mercer", "Samford",
+      "The Citadel", "UNC Greensboro", "VMI", "Western Carolina", "Wofford",
     ],
   },
   {
     conference: "Southland",
     teams: [
-      "Houston Baptist", "Lamar", "McNeese", "Nicholls", "Northwestern State",
-      "Southeastern Louisiana", "Texas A&M-Corpus Christi",
+      "East Texas A&M", "Houston Christian", "Incarnate Word", "Lamar",
+      "McNeese", "New Orleans", "Nicholls", "Northwestern State",
+      "Southeastern Louisiana", "Stephen F. Austin", "Texas A&M-Corpus Christi",
+      "UTRGV",
     ],
   },
   {
     conference: "Summit League",
     teams: [
       "Denver", "Kansas City", "North Dakota", "North Dakota State",
-      "Omaha", "Oral Roberts", "South Dakota", "South Dakota State", "Western Illinois",
+      "Omaha", "Oral Roberts", "South Dakota", "South Dakota State",
+      "St. Thomas (MN)",
     ],
   },
   {
     conference: "Sun Belt",
     teams: [
-      "Appalachian State", "Arkansas State", "Coastal Carolina", "Georgia Southern",
-      "Georgia State", "James Madison", "Louisiana", "Louisiana Monroe",
-      "Marshall", "Old Dominion", "South Alabama", "Southern Miss",
-      "Texas State", "Troy",
+      "Appalachian State", "Arkansas State", "Coastal Carolina",
+      "Georgia Southern", "Georgia State", "James Madison", "Louisiana",
+      "Louisiana-Monroe", "Marshall", "Old Dominion", "South Alabama",
+      "Southern Miss", "Texas State", "Troy",
     ],
   },
   {
@@ -233,16 +233,16 @@ export const D1_TEAMS_BY_CONFERENCE: { conference: string; teams: string[] }[] =
   {
     conference: "WAC",
     teams: [
-      "Abilene Christian", "Cal Baptist", "Grand Canyon", "Lamar",
-      "New Mexico State", "Sam Houston", "Seattle", "Southern Utah",
-      "Tarleton State", "Utah Tech", "Utah Valley",
+      "Abilene Christian", "California Baptist", "Southern Utah",
+      "Tarleton State", "UT Arlington", "Utah Tech", "Utah Valley",
     ],
   },
   {
     conference: "West Coast Conference",
     teams: [
-      "Gonzaga", "LMU", "Pacific", "Pepperdine", "Portland",
-      "Saint Mary's", "San Diego", "San Francisco", "Santa Clara", "Seattle",
+      "Gonzaga", "Loyola Marymount", "Oregon State", "Pacific", "Pepperdine",
+      "Portland", "Saint Mary's", "San Diego", "San Francisco", "Santa Clara",
+      "Seattle", "Washington State",
     ],
   },
 ]
