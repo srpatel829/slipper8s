@@ -26,22 +26,22 @@ import { cn } from "@/lib/utils"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { SelectedPick } from "@/components/picks/picks-form"
 
-// ─── Seed tier config — spec-locked names and colors ────────────────────────
-// Seeds 1-4: Chalk (Red #C0392B) | Seeds 5-8: Dark Horses (Orange #E67E22)
-// Seeds 9-12: Sleepers (Gold #D4AC0D) | Seeds 13-16: Bracket Busters (Green #27AE60)
+// ─── Seed tier config — must match colors.ts ────────────────────────────────
+// Seeds 1-4: Chalk (Navy #1B4F72) | Seeds 5-8: Dark Horses (Orange #E67E22)
+// Seeds 9-12: Sleepers (Cyan #00ACC1) | Seeds 13-16: Bracket Busters (Brown #A0522D)
 
 export const SEED_TIERS = [
-  { label: "Chalk",          range: [1, 4]   as const, dotClass: "bg-[#C0392B]", textClass: "text-[#C0392B]" },
+  { label: "Chalk",          range: [1, 4]   as const, dotClass: "bg-[#1B4F72]", textClass: "text-[#1B4F72]" },
   { label: "Dark Horses",    range: [5, 8]   as const, dotClass: "bg-[#E67E22]", textClass: "text-[#E67E22]" },
-  { label: "Sleepers",       range: [9, 12]  as const, dotClass: "bg-[#D4AC0D]", textClass: "text-[#D4AC0D]" },
-  { label: "Bracket Busters", range: [13, 16] as const, dotClass: "bg-[#27AE60]", textClass: "text-[#27AE60]" },
+  { label: "Sleepers",       range: [9, 12]  as const, dotClass: "bg-[#00ACC1]", textClass: "text-[#00ACC1]" },
+  { label: "Bracket Busters", range: [13, 16] as const, dotClass: "bg-[#A0522D]", textClass: "text-[#A0522D]" },
 ] as const
 
 export function getSeedTierDotClass(seed: number): string {
-  if (seed <= 4) return "bg-[#C0392B]"
+  if (seed <= 4) return "bg-[#1B4F72]"
   if (seed <= 8) return "bg-[#E67E22]"
-  if (seed <= 12) return "bg-[#D4AC0D]"
-  return "bg-[#27AE60]"
+  if (seed <= 12) return "bg-[#00ACC1]"
+  return "bg-[#A0522D]"
 }
 
 // ─── Region layout (matches NCAA bracket visual orientation) ────────────────
