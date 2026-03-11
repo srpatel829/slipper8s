@@ -106,8 +106,10 @@ model User {
   sessions      Session[]
   picks         Pick[]
   entries       Entry[]
-  adminLeagues  League[]  @relation("LeagueAdmin")
-  favoriteTeam  Team?     @relation("FavoriteTeam", fields: [favoriteTeamId], references: [id])
+  adminLeagues       League[]        @relation("LeagueAdmin")
+  leagueMemberships  LeagueMember[]
+  feedbacks          Feedback[]
+  favoriteTeam       Team?           @relation("FavoriteTeam", fields: [favoriteTeamId], references: [id])
 }
 
 model Season {
@@ -136,18 +138,31 @@ model League {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  admin         User          @relation("LeagueAdmin", fields: [adminId], references: [id])
-  season        Season        @relation(fields: [seasonId], references: [id])
+  admin         User           @relation("LeagueAdmin", fields: [adminId], references: [id])
+  season        Season         @relation(fields: [seasonId], references: [id])
   leagueEntries LeagueEntry[]
+  members       LeagueMember[]
 
   @@unique([name, seasonId])
+}
+
+model LeagueMember {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String
+  paid      Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId])
 }
 
 model LeagueEntry {
   id        String   @id @default(cuid())
   leagueId  String
   entryId   String
-  paid      Boolean  @default(false)
   joinedAt  DateTime @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
@@ -356,4 +371,16 @@ model AuditLog {
   action    String
   details   Json?
   createdAt DateTime @default(now())
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  userName  String?
+  userEmail String?
+  message   String   @db.Text
+  page      String?  // Which page the feedback was submitted from
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 }

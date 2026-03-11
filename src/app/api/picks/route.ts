@@ -139,6 +139,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Auto-link new entry to all leagues the user is a member of for this season
+  try {
+    const memberships = await prisma.leagueMember.findMany({
+      where: { userId: session.user.id },
+      include: { league: { select: { seasonId: true } } },
+    })
+    const relevantLeagueIds = memberships
+      .filter((m) => m.league.seasonId === seasonId)
+      .map((m) => m.leagueId)
+    if (relevantLeagueIds.length > 0) {
+      await prisma.leagueEntry.createMany({
+        data: relevantLeagueIds.map((leagueId) => ({
+          leagueId,
+          entryId: entry.id,
+        })),
+        skipDuplicates: true,
+      })
+    }
+  } catch (err) {
+    console.error("[picks] Auto-link to leagues failed:", err)
+  }
+
   // Invalidate leaderboard cache (new entry changes rankings)
   if (seasonId) {
     invalidateLeaderboardCache(seasonId).catch((err) =>

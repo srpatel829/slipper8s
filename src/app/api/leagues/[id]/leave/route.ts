@@ -27,28 +27,33 @@ export async function POST(
     )
   }
 
-  // Find user's entries in this league
-  const userLeagueEntries = await prisma.leagueEntry.findMany({
-    where: {
-      leagueId: id,
-      entry: { userId: session.user.id },
-    },
+  // Check if user is a member of this league
+  const membership = await prisma.leagueMember.findUnique({
+    where: { leagueId_userId: { leagueId: id, userId: session.user.id } },
   })
 
-  if (userLeagueEntries.length === 0) {
+  if (!membership) {
     return NextResponse.json({ error: "You are not in this league" }, { status: 400 })
   }
 
-  // Delete all of user's LeagueEntry rows for this league (entries preserved)
-  await prisma.leagueEntry.deleteMany({
-    where: {
-      leagueId: id,
-      entry: { userId: session.user.id },
-    },
+  // Delete LeagueMember row
+  await prisma.leagueMember.delete({
+    where: { id: membership.id },
   })
 
-  return NextResponse.json({
-    success: true,
-    entriesRemoved: userLeagueEntries.length,
+  // Delete any LeagueEntry rows for this user's entries in this league
+  const userEntries = await prisma.entry.findMany({
+    where: { userId: session.user.id, seasonId: league.seasonId },
+    select: { id: true },
   })
+  if (userEntries.length > 0) {
+    await prisma.leagueEntry.deleteMany({
+      where: {
+        leagueId: id,
+        entryId: { in: userEntries.map((e) => e.id) },
+      },
+    })
+  }
+
+  return NextResponse.json({ success: true })
 }

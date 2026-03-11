@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
 import {
   Users, Plus, LogIn, Copy, Check, Loader2, Trophy, Crown, ChevronRight,
 } from "lucide-react"
@@ -38,6 +39,7 @@ export default function LeaguesPage() {
   const [newLeagueName, setNewLeagueName] = useState("")
   const [newDescription, setNewDescription] = useState("")
   const [newMaxEntries, setNewMaxEntries] = useState("")
+  const [newTrackPayments, setNewTrackPayments] = useState(false)
   const [inviteCode, setInviteCode] = useState("")
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
@@ -67,6 +69,7 @@ export default function LeaguesPage() {
           name: newLeagueName.trim(),
           description: newDescription.trim() || undefined,
           maxEntries: newMaxEntries ? Number(newMaxEntries) : undefined,
+          trackPayments: newTrackPayments,
         }),
       })
       const data = await res.json()
@@ -190,6 +193,16 @@ export default function LeaguesPage() {
               />
               <p className="text-xs text-muted-foreground">Leave blank for unlimited.</p>
             </div>
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <Label className="text-sm">Track Payments</Label>
+                <p className="text-xs text-muted-foreground">Track who has paid their entry fee.</p>
+              </div>
+              <Switch
+                checked={newTrackPayments}
+                onCheckedChange={setNewTrackPayments}
+              />
+            </div>
             <div className="flex gap-3">
               <Button type="submit" disabled={creating || !newLeagueName.trim()}>
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create"}
@@ -264,7 +277,7 @@ export default function LeaguesPage() {
                     <p className="text-xs text-muted-foreground mb-1 line-clamp-1">{league.description}</p>
                   )}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{league.memberCount} entr{league.memberCount !== 1 ? "ies" : "y"}</span>
+                    <span>{league.memberCount} member{league.memberCount !== 1 ? "s" : ""}</span>
                     <span>Admin: {league.adminName}</span>
                   </div>
                 </div>

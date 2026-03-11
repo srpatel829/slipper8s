@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         },
       },
       season: { select: { year: true } },
-      _count: { select: { leagueEntries: true } },
+      _count: { select: { members: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       inviteCode: l.inviteCode,
       admin: l.admin,
       seasonYear: l.season.year,
-      memberCount: l._count.leagueEntries,
+      memberCount: l._count.members,
       createdAt: l.createdAt,
     })),
   })
@@ -77,7 +77,7 @@ export async function DELETE(req: NextRequest) {
 
   const league = await prisma.league.findUnique({
     where: { id: leagueId },
-    include: { _count: { select: { leagueEntries: true } } },
+    include: { _count: { select: { members: true } } },
   })
 
   if (!league) {
@@ -90,7 +90,7 @@ export async function DELETE(req: NextRequest) {
   await prisma.auditLog.create({
     data: {
       adminId: session.user.id!,
-      action: `Deleted league "${league.name}" (${league._count.leagueEntries} members)`,
+      action: `Deleted league "${league.name}" (${league._count.members} members)`,
       details: { leagueId, leagueName: league.name, reason: reason ?? "Admin deleted league" },
     },
   })

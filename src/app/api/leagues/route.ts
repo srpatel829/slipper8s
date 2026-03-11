@@ -19,20 +19,34 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // Find leagues where the user is admin OR has an entry via LeagueEntry
+  // Find leagues where the user is admin OR is a LeagueMember
   const leagues = await prisma.league.findMany({
     where: {
       OR: [
         { adminId: session.user.id },
-        { leagueEntries: { some: { entry: { userId: session.user.id } } } },
+        { members: { some: { userId: session.user.id } } },
       ],
     },
     include: {
       admin: { select: { id: true, name: true, username: true } },
-      _count: { select: { leagueEntries: true } },
+      _count: { select: { members: true } },
     },
     orderBy: { createdAt: "desc" },
   })
+
+  // Self-heal: if admin has no LeagueMember row for any league they own, create it
+  for (const l of leagues) {
+    if (l.adminId === session.user.id && l._count.members === 0) {
+      try {
+        await prisma.leagueMember.create({
+          data: { leagueId: l.id, userId: session.user.id },
+        })
+        l._count.members = 1
+      } catch {
+        // Already exists (unique constraint) — ignore
+      }
+    }
+  }
 
   return NextResponse.json(
     leagues.map((l) => ({
@@ -44,7 +58,7 @@ export async function GET(req: NextRequest) {
       trackPayments: l.trackPayments,
       isAdmin: l.adminId === session.user.id,
       adminName: l.admin.username ?? l.admin.name ?? "Unknown",
-      memberCount: l._count.leagueEntries,
+      memberCount: l._count.members,
       createdAt: l.createdAt,
     }))
   )
@@ -85,6 +99,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  try {
   // Get current season
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
   if (!settings?.currentSeasonId) {
@@ -108,28 +123,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const league = await prisma.league.create({
-      data: {
-        name,
-        description,
-        maxEntries,
-        trackPayments,
-        inviteCode: generateInviteCode(),
-        adminId: session.user.id,
-        seasonId: season.id,
-      },
+    // Create league + auto-join admin in a transaction
+    const league = await prisma.$transaction(async (tx) => {
+      const newLeague = await tx.league.create({
+        data: {
+          name,
+          description,
+          maxEntries,
+          trackPayments,
+          inviteCode: generateInviteCode(),
+          adminId: session.user.id,
+          seasonId: season.id,
+        },
+      })
+
+      await tx.leagueMember.create({
+        data: {
+          leagueId: newLeague.id,
+          userId: session.user.id,
+        },
+      })
+
+      return newLeague
     })
 
     return NextResponse.json({
       id: league.id,
       name: league.name,
       inviteCode: league.inviteCode,
-    }, { status: 201 })
+    })
   }
+
+  const currentSeasonId = settings.currentSeasonId!
 
   // Check duplicate name for this season
   const existing = await prisma.league.findUnique({
-    where: { name_seasonId: { name, seasonId: settings.currentSeasonId } },
+    where: { name_seasonId: { name, seasonId: currentSeasonId } },
   })
   if (existing) {
     return NextResponse.json(
@@ -138,18 +167,40 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const league = await prisma.league.create({
-    data: {
-      name,
-      inviteCode: generateInviteCode(),
-      adminId: session.user.id,
-      seasonId: settings.currentSeasonId,
-    },
+  // Create league + auto-join admin in a transaction so both succeed or neither does
+  const league = await prisma.$transaction(async (tx) => {
+    const newLeague = await tx.league.create({
+      data: {
+        name,
+        description,
+        maxEntries,
+        trackPayments,
+        inviteCode: generateInviteCode(),
+        adminId: session.user.id,
+        seasonId: currentSeasonId,
+      },
+    })
+
+    await tx.leagueMember.create({
+      data: {
+        leagueId: newLeague.id,
+        userId: session.user.id,
+      },
+    })
+
+    return newLeague
   })
 
   return NextResponse.json({
     id: league.id,
     name: league.name,
     inviteCode: league.inviteCode,
-  }, { status: 201 })
+  })
+  } catch (err) {
+    console.error("[leagues] POST error:", err)
+    return NextResponse.json(
+      { error: "Failed to create league" },
+      { status: 500 }
+    )
+  }
 }

@@ -48,6 +48,7 @@ interface ProfileUser {
   state: string | null
   gender: Gender | null
   favoriteTeamId: string | null
+  favoriteTeamName: string | null
   notificationsEnabled: boolean
   dateOfBirth: Date | null
   phone: string | null
@@ -74,7 +75,9 @@ export function ProfileForm({ user, teams }: ProfileFormProps) {
   const [country, setCountry] = useState(user.country ?? "")
   const [state, setState] = useState(user.state ?? "")
   const [gender, setGender] = useState(user.gender ?? "")
-  const [favoriteTeamId, setFavoriteTeamId] = useState(user.favoriteTeamId ?? "")
+  const [favoriteTeamId, setFavoriteTeamId] = useState(
+    user.favoriteTeamId || user.favoriteTeamName || ""
+  )
   const [notifications, setNotifications] = useState(user.notificationsEnabled)
   const [dateOfBirth, setDateOfBirth] = useState(
     user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split("T")[0] : ""

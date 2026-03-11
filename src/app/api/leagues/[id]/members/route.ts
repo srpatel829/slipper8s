@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// PATCH /api/leagues/[id]/members — toggle payment status on a LeagueEntry (admin only)
+// PATCH /api/leagues/[id]/members — toggle payment status on a LeagueMember
 export async function PATCH(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await auth()
@@ -19,35 +19,85 @@ export async function PATCH(
     return NextResponse.json({ error: "League not found" }, { status: 404 })
   }
   if (league.adminId !== session.user.id) {
-    return NextResponse.json({ error: "Only the league admin can manage members" }, { status: 403 })
+    return NextResponse.json({ error: "Only the league admin can update payment status" }, { status: 403 })
   }
   if (!league.trackPayments) {
     return NextResponse.json({ error: "Payment tracking is not enabled for this league" }, { status: 400 })
   }
 
   const body = await request.json()
-  const { leagueEntryId, paid } = body
+  const { leagueMemberId, paid } = body
 
-  if (!leagueEntryId || typeof paid !== "boolean") {
-    return NextResponse.json({ error: "leagueEntryId and paid (boolean) required" }, { status: 400 })
+  if (!leagueMemberId || typeof paid !== "boolean") {
+    return NextResponse.json({ error: "leagueMemberId and paid are required" }, { status: 400 })
   }
 
-  // Verify the LeagueEntry belongs to this league
-  const leagueEntry = await prisma.leagueEntry.findUnique({
-    where: { id: leagueEntryId },
+  // Verify the member belongs to this league
+  const member = await prisma.leagueMember.findFirst({
+    where: { id: leagueMemberId, leagueId: id },
   })
 
-  if (!leagueEntry || leagueEntry.leagueId !== id) {
+  if (!member) {
     return NextResponse.json({ error: "Member not found in this league" }, { status: 404 })
   }
 
-  const updated = await prisma.leagueEntry.update({
-    where: { id: leagueEntryId },
+  await prisma.leagueMember.update({
+    where: { id: leagueMemberId },
     data: { paid },
   })
 
-  return NextResponse.json({
-    leagueEntryId: updated.id,
-    paid: updated.paid,
+  return NextResponse.json({ leagueMemberId, paid })
+}
+
+// DELETE /api/leagues/[id]/members — remove a member from the league (admin only)
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await auth()
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  const { id } = await params
+
+  const league = await prisma.league.findUnique({ where: { id } })
+  if (!league) {
+    return NextResponse.json({ error: "League not found" }, { status: 404 })
+  }
+  if (league.adminId !== session.user.id) {
+    return NextResponse.json({ error: "Only the league admin can remove members" }, { status: 403 })
+  }
+
+  const body = await request.json()
+  const { userId } = body
+
+  if (!userId) {
+    return NextResponse.json({ error: "userId is required" }, { status: 400 })
+  }
+
+  if (userId === league.adminId) {
+    return NextResponse.json({ error: "Cannot remove the league admin" }, { status: 400 })
+  }
+
+  // Delete LeagueMember
+  await prisma.leagueMember.deleteMany({
+    where: { leagueId: id, userId },
   })
+
+  // Delete any LeagueEntry rows for this user's entries
+  const userEntries = await prisma.entry.findMany({
+    where: { userId, seasonId: league.seasonId },
+    select: { id: true },
+  })
+  if (userEntries.length > 0) {
+    await prisma.leagueEntry.deleteMany({
+      where: {
+        leagueId: id,
+        entryId: { in: userEntries.map((e) => e.id) },
+      },
+    })
+  }
+
+  return NextResponse.json({ success: true })
 }

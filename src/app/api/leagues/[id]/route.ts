@@ -18,15 +18,16 @@ export async function GET(
     where: { id },
     include: {
       admin: { select: { id: true, name: true, username: true } },
-      leagueEntries: {
+      members: {
         include: {
-          entry: {
-            include: {
-              user: { select: { id: true, name: true, username: true } },
-            },
-          },
+          user: { select: { id: true, name: true, username: true } },
         },
         orderBy: { joinedAt: "asc" },
+      },
+      leagueEntries: {
+        include: {
+          entry: { select: { id: true, userId: true, entryNumber: true, score: true } },
+        },
       },
     },
   })
@@ -35,13 +36,25 @@ export async function GET(
     return NextResponse.json({ error: "League not found" }, { status: 404 })
   }
 
-  // Check if user is a member of this league (has LeagueEntry) or is admin
+  // Check if user is a member of this league (LeagueMember) or is admin
   const isMember =
     league.adminId === session.user.id ||
-    league.leagueEntries.some((le) => le.entry.userId === session.user.id)
+    league.members.some((m) => m.userId === session.user.id)
 
   if (!isMember) {
     return NextResponse.json({ error: "Not a member of this league" }, { status: 403 })
+  }
+
+  // Self-heal: if admin has no LeagueMember row, create one
+  if (league.adminId === session.user.id && !league.members.some((m) => m.userId === session.user.id)) {
+    const newMember = await prisma.leagueMember.create({
+      data: { leagueId: league.id, userId: session.user.id },
+    })
+    // Add to the members array so the response includes it
+    league.members.push({
+      ...newMember,
+      user: { id: session.user.id, name: league.admin.name, username: league.admin.username },
+    } as typeof league.members[0])
   }
 
   return NextResponse.json({
@@ -52,17 +65,24 @@ export async function GET(
     maxEntries: league.maxEntries,
     trackPayments: league.trackPayments,
     isAdmin: league.adminId === session.user.id,
+    adminId: league.adminId,
     adminName: league.admin.username ?? league.admin.name ?? "Unknown",
-    members: league.leagueEntries.map((le) => ({
-      leagueEntryId: le.id,
-      entryId: le.entry.id,
-      userId: le.entry.userId,
-      name: le.entry.user.username ?? le.entry.user.name ?? "Unknown",
-      entryNumber: le.entry.entryNumber,
-      score: le.entry.score,
-      paid: le.paid,
-      joinedAt: le.joinedAt,
-    })),
+    members: league.members.map((m) => {
+      // Find entries for this member in this league
+      const memberEntries = league.leagueEntries.filter(
+        (le) => le.entry.userId === m.userId
+      )
+      const totalScore = memberEntries.reduce((sum, le) => sum + le.entry.score, 0)
+      return {
+        leagueMemberId: m.id,
+        userId: m.userId,
+        name: m.user.username ?? m.user.name ?? "Unknown",
+        score: totalScore,
+        paid: m.paid,
+        joinedAt: m.joinedAt,
+        entryCount: memberEntries.length,
+      }
+    }),
     createdAt: league.createdAt,
   })
 }

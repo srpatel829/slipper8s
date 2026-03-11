@@ -22,6 +22,7 @@ export default async function ProfilePage() {
         state: true,
         gender: true,
         favoriteTeamId: true,
+        favoriteTeamName: true,
         notificationsEnabled: true,
         dateOfBirth: true,
         phone: true,

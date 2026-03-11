@@ -6,8 +6,8 @@ const { auth } = NextAuth(authConfig)
 export default auth
 
 export const config = {
-  matcher: [
-    // Only protect these specific routes — exclude public pages and demo
-    "/(picks|leaderboard|scores|simulator|admin)(.*)",
-  ],
+  // Auth is handled server-side by (protected)/layout.tsx.
+  // The proxy uses an edge-safe config without a database adapter,
+  // so it cannot validate database sessions and must not gate routes.
+  matcher: [],
 }

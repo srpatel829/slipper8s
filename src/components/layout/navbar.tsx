@@ -16,7 +16,8 @@ import {
 import { Badge } from "@/components/ui/badge"
 import {
   Menu, BarChart3, Target, Zap, Play, Settings,
-  Users, User, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch, Trophy
+  Users, User, LogOut, ChevronDown, Crown, X, Grid2X2, GitBranch, Trophy,
+  HelpCircle, ScrollText
 } from "lucide-react"
 import type { Session } from "next-auth"
 import { ThemeToggle } from "@/components/layout/theme-toggle"
@@ -142,17 +143,24 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
                   <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
                   <div className="flex items-center gap-1.5 mt-1.5">
                     <Badge variant="outline" className="text-[10px] h-4">{user.role}</Badge>
-                    {user.isPaid ? (
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[10px] h-4">Paid</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px] h-4 text-red-400 border-red-500/30">Unpaid</Badge>
-                    )}
                   </div>
                 </div>
                 <DropdownMenuItem asChild>
                   <Link href={prefixHref("/profile")} className="gap-2 text-sm">
                     <User className="h-3.5 w-3.5" />
                     Profile & Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/how-to-play" className="gap-2 text-sm">
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    How to Play / FAQ
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/commissioner" className="gap-2 text-sm">
+                    <ScrollText className="h-3.5 w-3.5" />
+                    Letter from the Commissioner
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -255,6 +263,26 @@ export function Navbar({ session, demoMode, linkPrefix = "" }: NavbarProps) {
                     Demo Mode
                   </Link>
                 )}
+
+                {/* Info links */}
+                <div className="border-t border-border mt-3 pt-3">
+                  <Link
+                    href="/how-to-play"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  >
+                    <HelpCircle className="h-4 w-4" />
+                    How to Play / FAQ
+                  </Link>
+                  <Link
+                    href="/commissioner"
+                    onClick={() => setOpen(false)}
+                    className="flex items-center gap-2.5 text-sm px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  >
+                    <ScrollText className="h-4 w-4" />
+                    Letter from the Commissioner
+                  </Link>
+                </div>
               </div>
 
               {user && (

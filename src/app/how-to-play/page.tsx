@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { TrendingUp, Zap, ArrowRight, Play, HelpCircle, User, Trophy } from "lucide-react"
+import { TrendingUp, Zap, ArrowRight, Play, HelpCircle, Trophy } from "lucide-react"
 
 export const metadata = {
   title: "How to Play | Slipper8s",
@@ -293,32 +293,6 @@ export default function HowToPlayPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* About Section */}
-        <section className="mb-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-              <User className="h-5 w-5 text-purple-400" />
-            </div>
-            <h2 className="text-2xl font-bold tracking-tight">About</h2>
-          </div>
-
-          <div className="bg-card border border-border rounded-2xl p-8">
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Slipper8s started as a spreadsheet among friends in 2016. Every March, we&apos;d pick 8 teams,
-              track scores by hand, and argue about who was really winning. Ten years and 265 players later,
-              it was time to build something better.
-            </p>
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              The name is a play on &quot;sleeper picks&quot; and &quot;glass slippers&quot; — because in this game,
-              the Cinderella teams are the ones that win you the pool. A #12 seed winning one game is worth
-              more than a #1 seed winning the championship. That&apos;s the whole point.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              Built with love for the tournament by Sumeet Patel and friends.
-            </p>
           </div>
         </section>
 

@@ -41,7 +41,7 @@ function generateUsername(firstName: string, lastName: string): string {
   const first = clean(firstName)
   const last = clean(lastName)
   if (!first || !last) return ""
-  // e.g. "SheelP" from "Sheel Patel"
+  // e.g. "JohnD" from "John Doe"
   return `${first.charAt(0).toUpperCase()}${first.slice(1).toLowerCase()}${last.charAt(0).toUpperCase()}`
 }
 
@@ -57,6 +57,9 @@ export default function RegisterPage() {
   const [state, setState] = useState("")
   const [gender, setGender] = useState("")
   const [favoriteTeam, setFavoriteTeam] = useState("")
+  const [dateOfBirth, setDateOfBirth] = useState("")
+  const [phoneCountryCode, setPhoneCountryCode] = useState("+1")
+  const [phone, setPhone] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
@@ -124,6 +127,8 @@ export default function RegisterPage() {
           state: state && state !== "none" ? state : null,
           gender: gender || null,
           favoriteTeam: favoriteTeam || null,
+          dateOfBirth: dateOfBirth || null,
+          phone: phone ? `${phoneCountryCode.replace("CA", "")} ${phone}` : null,
         }),
       })
 
@@ -182,7 +187,7 @@ export default function RegisterPage() {
                   id="firstName"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Sheel"
+                  placeholder="First"
                   required
                   className="h-10 bg-muted/50 border-border"
                 />
@@ -193,7 +198,7 @@ export default function RegisterPage() {
                   id="lastName"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Patel"
+                  placeholder="Last"
                   required
                   className="h-10 bg-muted/50 border-border"
                 />
@@ -211,7 +216,7 @@ export default function RegisterPage() {
                     setUsernameManual(true)
                     setUsername(e.target.value)
                   }}
-                  placeholder="SheelP"
+                  placeholder="e.g. JohnD"
                   required
                   minLength={4}
                   maxLength={20}
@@ -297,6 +302,63 @@ export default function RegisterPage() {
               </Label>
               <TeamCombobox value={favoriteTeam} onChange={setFavoriteTeam} />
               <p className="text-xs text-muted-foreground">See how you rank among fans of your team and conference</p>
+            </div>
+
+            {/* Additional Info (optional) */}
+            <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <span className="text-base">&#128203;</span>
+                Additional Info <span className="text-muted-foreground font-normal">(optional)</span>
+              </h3>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
+                <Input
+                  id="dateOfBirth"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="h-10 bg-muted/50 border-border max-w-[200px]"
+                />
+                <p className="text-xs text-muted-foreground">May be required for future prize verification (age 18+)</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="phone" className="text-sm">Phone Number</Label>
+                <div className="flex gap-2 max-w-[300px]">
+                  <Select value={phoneCountryCode} onValueChange={setPhoneCountryCode}>
+                    <SelectTrigger className="h-10 bg-muted/50 border-border w-[100px] shrink-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="+1">🇺🇸 +1</SelectItem>
+                      <SelectItem value="+44">🇬🇧 +44</SelectItem>
+                      <SelectItem value="+61">🇦🇺 +61</SelectItem>
+                      <SelectItem value="+91">🇮🇳 +91</SelectItem>
+                      <SelectItem value="+49">🇩🇪 +49</SelectItem>
+                      <SelectItem value="+33">🇫🇷 +33</SelectItem>
+                      <SelectItem value="+55">🇧🇷 +55</SelectItem>
+                      <SelectItem value="+52">🇲🇽 +52</SelectItem>
+                      <SelectItem value="+81">🇯🇵 +81</SelectItem>
+                      <SelectItem value="+82">🇰🇷 +82</SelectItem>
+                      <SelectItem value="+86">🇨🇳 +86</SelectItem>
+                      <SelectItem value="+234">🇳🇬 +234</SelectItem>
+                      <SelectItem value="+27">🇿🇦 +27</SelectItem>
+                      <SelectItem value="+63">🇵🇭 +63</SelectItem>
+                      <SelectItem value="+1CA">🇨🇦 +1</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
+                    className="h-10 bg-muted/50 border-border flex-1"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">For future score update notifications via text (coming soon)</p>
+              </div>
             </div>
 
             {/* Error */}

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
-  const { firstName, lastName, username, country, state, gender, favoriteTeam } = body
+  const { firstName, lastName, username, country, state, gender, favoriteTeam, dateOfBirth, phone } = body
 
   // Validate required fields
   if (!firstName?.trim() || !lastName?.trim() || !username?.trim()) {
@@ -60,6 +60,39 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Username is already taken" }, { status: 409 })
   }
 
+  // Validate dateOfBirth if provided
+  let parsedDob: Date | null = null
+  if (dateOfBirth) {
+    parsedDob = new Date(dateOfBirth)
+    if (isNaN(parsedDob.getTime())) {
+      return NextResponse.json({ error: "Invalid date of birth" }, { status: 400 })
+    }
+    const age = (Date.now() - parsedDob.getTime()) / (365.25 * 24 * 60 * 60 * 1000)
+    if (age < 13) {
+      return NextResponse.json({ error: "Must be at least 13 years old" }, { status: 400 })
+    }
+  }
+
+  // Validate phone if provided
+  let cleanPhone: string | null = null
+  if (phone) {
+    const digits = phone.replace(/\D/g, "")
+    if (digits.length < 7 || digits.length > 20) {
+      return NextResponse.json({ error: "Phone number must be 7-20 digits" }, { status: 400 })
+    }
+    cleanPhone = digits
+  }
+
+  // Try to find matching team record for favoriteTeamId
+  let favoriteTeamId: string | null = null
+  if (favoriteTeam) {
+    const team = await prisma.team.findFirst({
+      where: { name: { equals: favoriteTeam, mode: "insensitive" } },
+      select: { id: true },
+    })
+    if (team) favoriteTeamId = team.id
+  }
+
   // Update user profile
   const updatedUser = await prisma.user.update({
     where: { id: session.user.id },
@@ -72,6 +105,9 @@ export async function POST(request: Request) {
       state: state?.trim() || null,
       gender: gender || null,
       favoriteTeamName: favoriteTeam || null,
+      favoriteTeamId,
+      dateOfBirth: parsedDob,
+      phone: cleanPhone,
       registrationComplete: true,
     },
   })
