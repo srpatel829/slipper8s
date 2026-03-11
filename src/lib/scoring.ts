@@ -137,27 +137,23 @@ export function computePercentile(rank: number, total: number): number {
   return Math.round((rank / total) * 1000) / 10 // e.g. Top 6.3%
 }
 
-// ─── Entry display name (spec rules for multiple entries) ─────────────────────
-// Single entry: "Ankur Patel"
-// Multi with nickname: "Arjun (Ankur Patel 2)"
-// Multi without nickname: "Ankur Patel 2"
+// ─── Entry display name ──────────────────────────────────────────────────────
+// Shown as the primary label on the leaderboard (username shown separately).
+// Single entry, no nickname:  "Main Entry"
+// Single entry, with nickname: "Upset Special"
+// Multi entry, no nickname:    "Entry 1" / "Entry 2"
+// Multi entry, with nickname:  "Upset Special" / "Chalk City"
 
 function entryDisplayName(
-  userName: string | null,
-  email: string,
+  _userName: string | null,
+  _email: string,
   entryNumber: number,
   nickname: string | null,
   isMultiEntry: boolean,
 ): string {
-  const base = userName ?? email
-  if (!isMultiEntry || entryNumber === 1) {
-    // Only show plain name if user has 1 entry, OR this is entry #1 of a multi
-    // But per spec: for multi-entry users, even entry #1 should never be "just the name"
-    // Actually spec says: "Single entry: Ankur Patel" but for multi, even entry 1 needs qualifier
-    if (!isMultiEntry) return base
-  }
-  if (nickname) return `${nickname} (${base} ${entryNumber})`
-  return `${base} ${entryNumber}`
+  if (nickname) return nickname
+  if (!isMultiEntry) return "Main Entry"
+  return `Entry ${entryNumber}`
 }
 
 // ─── Entry-based scoring (primary) ────────────────────────────────────────────
