@@ -115,7 +115,7 @@ export function ShareCard({ shareUrl, firstName }: ShareCardProps) {
                 </svg>
               </div>
               <div>
-                <div className="font-bold">Slipper8s</div>
+                <div className="font-bold">Slipper8s&#8482;</div>
                 <div className="text-xs opacity-90">College Basketball Pool</div>
               </div>
             </div>

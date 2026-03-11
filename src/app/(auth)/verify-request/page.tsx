@@ -10,7 +10,7 @@ export default function VerifyRequestPage() {
         <div className="flex justify-center mb-6">
           <div className="flex items-center gap-2 text-2xl font-bold">
             <Trophy className="h-7 w-7 text-primary" />
-            Slipper8s
+            Slipper8s<sup className="text-[10px] align-super ml-0.5">TM</sup>
           </div>
         </div>
 

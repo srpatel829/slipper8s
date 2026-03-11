@@ -221,7 +221,7 @@ export default function PrivacyPage() {
 
         <div className="border-t border-border mt-12 pt-6">
           <p className="text-xs text-muted-foreground text-center">
-            Slipper8s — Where sleeper picks become glass slippers
+            Slipper8s&#8482; — Where sleeper picks become glass slippers
           </p>
         </div>
       </div>

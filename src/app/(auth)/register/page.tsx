@@ -173,7 +173,7 @@ export default function RegisterPage() {
             <Trophy className="h-8 w-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Complete Your Profile</h1>
-          <p className="text-muted-foreground text-sm mt-1">Set up your Slipper8s account</p>
+          <p className="text-muted-foreground text-sm mt-1">Set up your Slipper8s&#8482; account</p>
         </div>
 
         {/* Card */}

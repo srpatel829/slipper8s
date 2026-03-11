@@ -25,7 +25,7 @@ export default function MaintenancePage() {
           </div>
           <div className="flex items-center gap-2 mb-2">
             <Trophy className="h-5 w-5 text-primary" />
-            <span className="font-bold text-lg tracking-tight">Slipper8s</span>
+            <span className="font-bold text-lg tracking-tight">Slipper8s<sup className="text-[8px] align-super ml-0.5">TM</sup></span>
           </div>
         </div>
 

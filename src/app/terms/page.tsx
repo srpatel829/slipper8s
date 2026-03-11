@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">1. Acceptance of Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing or using Slipper8s (&quot;the Service&quot;), available at slipper8s.com,
+              By accessing or using Slipper8s&#8482; (&quot;the Service&quot;), available at slipper8s.com,
               you agree to be bound by these Terms of Service. If you do not agree, please do not
               use the Service.
             </p>
@@ -96,15 +96,40 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-3">8. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              The Slipper8s name, logo, and all content created by us are our intellectual property.
-              Team names, logos, and related marks are property of their respective owners and are
-              used for informational purposes only. Slipper8s is not affiliated with, endorsed by,
-              or connected to the NCAA or any college basketball program.
+              The Slipper8s&#8482; name, logo, branding, game concept, scoring system, user interface
+              designs, and all original content created by Slipper8s are the exclusive intellectual
+              property of Slipper8s and its owner(s). All rights are reserved. Team names, logos,
+              and related marks are property of their respective owners and are used for informational
+              purposes only. Slipper8s is not affiliated with, endorsed by, or connected to the NCAA
+              or any college basketball program.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">9. Limitation of Liability</h2>
+            <h2 className="text-xl font-semibold mb-3">9. Restrictions on Commercial Use and Cloning</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              By using the Service, you agree that you will not, directly or indirectly:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-2">
+              <li>Copy, reproduce, or clone the Slipper8s game concept, scoring methodology (seed &times; wins), or game mechanics for any commercial purpose</li>
+              <li>Create, launch, or operate a competing service that is substantially similar to Slipper8s in concept, design, scoring system, or user experience</li>
+              <li>Use information obtained from the Service to develop, improve, or market a competing product or service</li>
+              <li>Reverse engineer, decompile, or disassemble any part of the Service&apos;s software or technology</li>
+              <li>Scrape, harvest, or collect data from the Service for commercial use or to build a competing product</li>
+              <li>Use the Slipper8s name, trademarks, branding, or any confusingly similar marks in connection with any other product or service</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed mt-3">
+              This restriction applies during your use of the Service and for a period of two (2) years
+              following the termination of your account. Violation of this section may result in
+              immediate account termination and may subject you to legal action, including claims for
+              injunctive relief and monetary damages. Nothing in this section restricts the development
+              of independently created works that do not derive from or rely upon the Slipper8s Service
+              or its proprietary elements.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-3">10. Limitation of Liability</h2>
             <p className="text-muted-foreground leading-relaxed">
               The Service is provided &quot;as is&quot; without warranties of any kind. We are not
               liable for any damages arising from your use of the Service, including but not limited
@@ -114,7 +139,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">10. Account Termination</h2>
+            <h2 className="text-xl font-semibold mb-3">11. Account Termination</h2>
             <p className="text-muted-foreground leading-relaxed">
               We reserve the right to suspend or terminate any account that violates these terms or
               engages in conduct we deem harmful to the Service or its users. Upon termination,
@@ -124,7 +149,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">11. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold mb-3">12. Changes to Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
               We may update these Terms at any time. Continued use of the Service after changes
               constitutes acceptance. Material changes will be communicated via email to registered
@@ -133,7 +158,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">12. Contact</h2>
+            <h2 className="text-xl font-semibold mb-3">13. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
               Questions about these Terms? Reach out at{" "}
               <a href="mailto:support@slipper8s.com" className="text-primary hover:underline">
@@ -146,7 +171,7 @@ export default function TermsPage() {
 
         <div className="border-t border-border mt-12 pt-6">
           <p className="text-xs text-muted-foreground text-center">
-            Slipper8s — Where sleeper picks become glass slippers
+            Slipper8s&#8482; — Where sleeper picks become glass slippers
           </p>
         </div>
       </div>

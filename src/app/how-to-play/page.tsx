@@ -14,7 +14,7 @@ export default function HowToPlayPage() {
       <nav className="flex items-center justify-between px-6 py-5 max-w-4xl mx-auto">
         <Link href="/" className="flex items-center gap-2.5">
           <Trophy className="h-7 w-7 text-primary" />
-          <span className="font-bold text-lg tracking-tight">Slipper8s</span>
+          <span className="font-bold text-lg tracking-tight">Slipper8s<sup className="text-[8px] align-super ml-0.5">TM</sup></span>
         </Link>
         <Link href="/login">
           <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">

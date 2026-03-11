@@ -42,7 +42,7 @@ export default async function HomePage() {
       <nav className="relative z-10 flex items-center justify-between px-6 py-5 max-w-6xl mx-auto">
         <div className="flex items-center gap-2.5">
           <Trophy className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg tracking-tight">Slipper8s</span>
+          <span className="font-bold text-lg tracking-tight">Slipper8s<sup className="text-[8px] align-super ml-0.5">TM</sup></span>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/how-to-play">
@@ -76,7 +76,7 @@ export default async function HomePage() {
 
         {/* Brand name */}
         <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-none mb-5">
-          <span className="text-gradient-blue">Slipper8s</span>
+          <span className="text-gradient-blue">Slipper8s<sup className="text-[16px] align-super ml-1">&#8482;</sup></span>
         </h1>
 
         {/* 3-bullet summary */}

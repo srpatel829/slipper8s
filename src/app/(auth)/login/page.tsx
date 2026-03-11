@@ -23,7 +23,7 @@ export default function LoginPage() {
           <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-4 shadow-lg glow-blue">
             <Trophy className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Slipper8s</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Slipper8s<sup className="text-[10px] align-super ml-0.5">TM</sup></h1>
           <p className="text-muted-foreground text-sm mt-1">College Basketball Tournament Pool</p>
         </div>
 
