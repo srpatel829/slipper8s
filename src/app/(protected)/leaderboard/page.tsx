@@ -1,5 +1,5 @@
 import { auth } from "@/lib/auth"
-import { LeaderboardTable } from "@/components/leaderboard/leaderboard-table"
+import { LeaderboardLive } from "@/components/leaderboard/leaderboard-live"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
@@ -128,11 +128,12 @@ async function getSeasonStatus(): Promise<string | null> {
 
 export default async function LeaderboardPage() {
   const session = await auth()
-  const [leaderboard, userLeagues, userProfile, seasonStatus] = await Promise.all([
+  const [leaderboard, userLeagues, userProfile, seasonStatus, teams] = await Promise.all([
     getLeaderboard(),
     session?.user?.id ? getUserLeagues(session.user.id) : Promise.resolve([]),
     session?.user?.id ? getUserProfile(session.user.id) : Promise.resolve(null),
     getSeasonStatus(),
+    prisma.team.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
   ])
 
   // Find the current user's best entry for share card
@@ -175,11 +176,10 @@ export default async function LeaderboardPage() {
         </div>
       </div>
 
-      <LeaderboardTable
+      <LeaderboardLive
         initialData={leaderboard}
         currentUserId={session?.user?.id}
-        userLeagues={userLeagues}
-        userProfile={userProfile}
+        teams={teams}
       />
 
       {/* Score history chart — collapsible */}
