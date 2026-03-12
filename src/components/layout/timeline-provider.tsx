@@ -67,7 +67,7 @@ export function TimelineProvider({
   return (
     <TimelineContext.Provider value={value}>
       {children}
-      {showTimeline && latestCompletedCheckpoint >= 0 && (
+      {showTimeline && (
         <TimelineFooter
           latestCheckpoint={latestCompletedCheckpoint}
           currentCheckpoint={currentCheckpoint}
