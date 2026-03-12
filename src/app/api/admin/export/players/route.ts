@@ -49,6 +49,7 @@ export async function GET() {
       gender: true,
       dateOfBirth: true,
       phone: true,
+      favoriteTeamName: true,
       favoriteTeam: {
         select: { name: true },
       },
@@ -92,7 +93,7 @@ export async function GET() {
       user.gender,
       user.dateOfBirth ? user.dateOfBirth.toISOString().slice(0, 10) : null,
       user.phone,
-      user.favoriteTeam?.name ?? null,
+      user.favoriteTeam?.name ?? user.favoriteTeamName ?? null,
       user.registrationComplete,
       user.createdAt.toISOString(),
     ]
