@@ -6,25 +6,34 @@
 
 ---
 
-## ⚠️ CRITICAL REMINDERS — DO BEFORE LAUNCH
+## Post-Launch Status
 
-**Remind user to ask "what do we still need to do before going live?" before each milestone.**
+**Site is LIVE at slipper8s.com as of March 2026.**
 
-1. **Upgrade Vercel to Pro** ($20/mo) by March 16 — required for 5-min cron. Then change `vercel.json` cron back from `"0 12 * * *"` to `"*/5 * * * *"`. Downgrade back to Hobby after April 6.
-2. **Replace AUTH_SECRET** with real secure value — run `openssl rand -base64 32`, update in both `.env` locally AND Vercel Environment Variables. Current placeholder is `slipper8s-secret-2026-replace-this-later`.
-3. **Add CRON_SECRET** — generate with `openssl rand -base64 32`, add to both `.env` and Vercel env vars.
-4. **Add AUTH_URL** — set to `https://slipper8s.vercel.app` in Vercel env vars (required for magic links to work on production domain).
-5. **Add RESEND_FROM_EMAIL** — set sending email address in Vercel env vars.
-6. **Set up Upstash Redis** — leaderboard caching is NOT implemented yet, critical for launch.
-7. **Run db:seed** — seed AppSettings singleton after migration.
-8. **DNS** — point slipper8s.com to Vercel by March 10 (48hr propagation).
-9. **Verify Resend domain** — magic links won't deliver without verified sending domain.
+All pre-launch items completed:
+- [x] Vercel Pro upgrade — active. Cron still at daily (`"0 12 * * *"`); change to `"*/5 * * * *"` when tournament games begin. Downgrade back to Hobby after April 6.
+- [x] AUTH_SECRET, CRON_SECRET, AUTH_URL — all set in `.env` and Vercel env vars
+- [x] RESEND_FROM_EMAIL — configured
+- [x] Upstash Redis — installed and configured for leaderboard caching
+- [x] db:seed — AppSettings seeded
+- [x] DNS — slipper8s.com pointing to Vercel, propagated
+- [x] Resend domain verified — emails delivering
+- [x] Sentry integrated — `@sentry/nextjs` installed, config files in place
+- [x] Google Analytics 4 — integrated in layout.tsx
+- [x] Terms of Service + Privacy Policy — live at /terms and /privacy
+- [x] sitemap.xml — generated via src/app/sitemap.ts
+
+**Still TODO:**
+- [ ] Change vercel.json cron to `*/5 * * * *` when tournament starts (requires Vercel Pro)
+- [ ] Downgrade Vercel back to Hobby after April 6
+- [ ] Meta Pixel tracking — needs Pixel ID from user
+- [ ] sleeper8s.com redirect to slipper8s.com
 
 ---
 
 ## What We Are Building
 
-Slipper8s (slipper8s.com) is a free college basketball tournament prediction game. Players pick 8 teams. Scoring = seed x wins. Highest total wins. 10-year history (265 players in 2025). Moving from Google Forms/Sheets to a proper web app for 2026.
+Slipper8s (slipper8s.com) is a free college basketball tournament prediction game. Players pick 8 teams. Scoring = seed x wins. Highest total wins. 10-year history (265 players in 2025). Launched as a web app for 2026 season (migrated from Google Forms/Sheets).
 
 ---
 
@@ -45,20 +54,20 @@ Slipper8s (slipper8s.com) is a free college basketball tournament prediction gam
 
 - **Frontend + Backend:** Next.js 15 (App Router, RSC + API routes), deployed on Vercel
 - **Database:** Neon PostgreSQL (serverless, auto-pauses off-season) via Prisma 7
-- **Cache:** Upstash Redis or Vercel KV — NOT YET IMPLEMENTED, must add before launch
-- **Email:** Resend (magic links only so far) — no SendGrid, no MJML templates yet
+- **Cache:** Upstash Redis (`@upstash/redis`) — configured and active
+- **Email:** Resend — magic links + full email template suite (welcome, confirmation, locked, reminder, recap, results, bracket, play-in)
 - **Auth:** NextAuth v5 — magic link AND Google OAuth both supported. Both options shown at login and registration.
-- **File storage:** Not yet implemented — profile photos deferred
-- **Error tracking:** Sentry — NOT YET INTEGRATED
+- **File storage:** Not yet implemented — profile photos deferred to post-launch
+- **Error tracking:** Sentry (`@sentry/nextjs`) — integrated, config files at project root
 - **SMS:** Phone number stored as optional field — NO SMS in 2026, email only
 - **Repo:** github.com/srpatel829/slipper8s (forked from rrpatel2009/super-8s)
-- **Live URL:** slipper8s.vercel.app
+- **Live URL:** slipper8s.com (also accessible via slipper8s.vercel.app)
 
 ---
 
-## Build Strategy — 2025 Data First, Always
+## Build Strategy — 2025 Data Validation (Reference)
 
-Do not touch live 2026 data until every 2025 validation item passes.
+2025 data was used as the primary validation source during development. The site is now live for 2026.
 
 Files in `/data/historical/`:
 - `Super_8s_2025.xlsx` — 265 entries, primary validation source
@@ -322,8 +331,9 @@ Seeds 13-16: Green  #27AE60
 ```
 Always show seed number alongside color. Grayscale users must have full info from number alone. Relative units (rem/em). Test at 150% text scale.
 
-### Multiple Entry Naming
-- Single entry: Ankur Patel
+### Multiple Entry Slip Naming
+**Note:** All user-facing text uses "entry slip" / "entry slips" (not "entry" / "entries") to reinforce the Slipper8s brand. Code identifiers, DB columns, and URL paths still use "entry"/"entries".
+- Single entry slip: Ankur Patel
 - Multi with nickname: Arjun (Ankur Patel 2)
 - Multi without nickname: Ankur Patel 2
 - NEVER just "Ankur Patel" for a multi-entry
@@ -397,11 +407,11 @@ In-app payments, native apps, "March Madness" usage, SMS notifications, historic
 ---
 
 ## Open Questions (Pause and Ask Before Building Affected Features)
-1. Exact deadline time: 12:00pm or 12:15pm ET on March 19?
+1. ~~Exact deadline time~~ — Resolved: 12:00pm ET on March 19
 2. KenPom API scope: verify first session before building any KenPom features
 3. Silver Bulletin scraping: verify authenticated download works before building
 4. Historical data scope: full 2019-2025 player profiles or Hall of Champions summary only?
-5. DNS: point slipper8s.com to hosting by March 10 — DNS takes 48 hours to propagate
+5. ~~DNS~~ — Resolved: slipper8s.com live on Vercel
 
 ---
 
@@ -718,25 +728,23 @@ Inspired by the NCAA tournament color palette:
 
 ---
 
-## Pre-Launch Checklist Additions (March 16)
-- [ ] SSL on both domains, HTTP redirects to HTTPS
-- [ ] sleeper8s.com redirects to slipper8s.com
-- [ ] DNS propagated
-- [ ] All env vars set in production
-- [ ] Database backup configured and tested
-- [ ] All 2025 validation items pass
-- [ ] Email sending tested
-- [ ] ESPN poller detecting bracket correctly
+## Launch Checklist (Updated March 12, 2026)
+- [x] SSL on slipper8s.com, HTTP redirects to HTTPS (Vercel handles this)
+- [ ] sleeper8s.com redirects to slipper8s.com — not yet configured
+- [x] DNS propagated — slipper8s.com live
+- [x] All env vars set in production
+- [x] Email sending tested and working via Resend
+- [x] Admin panel live (Sumeet + brother only)
+- [x] Terms of Service + Privacy Policy live at /terms and /privacy
+- [x] sitemap.xml — generated via src/app/sitemap.ts
+- [x] robots.txt — created at public/robots.txt
+- [x] Sentry integrated (`@sentry/nextjs`)
+- [x] Google Analytics 4 integrated
+- [ ] Meta Pixel — awaiting Pixel ID
+- [x] Open Graph tags verified via social media sharing tests
+- [ ] Load test passed (1,000 simultaneous users)
 - [ ] KenPom data on team cards
 - [ ] Silver Bulletin integration tested with 2025 files
-- [ ] Admin panel (Sumeet + brother only)
-- [ ] Terms of Service + Privacy Policy live
-- [ ] Load test passed (1,000 simultaneous users)
-- [ ] robots.txt + sitemap.xml
-- [ ] Open Graph tags verified via WhatsApp link preview test
-- [ ] Sentry receiving test errors
-- [ ] Maintenance mode page working
-- [ ] Percentile calculations verified across all 6 dimensions
 
 ---
 
@@ -756,7 +764,7 @@ Inspired by the NCAA tournament color palette:
 /public               Static assets
 .env                  Local secrets (never commit)
 .env.example          All required env var names (no values)
-vercel.json           Cron config (currently daily — change to */5 before launch)
+vercel.json           Cron config (currently daily — change to */5 when tournament starts)
 CLAUDE.md             This file
 Slipper8s_Spec_v11.docx  Full product specification
 ```
