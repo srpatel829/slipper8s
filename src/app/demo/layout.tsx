@@ -8,10 +8,12 @@
  * - Bottom padding to prevent content hiding under control panel
  */
 
+import Link from "next/link"
 import { DemoProvider } from "@/lib/demo-context"
 import { DemoControlPanel } from "@/components/demo/demo-control-panel"
 import { DemoNavbar } from "@/components/demo/demo-navbar"
 import { Badge } from "@/components/ui/badge"
+import { LogIn } from "lucide-react"
 
 export default function DemoLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -19,15 +21,23 @@ export default function DemoLayout({ children }: { children: React.ReactNode }) 
       {/* Navbar in demo mode */}
       <DemoNavbar />
 
-      {/* Subtle DEMO MODE watermark — always visible even when panel is collapsed */}
-      <div className="fixed top-[68px] right-4 z-40 pointer-events-none">
-        <Badge className="bg-primary/10 text-primary/50 border-primary/20 text-[10px] font-mono tracking-wider px-2 py-0.5">
-          DEMO
+      {/* DEMO MODE banner with exit link */}
+      <div className="fixed top-[60px] left-0 right-0 z-40 flex items-center justify-center gap-3 bg-primary/10 border-b border-primary/20 py-1.5 px-4">
+        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-mono tracking-wider px-2 py-0.5">
+          DEMO MODE
         </Badge>
+        <span className="text-xs text-muted-foreground">You&apos;re viewing sample data based on 2025 results.</span>
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+        >
+          <LogIn className="h-3 w-3" />
+          Sign in for the real thing
+        </Link>
       </div>
 
-      {/* Main content — pb accounts for control panel height (~110px) */}
-      <main className="pt-16 pb-36 min-h-screen">
+      {/* Main content — pt accounts for navbar + demo banner, pb for control panel */}
+      <main className="pt-24 pb-36 min-h-screen">
         {children}
       </main>
 
