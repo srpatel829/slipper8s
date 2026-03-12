@@ -74,12 +74,43 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled, isPreTourna
         </TeamCallout>
       ) : (
         <div>
-          <p className="text-sm font-medium">
-            {slot.team1.shortName} <span className="text-muted-foreground">/</span>{" "}
-            {slot.team2.shortName}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {slot.team1.name} vs {slot.team2.name} — winner advances
+          <div className="flex items-center gap-2">
+            <TeamCallout
+              team={buildTeamCalloutData(
+                { id: slot.team1.id, name: slot.team1.name, shortName: slot.team1.shortName ?? "", seed: slot.team1.seed, region: slot.team1.region ?? "", wins: slot.team1.wins, eliminated: slot.team1.eliminated, logoUrl: slot.team1.logoUrl },
+                isPreTournament,
+              )}
+              interactiveChild
+            >
+              {slot.team1.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={slot.team1.logoUrl} alt={slot.team1.name} className="h-7 w-7 object-contain" />
+              ) : (
+                <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold">
+                  {slot.team1.shortName?.[0] ?? "?"}
+                </div>
+              )}
+            </TeamCallout>
+            <span className="text-xs text-muted-foreground font-medium">vs</span>
+            <TeamCallout
+              team={buildTeamCalloutData(
+                { id: slot.team2.id, name: slot.team2.name, shortName: slot.team2.shortName ?? "", seed: slot.team2.seed, region: slot.team2.region ?? "", wins: slot.team2.wins, eliminated: slot.team2.eliminated, logoUrl: slot.team2.logoUrl },
+                isPreTournament,
+              )}
+              interactiveChild
+            >
+              {slot.team2.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={slot.team2.logoUrl} alt={slot.team2.name} className="h-7 w-7 object-contain" />
+              ) : (
+                <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-[10px] font-bold">
+                  {slot.team2.shortName?.[0] ?? "?"}
+                </div>
+              )}
+            </TeamCallout>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {slot.team1.shortName} vs {slot.team2.shortName} — winner advances
           </p>
         </div>
       )}
