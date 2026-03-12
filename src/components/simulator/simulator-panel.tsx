@@ -12,7 +12,8 @@
  *   - Real app mode: computes upcoming matchups from `aliveTeams` bracket positions
  */
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -252,6 +253,76 @@ function TeamChip({
   )
 }
 
+// ─── Persistence helpers ──────────────────────────────────────────────────────
+
+const SIM_STORAGE_KEY = "slipper8s-sim-picks"
+
+/** Encode gamePicks to a URL-safe base64 string */
+function encodeSimPicks(picks: Record<string, string>): string {
+  const entries = Object.entries(picks)
+  if (entries.length === 0) return ""
+  // Compact format: gameId:winnerId pairs separated by |
+  const compact = entries.map(([gId, wId]) => `${gId}:${wId}`).join("|")
+  return btoa(compact)
+}
+
+/** Decode URL-safe base64 string back to gamePicks */
+function decodeSimPicks(encoded: string): Record<string, string> {
+  try {
+    const compact = atob(encoded)
+    const picks: Record<string, string> = {}
+    for (const pair of compact.split("|")) {
+      const sep = pair.indexOf(":")
+      if (sep === -1) continue
+      picks[pair.slice(0, sep)] = pair.slice(sep + 1)
+    }
+    return picks
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Reconcile saved picks against current game state.
+ * - Drop picks for games that are now completed (real results win)
+ * - Drop picks whose chosen team no longer appears in the game (team eliminated upstream)
+ * - Cascade-clear downstream picks that depended on dropped teams
+ */
+function reconcilePicks(
+  saved: Record<string, string>,
+  games: MatchupGame[],
+  dsMap: Map<string, string>,
+): Record<string, string> {
+  const gameMap = new Map(games.map(g => [g.gameId, g]))
+  const reconciled: Record<string, string> = {}
+  const droppedTeams = new Set<string>()
+
+  for (const [gameId, winnerId] of Object.entries(saved)) {
+    const game = gameMap.get(gameId)
+    if (!game) continue // game no longer exists
+    if (game.isLocked) continue // game completed — real result wins
+
+    // Check if the picked team is still a valid participant in this game
+    if (winnerId !== game.teamAId && winnerId !== game.teamBId) {
+      droppedTeams.add(winnerId)
+      continue
+    }
+    reconciled[gameId] = winnerId
+  }
+
+  // Cascade-clear: walk downstream from any dropped pick
+  if (droppedTeams.size > 0) {
+    for (const gameId of Object.keys(reconciled)) {
+      if (droppedTeams.has(reconciled[gameId])) {
+        droppedTeams.add(reconciled[gameId])
+        delete reconciled[gameId]
+      }
+    }
+  }
+
+  return reconciled
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SimulatorPanel({
@@ -264,6 +335,10 @@ export function SimulatorPanel({
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
   // Rounds that are collapsed (defaults: completed rounds)
   const [collapsedRounds, setCollapsedRounds] = useState<Set<number>>(() => new Set())
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const initializedRef = useRef(false)
 
   // ── Compute isPreTournament ─────────────────────────────────────────────────
   const isPreTournament = gameIndex === undefined || gameIndex < 0
@@ -337,6 +412,55 @@ export function SimulatorPanel({
     }
     return map
   }, [gameSequence])
+
+  // ── Load saved picks on mount (URL params → localStorage fallback) ────────
+  useEffect(() => {
+    if (initializedRef.current) return
+    if (allGames.length === 0) return // wait for games to be computed
+    initializedRef.current = true
+
+    const simParam = searchParams.get("sim")
+    let loaded: Record<string, string> = {}
+
+    if (simParam) {
+      loaded = decodeSimPicks(simParam)
+    } else {
+      try {
+        const stored = localStorage.getItem(SIM_STORAGE_KEY)
+        if (stored) loaded = JSON.parse(stored)
+      } catch { /* ignore */ }
+    }
+
+    if (Object.keys(loaded).length > 0) {
+      const reconciled = reconcilePicks(loaded, allGames, downstreamMap)
+      if (Object.keys(reconciled).length > 0) {
+        setGamePicks(reconciled)
+      }
+    }
+  }, [allGames, downstreamMap, searchParams])
+
+  // ── Sync picks to URL + localStorage on change ──────────────────────────────
+  const syncPicks = useCallback((picks: Record<string, string>) => {
+    // localStorage
+    try {
+      if (Object.keys(picks).length > 0) {
+        localStorage.setItem(SIM_STORAGE_KEY, JSON.stringify(picks))
+      } else {
+        localStorage.removeItem(SIM_STORAGE_KEY)
+      }
+    } catch { /* ignore */ }
+
+    // URL params
+    const encoded = encodeSimPicks(picks)
+    const params = new URLSearchParams(searchParams.toString())
+    if (encoded) {
+      params.set("sim", encoded)
+    } else {
+      params.delete("sim")
+    }
+    const qs = params.toString()
+    router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
+  }, [searchParams, router, pathname])
 
   // ── Build hypothetical state from user's game picks ───────────────────────
   const hypothetical = useMemo<HypotheticalState>(() => {
@@ -427,8 +551,14 @@ export function SimulatorPanel({
         }
       }
 
+      syncPicks(next)
       return next
     })
+  }
+
+  function resetPicks() {
+    setGamePicks({})
+    syncPicks({})
   }
 
   return (
@@ -459,7 +589,7 @@ export function SimulatorPanel({
                 </div>
               )}
               {hasChanges && (
-                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={() => setGamePicks({})}>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5" onClick={resetPicks}>
                   <RotateCcw className="h-3.5 w-3.5" />
                   Reset
                 </Button>

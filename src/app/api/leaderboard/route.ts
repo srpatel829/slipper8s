@@ -31,10 +31,23 @@ export async function GET(req: NextRequest) {
   const dimension = req.nextUrl.searchParams.get("dimension") ?? "global"
   const dimensionValue = req.nextUrl.searchParams.get("value") ?? "all"
 
-  const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "main" },
+    select: { currentSeasonId: true, picksDeadline: true },
+  })
   const seasonId = settings?.currentSeasonId
 
   if (!seasonId) {
+    return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
+  }
+
+  // Gate: don't reveal picks while picks are still open
+  const season = await prisma.season.findUnique({
+    where: { id: seasonId },
+    select: { status: true },
+  })
+  const deadlinePassed = settings.picksDeadline ? new Date() >= settings.picksDeadline : false
+  if (season?.status === "REGISTRATION" && !deadlinePassed) {
     return NextResponse.json([], { headers: { "Cache-Control": "no-store" } })
   }
 

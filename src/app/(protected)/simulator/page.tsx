@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { SimulatorPanel } from "@/components/simulator/simulator-panel"
@@ -246,12 +247,14 @@ export default async function SimulatorPage() {
   const { gameSequence, gameIndex } = buildGameSequence(teams, tournamentGames)
 
   return (
-    <SimulatorPanel
-      initialLeaderboard={leaderboard}
-      aliveTeams={aliveTeams}
-      allTeams={teams}
-      gameSequence={gameSequence}
-      gameIndex={gameIndex}
-    />
+    <Suspense fallback={null}>
+      <SimulatorPanel
+        initialLeaderboard={leaderboard}
+        aliveTeams={aliveTeams}
+        allTeams={teams}
+        gameSequence={gameSequence}
+        gameIndex={gameIndex}
+      />
+    </Suspense>
   )
 }
