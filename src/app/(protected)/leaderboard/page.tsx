@@ -180,8 +180,60 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
   return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
 }
 
+async function isPicksOpen(): Promise<{ open: boolean; deadline: Date | null }> {
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "main" },
+    select: { picksDeadline: true, currentSeasonId: true },
+  })
+  if (!settings?.currentSeasonId) return { open: false, deadline: null }
+  const season = await prisma.season.findUnique({
+    where: { id: settings.currentSeasonId },
+    select: { status: true },
+  })
+  // Picks are still open if status is REGISTRATION and deadline hasn't passed
+  const deadlinePassed = settings.picksDeadline ? new Date() >= settings.picksDeadline : false
+  const stillOpen = season?.status === "REGISTRATION" && !deadlinePassed
+  return { open: stillOpen, deadline: settings.picksDeadline }
+}
+
 export default async function LeaderboardPage() {
   const session = await auth()
+  const picksStatus = await isPicksOpen()
+
+  // Don't reveal other players' picks while picks are still open
+  if (picksStatus.open) {
+    return (
+      <div className="space-y-5">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight">Leaderboard</h1>
+          </div>
+          <div className="mt-8 flex flex-col items-center justify-center text-center py-16 border border-border rounded-xl bg-card">
+            <BarChart3 className="h-10 w-10 text-muted-foreground mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Leaderboard available after picks close</h2>
+            <p className="text-sm text-muted-foreground max-w-md">
+              To keep things fair, the leaderboard is hidden until the picks deadline passes.
+              {picksStatus.deadline && (
+                <> Picks close at{" "}
+                  <span className="font-medium text-foreground">
+                    {picksStatus.deadline.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
+                  </span>.
+                </>
+              )}
+            </p>
+            <Link
+              href="/picks"
+              className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Make your picks
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const [leaderboard, userLeagues, userProfile, seasonStatus, teams, optimal8] = await Promise.all([
     getLeaderboard(),
     session?.user?.id ? getUserLeagues(session.user.id) : Promise.resolve([]),

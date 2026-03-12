@@ -4,6 +4,8 @@ import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/sc
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { TeamsWithDimensions } from "@/components/teams/teams-with-dimensions"
 import type { TeamRow } from "@/components/teams/teams-table"
+import { Users } from "lucide-react"
+import Link from "next/link"
 
 export const dynamic = "force-dynamic"
 
@@ -60,8 +62,55 @@ async function getLeaderboard() {
   return leaderboard
 }
 
+async function isPicksOpen(): Promise<{ open: boolean; deadline: Date | null }> {
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "main" },
+    select: { picksDeadline: true, currentSeasonId: true },
+  })
+  if (!settings?.currentSeasonId) return { open: false, deadline: null }
+  const season = await prisma.season.findUnique({
+    where: { id: settings.currentSeasonId },
+    select: { status: true },
+  })
+  const deadlinePassed = settings.picksDeadline ? new Date() >= settings.picksDeadline : false
+  const stillOpen = season?.status === "REGISTRATION" && !deadlinePassed
+  return { open: stillOpen, deadline: settings.picksDeadline }
+}
+
 export default async function TeamsPage() {
   const session = await auth()
+  const picksStatus = await isPicksOpen()
+
+  // Don't reveal picker counts/percentages while picks are still open
+  if (picksStatus.open) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Tournament Teams</h1>
+          <div className="mt-8 flex flex-col items-center justify-center text-center py-16 border border-border rounded-xl bg-card">
+            <Users className="h-10 w-10 text-muted-foreground mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Team stats available after picks close</h2>
+            <p className="text-sm text-muted-foreground max-w-md">
+              To keep things fair, team popularity and picker data is hidden until the picks deadline passes.
+              {picksStatus.deadline && (
+                <> Picks close at{" "}
+                  <span className="font-medium text-foreground">
+                    {picksStatus.deadline.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
+                  </span>.
+                </>
+              )}
+            </p>
+            <Link
+              href="/picks"
+              className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Make your picks
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const [teams, leaderboard] = await Promise.all([
     prisma.team.findMany({
