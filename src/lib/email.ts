@@ -22,11 +22,11 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
         The committee will announce the bracket at 6pm ET on Sunday, March 15th. Slipper8s will go live shortly thereafter. Please log back in then to make your selections.
       </p>
       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        You can update your picks as many times as you want before the entry deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).
+        You can update your picks as many times as you want before the entry slip deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).
       </p>`
     : `
       <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry deadline.
+        The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry slip deadline.
       </p>`
 
   try {
@@ -108,7 +108,7 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
   }
 }
 
-// ─── Entry Confirmation Email (mandatory — sends on every pick save) ────────
+// ─── Entry Slip Confirmation Email (mandatory — sends on every pick save) ────
 
 export async function sendEntryConfirmationEmail(
   to: string,
@@ -120,7 +120,7 @@ export async function sendEntryConfirmationEmail(
     .map((p) => `<li style="color:#e4e4e7;font-size:14px;padding:4px 0;">#${p.seed} ${p.name} <span style="color:#71717a;">(${p.region})</span></li>`)
     .join("")
 
-  const entryLabel = entryNumber && entryNumber > 1 ? ` (Entry ${entryNumber})` : ""
+  const entryLabel = entryNumber && entryNumber > 1 ? ` (Entry Slip ${entryNumber})` : ""
 
   try {
     await resend.emails.send({
@@ -143,7 +143,7 @@ export async function sendEntryConfirmationEmail(
       <ol style="margin:0;padding:0 0 0 20px;">${picksHtml}</ol>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <p style="color:#a1a1aa;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry deadline.</p>
+      <p style="color:#a1a1aa;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry slip deadline.</p>
       <a href="${APP_URL}/picks" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
         Edit Your Picks →
       </a>
@@ -162,14 +162,14 @@ export async function sendEntryConfirmationEmail(
   }
 }
 
-// ─── Entries Locked Email (mandatory — sends when deadline passes) ──────────
+// ─── Entry Slips Locked Email (mandatory — sends when deadline passes) ──────
 
 export async function sendEntriesLockedEmail(to: string, firstName: string) {
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "Entries are locked — the tournament is LIVE! 🔒",
+      subject: "Entry slips are locked — the tournament is LIVE! 🔒",
       html: `
 <!DOCTYPE html>
 <html>
@@ -178,12 +178,12 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#8b5cf6;line-height:40px;text-align:center;font-size:20px;">🔒</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Entries Are Locked!</h1>
+      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Entry Slips Are Locked!</h1>
       <p style="color:#a1a1aa;font-size:13px;margin:0;">The tournament is live — let the games begin</p>
     </div>
     <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
       <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! All entries are now locked. No more changes allowed.
+        Hey ${firstName}! All entry slips are now locked. No more changes allowed.
       </p>
       <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
         Follow along on the leaderboard as the tournament unfolds. Your score updates automatically after every game.
@@ -225,7 +225,7 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#eab308;line-height:40px;text-align:center;font-size:20px;">⏰</div>
       <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Entry deadline: ${deadlineStr}</p>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
     </div>
     <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
       <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
@@ -295,7 +295,7 @@ export async function sendFinalResultsEmail(
           <p style="color:#e4e4e7;font-size:28px;font-weight:700;margin:0;">${score}</p>
         </div>
       </div>
-      <p style="color:#71717a;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entries</p>
+      <p style="color:#71717a;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entry slips</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
@@ -374,7 +374,7 @@ export async function sendDailyRecapEmail(
       </div>
       <div style="text-align:center;padding:8px;background:#27272a;border-radius:8px;margin-bottom:16px;">
         <p style="color:#e4e4e7;font-size:14px;margin:0;">${rankChangeText}</p>
-        <p style="color:#71717a;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entries</p>
+        <p style="color:#71717a;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entry slips</p>
       </div>
       <div style="text-align:center;">
         <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
@@ -396,14 +396,14 @@ export async function sendDailyRecapEmail(
   }
 }
 
-// ─── Bracket Announced / Entries Open Email (mandatory — when bracket is released) ──
+// ─── Bracket Announced / Entry Slips Open Email (mandatory — when bracket is released)
 
 export async function sendBracketAnnouncedEmail(to: string, firstName: string, deadlineStr: string) {
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "The bracket is out — Slipper8s entries are OPEN! 🏀",
+      subject: "The bracket is out — Slipper8s entry slips are OPEN! 🏀",
       html: `
 <!DOCTYPE html>
 <html>
@@ -413,7 +413,7 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
       <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Slipper8s entries are now open for 2026</p>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
     </div>
     <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
       <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
@@ -487,7 +487,7 @@ export async function sendPlayInResolvedEmail(
         <p style="color:#00A9E0;font-size:22px;font-weight:700;margin:0;">#${seed} ${resolvedTeamName}</p>
       </div>
       <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        ${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed on your part — your entry has been updated automatically.
+        ${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed on your part — your entry slip has been updated automatically.
       </p>
       <div style="text-align:center;">
         <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">

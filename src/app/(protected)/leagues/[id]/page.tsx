@@ -465,7 +465,7 @@ export default function LeagueDetailPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="maxEntries" className="text-sm">Max Entries</Label>
+                <Label htmlFor="maxEntries" className="text-sm">Max Entry Slips</Label>
                 <Input
                   id="maxEntries"
                   type="number"
@@ -475,13 +475,13 @@ export default function LeagueDetailPage() {
                   placeholder="Unlimited"
                   className="bg-muted/50 max-w-[200px]"
                 />
-                <p className="text-xs text-muted-foreground">Leave blank for unlimited entries.</p>
+                <p className="text-xs text-muted-foreground">Leave blank for unlimited entry slips.</p>
               </div>
 
               <div className="flex items-center justify-between py-2">
                 <div>
                   <Label className="text-sm">Track Payments</Label>
-                  <p className="text-xs text-muted-foreground">Track who has paid their entry fee.</p>
+                  <p className="text-xs text-muted-foreground">Track who has paid their entry fee (if you decide to set one).</p>
                 </div>
                 <Switch
                   checked={editTrackPayments}
@@ -541,7 +541,7 @@ export default function LeagueDetailPage() {
                         {member.name}
                       </span>
                       {member.entryCount > 0 && (
-                        <span className="text-[10px] text-muted-foreground">{member.entryCount} {member.entryCount === 1 ? "entry" : "entries"}</span>
+                        <span className="text-[10px] text-muted-foreground">{member.entryCount} {member.entryCount === 1 ? "entry slip" : "entry slips"}</span>
                       )}
                       {isMe && (
                         <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">You</span>

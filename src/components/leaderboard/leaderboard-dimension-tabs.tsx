@@ -268,7 +268,7 @@ export function LeaderboardDimensionTabs({
             </Select>
           )}
           <span className="text-xs text-muted-foreground">
-            {filteredEntries.length} {filteredEntries.length === 1 ? "entry" : "entries"}
+            {filteredEntries.length} {filteredEntries.length === 1 ? "entry slip" : "entry slips"}
             {" · "}
             {responseCount} of {entries.length} specified
           </span>
@@ -303,16 +303,16 @@ export function LeaderboardDimensionTabs({
                   </SelectContent>
                 </Select>
                 <span className="text-xs text-muted-foreground">
-                  {filteredEntries.length} {filteredEntries.length === 1 ? "entry" : "entries"}
+                  {filteredEntries.length} {filteredEntries.length === 1 ? "entry slip" : "entry slips"}
                 </span>
               </div>
               {filteredEntries.length === 0 ? (
                 <div className="text-center py-8 space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    No entries in this league yet.
+                    No entry slips in this league yet.
                   </p>
                   <p className="text-xs text-muted-foreground/60">
-                    League leaderboards will populate once entries have picks submitted.
+                    League leaderboards will populate once entry slips have picks submitted.
                   </p>
                 </div>
               ) : (

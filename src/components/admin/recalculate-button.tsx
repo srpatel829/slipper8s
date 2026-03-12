@@ -116,7 +116,7 @@ export function RecalculateButton() {
               </div>
               <div className="bg-muted rounded-lg p-2">
                 <p className="text-lg font-bold">{lastResult.entriesRecalculated}</p>
-                <p className="text-xs text-muted-foreground">Entries scored</p>
+                <p className="text-xs text-muted-foreground">Entry slips scored</p>
               </div>
             </div>
           </div>

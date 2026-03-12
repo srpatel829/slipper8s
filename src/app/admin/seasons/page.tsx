@@ -29,7 +29,7 @@ interface SeasonData {
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   SETUP: { label: "Setup", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
   REGISTRATION: { label: "Registration Open", color: "bg-blue-500/20 text-blue-400 border-blue-500/30" },
-  LOCKED: { label: "Entries Locked", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
+  LOCKED: { label: "Entry Slips Locked", color: "bg-purple-500/20 text-purple-400 border-purple-500/30" },
   ACTIVE: { label: "Active (Tournament)", color: "bg-green-500/20 text-green-400 border-green-500/30" },
   COMPLETED: { label: "Completed", color: "bg-muted text-muted-foreground border-border" },
 }
@@ -91,8 +91,8 @@ export default function SeasonsPage() {
   }
 
   const STATUS_WARNINGS: Record<string, string> = {
-    REGISTRATION: "This will send bracket announced emails to all registered users. Entries will be open for player submissions.",
-    LOCKED: "This will lock all entries. Players will no longer be able to submit or edit picks.",
+    REGISTRATION: "This will send bracket announced emails to all registered users. Entry slips will be open for player submissions.",
+    LOCKED: "This will lock all entry slips. Players will no longer be able to submit or edit picks.",
     ACTIVE: "This marks the tournament as in progress. ESPN sync will begin polling for game results.",
     COMPLETED: "This will trigger final results emails to all players. This action should only be taken after the championship game is final.",
   }
@@ -179,7 +179,7 @@ export default function SeasonsPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="deadline" className="text-sm">Entry Deadline (UTC)</Label>
+                <Label htmlFor="deadline" className="text-sm">Entry Slip Deadline (UTC)</Label>
                 <Input
                   id="deadline"
                   type="datetime-local"
@@ -220,7 +220,7 @@ export default function SeasonsPage() {
           <Calendar className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground">No seasons created yet</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
-            Create a season to start accepting entries.
+            Create a season to start accepting entry slips.
           </p>
         </div>
       ) : (
@@ -249,7 +249,7 @@ export default function SeasonsPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span>{season.entries} entries</span>
+                      <span>{season.entries} entry slips</span>
                       <span>{season.leagues} leagues</span>
                       {season.entryDeadlineUtc && (
                         <span>Deadline: {new Date(season.entryDeadlineUtc).toLocaleString()}</span>
@@ -279,7 +279,7 @@ export default function SeasonsPage() {
                       <SelectContent>
                         <SelectItem value="SETUP">Setup</SelectItem>
                         <SelectItem value="REGISTRATION">Registration Open</SelectItem>
-                        <SelectItem value="LOCKED">Entries Locked</SelectItem>
+                        <SelectItem value="LOCKED">Entry Slips Locked</SelectItem>
                         <SelectItem value="ACTIVE">Active (Tournament)</SelectItem>
                         <SelectItem value="COMPLETED">Completed</SelectItem>
                       </SelectContent>

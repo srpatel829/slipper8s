@@ -181,7 +181,7 @@ export default function LeaguesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="newMaxEntries" className="text-sm">Max entries (optional)</Label>
+              <Label htmlFor="newMaxEntries" className="text-sm">Max entry slips (optional)</Label>
               <Input
                 id="newMaxEntries"
                 type="number"
@@ -196,7 +196,7 @@ export default function LeaguesPage() {
             <div className="flex items-center justify-between py-2">
               <div>
                 <Label className="text-sm">Track Payments</Label>
-                <p className="text-xs text-muted-foreground">Track who has paid their entry fee.</p>
+                <p className="text-xs text-muted-foreground">Track who has paid their entry fee (if you decide to set one).</p>
               </div>
               <Switch
                 checked={newTrackPayments}

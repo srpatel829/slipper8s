@@ -115,7 +115,7 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside text-muted-foreground space-y-1 mt-2">
               <li>
                 <strong className="text-foreground">Mandatory emails</strong> (cannot be opted
-                out): Welcome email, entry confirmations, entries locked notification, final results
+                out): Welcome email, entry slip confirmations, entry slips locked notification, final results
               </li>
               <li>
                 <strong className="text-foreground">Optional emails</strong> (can be disabled in

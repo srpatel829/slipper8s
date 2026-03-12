@@ -89,7 +89,7 @@ export default function AdminEntriesPage() {
 
   async function handleVoidEntry(entryId: string, playerName: string) {
     const confirmed = window.confirm(
-      `Void entry for ${playerName}?\n\nThis will permanently delete this entry and all associated picks. This cannot be undone.`
+      `Void entry slip for ${playerName}?\n\nThis will permanently delete this entry slip and all associated picks. This cannot be undone.`
     )
     if (!confirmed) return
 
@@ -98,14 +98,14 @@ export default function AdminEntriesPage() {
       const res = await fetch("/api/admin/entries", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, action: "void", reason: "Admin voided entry" }),
+        body: JSON.stringify({ entryId, action: "void", reason: "Admin voided entry slip" }),
       })
       if (res.ok) {
-        toast.success("Entry voided successfully")
+        toast.success("Entry slip voided successfully")
         fetchEntries()
       } else {
         const data = await res.json()
-        toast.error(data.error ?? "Failed to void entry")
+        toast.error(data.error ?? "Failed to void entry slip")
       }
     } catch {
       toast.error("Something went wrong")
@@ -118,7 +118,7 @@ export default function AdminEntriesPage() {
     const direction = adjustment > 0 ? "add" : "subtract"
     const amount = Math.abs(adjustment)
     const confirmed = window.confirm(
-      `${direction === "add" ? "Add" : "Subtract"} ${amount} point(s) ${direction === "add" ? "to" : "from"} this entry's score?`
+      `${direction === "add" ? "Add" : "Subtract"} ${amount} point(s) ${direction === "add" ? "to" : "from"} this entry slip's score?`
     )
     if (!confirmed) return
 
@@ -157,10 +157,10 @@ export default function AdminEntriesPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <ClipboardList className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight">Entry Management</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Entry Slip Management</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            View, search, and manage player entries. Void entries or adjust scores if needed.
+            View, search, and manage player entry slips. Void entries or adjust scores if needed.
           </p>
         </div>
         <a
@@ -196,7 +196,7 @@ export default function AdminEntriesPage() {
       ) : entries.length === 0 ? (
         <div className="bg-card border border-border rounded-xl py-16 text-center">
           <ClipboardList className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground">No entries found</p>
+          <p className="text-muted-foreground">No entry slips found</p>
         </div>
       ) : (
         <>
@@ -329,7 +329,7 @@ export default function AdminEntriesPage() {
                           ) : (
                             <Trash2 className="h-3 w-3" />
                           )}
-                          Void Entry
+                          Void Entry Slip
                         </Button>
                       </div>
                     </div>

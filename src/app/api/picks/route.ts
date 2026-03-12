@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
   if (seasonId) {
     const season = await prisma.season.findUnique({ where: { id: seasonId }, select: { status: true } })
     if (season && season.status !== "REGISTRATION" && season.status !== "SETUP") {
-      return NextResponse.json({ error: "Entries are locked for this season" }, { status: 400 })
+      return NextResponse.json({ error: "Entry slips are locked for this season" }, { status: 400 })
     }
   }
   if (!seasonId) {
@@ -209,7 +209,7 @@ export async function PUT(req: NextRequest) {
   // Check season status — only allow edits during REGISTRATION
   const season = await prisma.season.findUnique({ where: { id: entry.seasonId }, select: { status: true } })
   if (season && season.status !== "REGISTRATION" && season.status !== "SETUP") {
-    return NextResponse.json({ error: "Entries are locked for this season" }, { status: 400 })
+    return NextResponse.json({ error: "Entry slips are locked for this season" }, { status: 400 })
   }
 
   // Delete old picks and create new ones, update charity preference
@@ -286,7 +286,7 @@ export async function DELETE(req: NextRequest) {
   // Check season status — only allow deletes during REGISTRATION
   const season = await prisma.season.findUnique({ where: { id: entry.seasonId }, select: { status: true } })
   if (season && season.status !== "REGISTRATION" && season.status !== "SETUP") {
-    return NextResponse.json({ error: "Entries are locked for this season" }, { status: 400 })
+    return NextResponse.json({ error: "Entry slips are locked for this season" }, { status: 400 })
   }
 
   // Delete entry (cascades to EntryPicks)

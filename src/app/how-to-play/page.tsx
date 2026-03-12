@@ -119,20 +119,20 @@ export default function HowToPlayPage() {
                   a: "Exactly 8. You can pick from any region and any seed — there are no restrictions other than you can not pick a team more than once.",
                 },
                 {
-                  q: "When is the entry deadline?",
+                  q: "When is the entry slip deadline?",
                   a: "Picks lock before the first game of the tournament. The exact date and time is shown on the homepage countdown timer and is always displayed in Eastern Time. All deadlines are enforced server-side — if you are mid-edit when the deadline passes, your save will be rejected.",
                 },
                 {
                   q: "Can I change my picks after submitting?",
-                  a: "Yes — you can edit your picks as many times as you want before the entry deadline. You will receive a confirmation email each time you save. Once the deadline passes, all picks are permanently locked.",
+                  a: "Yes — you can edit your picks as many times as you want before the entry slip deadline. You will receive a confirmation email each time you save. Once the deadline passes, all picks are permanently locked.",
                 },
                 {
-                  q: "Can I submit multiple entries?",
-                  a: "Yes. There is no cap on the number of entries per player per season. Each entry is scored independently. You can give each entry a nickname to keep track of them.",
+                  q: "Can I submit multiple entry slips?",
+                  a: "Yes. There is no cap on the number of entry slips per player per season. Each entry slip is scored independently. You can give each entry slip a nickname to keep track of them.",
                 },
                 {
-                  q: "Can I delete an entry?",
-                  a: "Yes, but only before the deadline. Once the tournament starts, all entries are locked and cannot be deleted. A confirmation warning is shown before deletion since it cannot be undone.",
+                  q: "Can I delete an entry slip?",
+                  a: "Yes, but only before the deadline. Once the tournament starts, all entry slips are locked and cannot be deleted. A confirmation warning is shown before deletion since it cannot be undone.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-card border border-border rounded-xl p-5">
@@ -158,7 +158,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "What is Max Score?",
-                  a: "Max Score is the highest score your entry could theoretically achieve if all your remaining alive teams win every future game. Importantly, it accounts for bracket collisions — if two of your picks would eventually meet, only one can advance. The team with larger seed number is assumed to survive because it earns more points per win.",
+                  a: "Max Score is the highest score your entry slip could theoretically achieve if all your remaining alive teams win every future game. Importantly, it accounts for bracket collisions — if two of your picks would eventually meet, only one can advance. The team with larger seed number is assumed to survive because it earns more points per win.",
                 },
                 {
                   q: "What is Expected Score?",
@@ -188,15 +188,15 @@ export default function HowToPlayPage() {
               {[
                 {
                   q: "How are rankings determined?",
-                  a: "Before the tournament, entries are ranked by Max Score. During the tournament entries are ranked by actual score and if there are multiple entries with the same score then the rank has \u201CT\u201D in front of it. In terms of display order for tied entries, the entry with higher Max Score is shown first. If Max Score is tied, then alphabetically by name. After the tournament ends, Max Score equals Current Score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
+                  a: "Before the tournament, entry slips are ranked by Max Score. During the tournament entry slips are ranked by actual score and if there are multiple entry slips with the same score then the rank has \u201CT\u201D in front of it. In terms of display order for tied entry slips, the entry slip with higher Max Score is shown first. If Max Score is tied, then alphabetically by name. After the tournament ends, Max Score equals Current Score for everyone, so final rankings reflect actual results. Rankings update after every completed game.",
                 },
                 {
                   q: "What are the archetype names and definitions?",
-                  a: "Each entry is assigned one or more archetypes based on pick patterns. \uD83D\uDC60 Cinderella Chaser: all 8 picks are seeds 10+. \uD83C\uDFAF Sweet Spotter: all 8 picks are seeds 5\u201312. \uD83E\uDDE0 Strategist: balanced spread across seed tiers and regions. \uD83C\uDF2A\uFE0F Chaos Agent: 2+ picks are seeds 13\u201316. \uD83D\uDDFA\uFE0F Regional Purist: 5+ picks from the same region. \u270F\uFE0F Chalk Artist: 4+ picks are seeds 1\u20134. \uD83D\uDD04 Contrarian: picks from the top and bottom of the bracket, skipping the middle. \uD83D\uDC9B Loyalist: 3+ picks from your favorite team\u2019s conference. \uD83C\uDFB2 Mixer: no single strategy \u2014 just vibes. Archetypes are shown as emoji badges next to your name on the leaderboard.",
+                  a: "Each entry slip is assigned one or more archetypes based on pick patterns. \uD83D\uDC60 Cinderella Chaser: all 8 picks are seeds 10+. \uD83C\uDFAF Sweet Spotter: all 8 picks are seeds 5\u201312. \uD83E\uDDE0 Strategist: balanced spread across seed tiers and regions. \uD83C\uDF2A\uFE0F Chaos Agent: 2+ picks are seeds 13\u201316. \uD83D\uDDFA\uFE0F Regional Purist: 5+ picks from the same region. \u270F\uFE0F Chalk Artist: 4+ picks are seeds 1\u20134. \uD83D\uDD04 Contrarian: picks from the top and bottom of the bracket, skipping the middle. \uD83D\uDC9B Loyalist: 3+ picks from your favorite team\u2019s conference. \uD83C\uDFB2 Mixer: no single strategy \u2014 just vibes. Archetypes are shown as emoji badges next to your name on the leaderboard.",
                 },
                 {
                   q: "What is the percentile ranking?",
-                  a: "Percentile shows where you stand relative to all entries. So if your entry is in the 95th percentile, it means your score is better than 95% of all entries. Percentile is shown alongside your absolute rank on the leaderboard, your scores page, share cards, and in email notifications.",
+                  a: "Percentile shows where you stand relative to all entry slips. So if your entry slip is in the 95th percentile, it means your score is better than 95% of all entry slips. Percentile is shown alongside your absolute rank on the leaderboard, your scores page, share cards, and in email notifications.",
                 },
                 {
                   q: "What are the leaderboard dimensions?",
@@ -204,7 +204,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "What are Max Rank and Floor Rank?",
-                  a: "Max Rank is the best finishing position your entry could achieve if everything goes your way — it uses collision-aware bracket analysis. Floor Rank is the worst case. Together they show the range of possible outcomes for your entry.",
+                  a: "Max Rank is the best finishing position your entry slip could achieve if everything goes your way — it uses collision-aware bracket analysis. Floor Rank is the worst case. Together they show the range of possible outcomes for your entry slip.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="bg-card border border-border rounded-xl p-5">
@@ -230,7 +230,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "How does the score history chart work?",
-                  a: "The score history chart shows how scores evolved throughout the tournament. It plots your entry, the current leader, the median player, and the Optimal 8 at each checkpoint. Checkpoints are created after all games in a session are final.",
+                  a: "The score history chart shows how scores evolved throughout the tournament. It plots your entry slip, the current leader, the median player, and the Optimal 8 at each checkpoint. Checkpoints are created after all games in a session are final.",
                 },
                 {
                   q: "How does the simulator work?",
@@ -238,7 +238,7 @@ export default function HowToPlayPage() {
                 },
                 {
                   q: "What email notifications will I receive?",
-                  a: "You will always receive: a welcome email, an entry confirmation when you save picks, a notification when entries lock, and final results after the tournament. Optional notifications (on by default) include deadline reminders and daily recaps during the tournament. You can turn off optional notifications in your profile settings.",
+                  a: "You will always receive: a welcome email, an entry slip confirmation when you save picks, a notification when entry slips lock, and final results after the tournament. Optional notifications (on by default) include deadline reminders and daily recaps during the tournament. You can turn off optional notifications in your profile settings.",
                 },
                 {
                   q: "Can I share my results?",

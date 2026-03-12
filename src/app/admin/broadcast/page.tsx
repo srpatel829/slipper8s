@@ -6,7 +6,7 @@ import { Mail, Send, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 
 const AUDIENCES = [
   { value: "all", label: "All Registered Users", desc: "Every user who completed registration" },
-  { value: "with_entries", label: "Users with Entries", desc: "Only users who have submitted picks" },
+  { value: "with_entries", label: "Users with Entry Slips", desc: "Only users who have submitted entry slips" },
   { value: "paid", label: "Paid Users", desc: "Only users marked as paid" },
   { value: "opted_in", label: "Opted-In Users", desc: "Users with notifications enabled" },
 ]

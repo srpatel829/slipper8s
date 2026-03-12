@@ -126,7 +126,7 @@ export async function GET() {
       if (deadline > now) {
         const hoursLeft = (deadline.getTime() - now.getTime()) / (1000 * 60 * 60)
         checks.push({
-          name: "Entry Deadline",
+          name: "Entry Slip Deadline",
           status: hoursLeft < 24 ? "warning" : "ok",
           message:
             hoursLeft < 24
@@ -135,20 +135,20 @@ export async function GET() {
         })
       } else {
         checks.push({
-          name: "Entry Deadline",
+          name: "Entry Slip Deadline",
           status: "ok",
-          message: `Deadline passed — entries locked`,
+          message: `Deadline passed — entry slips locked`,
         })
       }
     } else {
       checks.push({
-        name: "Entry Deadline",
+        name: "Entry Slip Deadline",
         status: "warning",
         message: "No deadline configured",
       })
     }
   } catch {
-    checks.push({ name: "Entry Deadline", status: "error", message: "Failed to check deadline" })
+    checks.push({ name: "Entry Slip Deadline", status: "error", message: "Failed to check deadline" })
   }
 
   // 6. Resend email — check env var

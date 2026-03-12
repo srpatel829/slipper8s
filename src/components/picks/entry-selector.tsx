@@ -44,7 +44,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
   function handleNewEntryClick() {
     // If this would be entry #2+, prompt for nickname
     if (entries.length >= 1) {
-      const defaultName = `Entry ${entries.length + 1}`
+      const defaultName = `Entry Slip ${entries.length + 1}`
       setNicknameInput(defaultName)
       setShowNicknamePrompt(true)
     } else {
@@ -66,11 +66,11 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       })
       if (!res.ok) {
         const err = await res.json()
-        toast.error(err.error ?? "Failed to create entry")
+        toast.error(err.error ?? "Failed to create entry slip")
         return
       }
       const data = await res.json()
-      toast.success(`Entry #${data.entryNumber} created`)
+      toast.success(`Entry slip #${data.entryNumber} created`)
       router.push(`/picks?entry=${data.entryId}`)
       router.refresh()
     } finally {
@@ -92,10 +92,10 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       })
       if (!res.ok) {
         const err = await res.json()
-        toast.error(err.error ?? "Failed to rename entry")
+        toast.error(err.error ?? "Failed to rename entry slip")
         return
       }
-      toast.success("Entry renamed")
+      toast.success("Entry slip renamed")
       router.refresh()
     } finally {
       setEditingId(null)
@@ -103,7 +103,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
   }
 
   async function deleteEntry(entryId: string) {
-    if (!confirm("Delete this entry? This cannot be undone.")) return
+    if (!confirm("Delete this entry slip? This cannot be undone.")) return
     setDeleting(entryId)
     try {
       const res = await fetch("/api/picks", {
@@ -113,10 +113,10 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       })
       if (!res.ok) {
         const err = await res.json()
-        toast.error(err.error ?? "Failed to delete entry")
+        toast.error(err.error ?? "Failed to delete entry slip")
         return
       }
-      toast.success("Entry deleted")
+      toast.success("Entry slip deleted")
       router.push("/picks")
       router.refresh()
     } finally {
@@ -126,9 +126,9 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
 
   function getEntryLabel(entry: EntryInfo) {
     if (entry.nickname) return entry.nickname
-    if (entry.leagueEntries.length > 0) return `${entry.leagueEntries[0].league.name} entry`
-    if (entries.length > 1) return `Entry #${entry.entryNumber}`
-    return "My Entry"
+    if (entry.leagueEntries.length > 0) return `${entry.leagueEntries[0].league.name} entry slip`
+    if (entries.length > 1) return `Entry Slip #${entry.entryNumber}`
+    return "My Entry Slip"
   }
 
   // Don't show selector if user has 0 or 1 entries and deadline passed
@@ -196,7 +196,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
                         setEditValue(entry.nickname || getEntryLabel(entry))
                       }}
                       className="text-muted-foreground hover:text-foreground transition-colors"
-                      title="Rename entry"
+                      title="Rename entry slip"
                     >
                       <Pencil className="h-3 w-3" />
                     </button>
@@ -227,7 +227,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
             disabled={creating}
           >
             <Plus className="h-3 w-3" />
-            {creating ? "Creating..." : "New entry"}
+            {creating ? "Creating..." : "New entry slip"}
           </Button>
         )}
       </div>
@@ -235,7 +235,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       {/* Nickname prompt for new entry */}
       {showNicknamePrompt && (
         <div className="flex items-center gap-2 bg-muted/30 border border-border rounded-lg px-3 py-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Name this entry:</span>
+          <span className="text-xs text-muted-foreground whitespace-nowrap">Name this entry slip:</span>
           <input
             ref={nicknameRef}
             type="text"

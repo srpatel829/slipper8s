@@ -8,7 +8,7 @@ const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/seasons", label: "Seasons", icon: Calendar },
   { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/entries", label: "Entries", icon: ClipboardList },
+  { href: "/admin/entries", label: "Entry Slips", icon: ClipboardList },
   { href: "/admin/leagues", label: "Leagues", icon: Trophy },
   { href: "/admin/teams", label: "Conferences", icon: Shirt },
   { href: "/admin/settings", label: "Settings", icon: Settings },

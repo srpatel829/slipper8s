@@ -64,13 +64,13 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">5. Entries and Picks</h2>
+            <h2 className="text-xl font-semibold mb-3">5. Entry Slips and Picks</h2>
             <p className="text-muted-foreground leading-relaxed">
-              All picks must be submitted before the published entry deadline. The deadline is
+              All picks must be submitted before the published entry slip deadline. The deadline is
               enforced server-side using UTC time. Picks submitted after the deadline will be
               rejected. You may edit or delete your picks at any time before the deadline. Once the
-              deadline passes, all entries are locked and cannot be modified. There is no limit on
-              the number of entries per player.
+              deadline passes, all entry slips are locked and cannot be modified. There is no limit on
+              the number of entry slips per player.
             </p>
           </section>
 

@@ -96,7 +96,7 @@ export default async function AdminDashboardPage() {
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard icon={Users} label="Entries" value={entryCount} color="text-blue-400" />
+        <StatCard icon={Users} label="Entry Slips" value={entryCount} color="text-blue-400" />
         <StatCard icon={CheckCircle2} label="Paid" value={paidCount} color="text-green-400" />
         <StatCard icon={BarChart3} label="Total Users" value={userCount} color="text-primary" />
         <StatCard icon={Database} label="Teams in DB" value={teamCount} color="text-violet-400" />
@@ -151,7 +151,7 @@ export default async function AdminDashboardPage() {
           <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
             <a href="/api/admin/export" download>
               <Download className="h-3 w-3" />
-              All Entries + Picks
+              All Entry Slips + Picks
             </a>
           </Button>
           <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
@@ -183,7 +183,7 @@ export default async function AdminDashboardPage() {
               )}
             </div>
             <div className="flex items-center justify-between py-1.5 border-b border-border/50">
-              <span className="text-muted-foreground">Entries Locked</span>
+              <span className="text-muted-foreground">Entry Slips Locked</span>
               {settings?.entriesLockedSentAt ? (
                 <span className="text-green-400 font-medium">
                   Sent {new Date(settings.entriesLockedSentAt).toLocaleDateString()}
@@ -302,7 +302,7 @@ export default async function AdminDashboardPage() {
         {[
           { href: "/admin/seasons", icon: Calendar, label: "Seasons", desc: "Create and manage tournament seasons" },
           { href: "/admin/users", icon: Users, label: "Manage Users", desc: "Mark paid, change roles" },
-          { href: "/admin/entries", icon: ClipboardList, label: "Manage Entries", desc: "View picks, void or adjust entries" },
+          { href: "/admin/entries", icon: ClipboardList, label: "Manage Entry Slips", desc: "View picks, void or adjust entry slips" },
           { href: "/admin/content", icon: Settings, label: "Content Pages", desc: "Edit rules, prizes, info pages" },
           { href: "/admin/settings", icon: Trophy, label: "Pool Settings", desc: "Deadline, payouts, charities" },
           { href: "/admin/broadcast", icon: Mail, label: "Broadcast Email", desc: "Send email to all players" },

@@ -37,7 +37,7 @@ export function EntryCounter() {
       <span>
         <span className="text-foreground font-semibold tabular-nums">{count.toLocaleString()}</span>
         {" "}
-        {count === 1 ? "entry" : "entries"} submitted so far
+        {count === 1 ? "entry slip" : "entry slips"} submitted so far
       </span>
     </div>
   )

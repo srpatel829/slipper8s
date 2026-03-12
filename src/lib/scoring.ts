@@ -139,9 +139,9 @@ export function computePercentile(rank: number, total: number): number {
 
 // ─── Entry display name ──────────────────────────────────────────────────────
 // Shown as the primary label on the leaderboard (username shown separately).
-// Single entry, no nickname:  "Main Entry"
+// Single entry, no nickname:  "Main Entry Slip"
 // Single entry, with nickname: "Upset Special"
-// Multi entry, no nickname:    "Entry 1" / "Entry 2"
+// Multi entry, no nickname:    "Entry Slip 1" / "Entry Slip 2"
 // Multi entry, with nickname:  "Upset Special" / "Chalk City"
 
 function entryDisplayName(
@@ -152,8 +152,8 @@ function entryDisplayName(
   isMultiEntry: boolean,
 ): string {
   if (nickname) return nickname
-  if (!isMultiEntry) return "Main Entry"
-  return `Entry ${entryNumber}`
+  if (!isMultiEntry) return "Main Entry Slip"
+  return `Entry Slip ${entryNumber}`
 }
 
 // ─── Entry-based scoring (primary) ────────────────────────────────────────────

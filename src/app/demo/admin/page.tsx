@@ -33,7 +33,7 @@ export default function DemoAdminDashboard() {
 
       {/* Stat grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard icon={Users} label="Entries" value={entryCount} color="text-blue-400" />
+        <StatCard icon={Users} label="Entry Slips" value={entryCount} color="text-blue-400" />
         <StatCard icon={CheckCircle2} label="Paid" value={paidCount} color="text-green-400" />
         <StatCard icon={BarChart3} label="Total Users" value={totalUsers} color="text-primary" />
         <StatCard icon={Database} label="Teams" value={teamCount} color="text-violet-400" />

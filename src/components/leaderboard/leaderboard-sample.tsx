@@ -483,7 +483,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
             {sortedEntries.length === 0 && (
               <tr>
                 <td colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
-                  No entries yet
+                  No entry slips yet
                 </td>
               </tr>
             )}
@@ -504,7 +504,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
             ) : (
               <>
                 <ChevronDown className="h-3.5 w-3.5" />
-                Show All {totalEntries} Entries ({hiddenCount} more)
+                Show All {totalEntries} Entry Slips ({hiddenCount} more)
               </>
             )}
           </button>
