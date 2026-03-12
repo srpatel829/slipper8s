@@ -21,6 +21,7 @@ export const authConfig: NextAuthConfig = {
         pathname.startsWith("/scores") ||
         pathname.startsWith("/simulator") ||
         pathname.startsWith("/teams") ||
+        pathname.startsWith("/auth-redirect") ||
         isAdminRoute
 
       if (isAdminRoute) {

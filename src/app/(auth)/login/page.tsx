@@ -40,7 +40,7 @@ export default function LoginPage() {
           <form
             action={async () => {
               "use server"
-              await signIn("google", { redirectTo: "/leaderboard" })
+              await signIn("google", { redirectTo: "/auth-redirect" })
             }}
           >
             <Button
@@ -74,7 +74,7 @@ export default function LoginPage() {
               "use server"
               await signIn("resend", {
                 email: formData.get("email") as string,
-                redirectTo: "/leaderboard",
+                redirectTo: "/auth-redirect",
               })
             }}
             className="space-y-4"
