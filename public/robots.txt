@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Admin and API routes
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://www.slipper8s.com/sitemap.xml
