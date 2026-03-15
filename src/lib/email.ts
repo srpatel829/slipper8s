@@ -416,28 +416,20 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
       <p style="color:#555;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
     </div>
     <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! The tournament bracket has been released and it's time to make your picks.
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">
+        Hey ${firstName}! The bracket is out and it's time to make your picks.
       </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
-        <strong style="color:#222;">Pick 8 teams.</strong> Score = seed × wins. Higher seeds score more when they win — so those sleeper picks can pay off big.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
+      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 16px;">
         <strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span>
       </p>
-      <div style="text-align:center;">
+      <div style="text-align:center;margin-bottom:16px;">
         <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
           Make Your Picks
         </a>
       </div>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 12px;">
-        <strong style="color:#222;">Playing with friends?</strong> Create or join a private league for bragging rights.
+      <p style="color:#555;font-size:13px;line-height:1.5;margin:0;border-top:1px solid #e5e7eb;padding-top:16px;">
+        <strong style="color:#222;">Playing with friends?</strong> <a href="${APP_URL}/leagues" style="color:#00A9E0;text-decoration:none;font-weight:500;">Create or join a private league →</a>
       </p>
-      <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
-        Private Leagues →
-      </a>
     </div>
     <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
