@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendBracketAnnouncedEmail } from "@/lib/email"
+import { sendBracketAnnouncedEmail, sendBracketAnnouncedIncompleteEmail } from "@/lib/email"
 
 // GET /api/admin/seasons — list all seasons
 export async function GET() {
@@ -163,12 +163,6 @@ export async function PUT(request: Request) {
 // ─── Helper: Send bracket announced emails to all registered users ──────────
 
 async function sendBracketAnnouncedEmails(deadline: Date | null) {
-  // Get all registered users (mandatory email — send to ALL regardless of notificationsEnabled)
-  const users = await prisma.user.findMany({
-    where: { registrationComplete: true },
-    select: { email: true, firstName: true },
-  })
-
   // Format deadline for display
   const deadlineStr = deadline
     ? deadline.toLocaleString("en-US", {
@@ -181,23 +175,48 @@ async function sendBracketAnnouncedEmails(deadline: Date | null) {
       }) + " ET"
     : "TBD"
 
+  // Get all registered users (mandatory email — send to ALL regardless of notificationsEnabled)
+  const registeredUsers = await prisma.user.findMany({
+    where: { registrationComplete: true },
+    select: { email: true, firstName: true },
+  })
+
+  // Get incomplete registration users (signed in but never finished)
+  const incompleteUsers = await prisma.user.findMany({
+    where: { registrationComplete: false },
+    select: { email: true, name: true },
+  })
+
   let sent = 0
   let failed = 0
 
-  for (const user of users) {
+  // Send full bracket announced email to registered users
+  for (const user of registeredUsers) {
     if (!user.email || !user.firstName) continue
     const result = await sendBracketAnnouncedEmail(user.email, user.firstName, deadlineStr)
     if (result.success) sent++
     else failed++
   }
 
-  console.log(`[admin/seasons] Bracket announced emails: ${sent} sent, ${failed} failed, ${users.length} total users`)
+  // Send "finish signing up" variant to incomplete users
+  let incompleteSent = 0
+  let incompleteFailed = 0
+  for (const user of incompleteUsers) {
+    if (!user.email) continue
+    // Use Google profile name (first word) as greeting, fallback to generic
+    const firstName = user.name?.split(" ")[0] ?? null
+    const result = await sendBracketAnnouncedIncompleteEmail(user.email, firstName, deadlineStr)
+    if (result.success) incompleteSent++
+    else incompleteFailed++
+  }
+
+  console.log(`[admin/seasons] Bracket announced emails: ${sent} sent, ${failed} failed (${registeredUsers.length} registered) | Incomplete: ${incompleteSent} sent, ${incompleteFailed} failed (${incompleteUsers.length} users)`)
 
   // Create audit log
   await prisma.auditLog.create({
     data: {
       adminId: "system",
-      action: `Bracket announced emails sent: ${sent} delivered, ${failed} failed out of ${users.length} users`,
+      action: `Bracket announced emails: ${sent}/${registeredUsers.length} registered, ${incompleteSent}/${incompleteUsers.length} incomplete`,
     },
   })
 }

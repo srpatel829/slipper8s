@@ -453,6 +453,57 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
   }
 }
 
+// ─── Bracket Announced — Incomplete Registration Variant ────────────────────
+// Sent to users who signed in but never finished registration
+
+export async function sendBracketAnnouncedIncompleteEmail(to: string, firstName: string | null, deadlineStr: string) {
+  const greeting = firstName ? `Hey ${firstName}!` : "Hey!"
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "The bracket is out — finish signing up to play Slipper8s! 🏀",
+      html: `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+      <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+      <p style="color:#a1a1aa;font-size:13px;margin:0;">Don't miss your chance to play Slipper8s 2026</p>
+    </div>
+    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        ${greeting} The tournament bracket has been released and entry slips are open — but you still need to finish signing up before you can make your picks.
+      </p>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        <strong style="color:#e4e4e7;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed × wins — sleeper picks can pay off big.
+      </p>
+      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        <strong style="color:#eab308;">Deadline:</strong> <span style="color:#e4e4e7;">${deadlineStr}</span>
+      </p>
+      <div style="text-align:center;">
+        <a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
+          Complete Registration
+        </a>
+      </div>
+    </div>
+    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+      Slipper8s — slipper8s.com
+    </p>
+  </div>
+</body>
+</html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send bracket announced (incomplete) email:", error)
+    return { success: false, error }
+  }
+}
+
 // ─── Play-In Slot Resolved Email (optional — when a play-in game resolves) ──
 
 export async function sendPlayInResolvedEmail(
