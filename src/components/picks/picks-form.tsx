@@ -17,7 +17,7 @@ import { getSeedColor } from "@/lib/colors"
 import { TeamLogoBox } from "@/components/team-logo-box"
 import { TeamCallout } from "@/components/team-callout"
 import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
-import { calculateEntryExpectedScore, SB_2025_MAP } from "@/lib/silver-bulletin-2025"
+import { calculateEntryExpectedScore, SB_2026_MAP } from "@/lib/silver-bulletin-2026"
 import type { Team, PlayInSlot, Pick } from "@/generated/prisma"
 
 type PlayInSlotWithTeams = PlayInSlot & {

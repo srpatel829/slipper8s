@@ -6,12 +6,12 @@
  */
 
 import type { TeamCalloutData } from "@/components/team-callout"
-import { getTeamExtendedData } from "@/lib/team-data-2025"
+import { getTeamExtendedData } from "@/lib/team-data-2026"
 import {
-  SB_2025_MAP,
+  SB_2026_MAP,
   pretournamentExpectedScore,
   expectedScoreAtState,
-} from "@/lib/silver-bulletin-2025"
+} from "@/lib/silver-bulletin-2026"
 import { getConferenceForTeam } from "@/lib/conference-map"
 
 /** Minimal team shape that every caller can satisfy. */
@@ -44,7 +44,7 @@ export function buildTeamCalloutData(
   options?: BuildCalloutOptions,
 ): TeamCalloutData {
   const ext = getTeamExtendedData(team.id)
-  const sb = SB_2025_MAP.get(team.id)
+  const sb = SB_2026_MAP.get(team.id)
 
   // ── Shared fields ──
   const base: TeamCalloutData = {
