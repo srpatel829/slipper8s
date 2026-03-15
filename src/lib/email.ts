@@ -117,7 +117,7 @@ export async function sendEntryConfirmationEmail(
   entryNumber?: number,
 ) {
   const picksHtml = picks
-    .map((p) => `<li style="color:#e4e4e7;font-size:14px;padding:4px 0;">#${p.seed} ${p.name} <span style="color:#71717a;">(${p.region})</span></li>`)
+    .map((p) => `<li style="color:#222;font-size:14px;padding:4px 0;">#${p.seed} ${p.name} <span style="color:#888;">(${p.region})</span></li>`)
     .join("")
 
   const entryLabel = entryNumber && entryNumber > 1 ? ` (Entry Slip ${entryNumber})` : ""
@@ -131,24 +131,24 @@ export async function sendEntryConfirmationEmail(
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#22c55e;line-height:40px;text-align:center;font-size:20px;">✓</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Picks Confirmed${entryLabel}</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">${firstName}, your picks have been saved</p>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Picks Confirmed${entryLabel}</h1>
+      <p style="color:#555;font-size:13px;margin:0;">${firstName}, your picks have been saved</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#a1a1aa;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:600;">Your 8 Teams</p>
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#555;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:600;">Your 8 Teams</p>
       <ol style="margin:0;padding:0 0 0 20px;">${picksHtml}</ol>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
-      <p style="color:#a1a1aa;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry slip deadline.</p>
+      <p style="color:#555;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry slip deadline.</p>
       <a href="${APP_URL}/picks" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
         Edit Your Picks →
       </a>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
@@ -174,18 +174,18 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#8b5cf6;line-height:40px;text-align:center;font-size:20px;">🔒</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Entry Slips Are Locked!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">The tournament is live — let the games begin</p>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Entry Slips Are Locked!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">The tournament is live — let the games begin</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
         Hey ${firstName}! All entry slips are now locked. No more changes allowed.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
         Follow along on the leaderboard as the tournament unfolds. Your score updates automatically after every game.
       </p>
       <div style="text-align:center;">
@@ -194,7 +194,7 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
         </a>
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
@@ -220,18 +220,18 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#eab308;line-height:40px;text-align:center;font-size:20px;">⏰</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
         Hey ${firstName}! Just a reminder — picks lock in less than 24 hours.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
         Make sure your 8 teams are exactly how you want them. Once the deadline passes, no changes allowed.
       </p>
       <div style="text-align:center;">
@@ -240,7 +240,7 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
         </a>
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
@@ -273,36 +273,36 @@ export async function sendFinalResultsEmail(
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏆</div>
-      <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">Tournament Complete!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Here's how you finished, ${firstName}</p>
+      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">Tournament Complete!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">Here's how you finished, ${firstName}</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
       <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:20px;">
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
           <p style="color:#00A9E0;font-size:28px;font-weight:700;margin:0;">#${rank}</p>
         </div>
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Percentile</p>
-          <p style="color:#e4e4e7;font-size:28px;font-weight:700;margin:0;">Top ${percentile}%</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Percentile</p>
+          <p style="color:#222;font-size:28px;font-weight:700;margin:0;">Top ${percentile}%</p>
         </div>
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
-          <p style="color:#e4e4e7;font-size:28px;font-weight:700;margin:0;">${score}</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
+          <p style="color:#222;font-size:28px;font-weight:700;margin:0;">${score}</p>
         </div>
       </div>
-      <p style="color:#71717a;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entry slips</p>
+      <p style="color:#888;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entry slips</p>
     </div>
     <div style="text-align:center;margin-bottom:24px;">
       <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
         View Full Leaderboard
       </a>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Thanks for playing! See you next year. — Slipper8s
     </p>
   </div>
@@ -347,34 +347,34 @@ export async function sendDailyRecapEmail(
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#00A9E0;line-height:40px;text-align:center;font-size:20px;">🏀</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Daily Recap — ${data.roundLabel}</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">All games are final for today</p>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Daily Recap — ${data.roundLabel}</h1>
+      <p style="color:#555;font-size:13px;margin:0;">All games are final for today</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 20px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 20px;">
         Hey ${firstName}! Here's where you stand after today's games.
       </p>
       <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px;">
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
           <p style="color:#00A9E0;font-size:24px;font-weight:700;margin:0;">#${data.rank}</p>
         </div>
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
-          <p style="color:#e4e4e7;font-size:24px;font-weight:700;margin:0;">${data.score}</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
+          <p style="color:#222;font-size:24px;font-weight:700;margin:0;">${data.score}</p>
         </div>
         <div>
-          <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Alive</p>
+          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Alive</p>
           <p style="color:${data.teamsRemaining > 0 ? "#27AE60" : "#C0392B"};font-size:24px;font-weight:700;margin:0;">${data.teamsRemaining}/8</p>
         </div>
       </div>
-      <div style="text-align:center;padding:8px;background:#27272a;border-radius:8px;margin-bottom:16px;">
-        <p style="color:#e4e4e7;font-size:14px;margin:0;">${rankChangeText}</p>
-        <p style="color:#71717a;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entry slips</p>
+      <div style="text-align:center;padding:8px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;">
+        <p style="color:#222;font-size:14px;margin:0;">${rankChangeText}</p>
+        <p style="color:#888;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entry slips</p>
       </div>
       <div style="text-align:center;">
         <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
@@ -382,7 +382,7 @@ export async function sendDailyRecapEmail(
         </a>
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       You can turn off daily recaps in your profile settings. — Slipper8s
     </p>
   </div>
@@ -408,22 +408,22 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
+      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
         Hey ${firstName}! The tournament bracket has been released and it's time to make your picks.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 8px;">
-        <strong style="color:#e4e4e7;">Pick 8 teams.</strong> Score = seed × wins. Higher seeds score more when they win — so those sleeper picks can pay off big.
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        <strong style="color:#222;">Pick 8 teams.</strong> Score = seed × wins. Higher seeds score more when they win — so those sleeper picks can pay off big.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        <strong style="color:#eab308;">Deadline:</strong> <span style="color:#e4e4e7;">${deadlineStr}</span>
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        <strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span>
       </p>
       <div style="text-align:center;">
         <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
@@ -431,15 +431,15 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
         </a>
       </div>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#a1a1aa;font-size:13px;line-height:1.6;margin:0 0 12px;">
-        <strong style="color:#e4e4e7;">Playing with friends?</strong> Create or join a private league for bragging rights.
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 12px;">
+        <strong style="color:#222;">Playing with friends?</strong> Create or join a private league for bragging rights.
       </p>
       <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
         Private Leagues →
       </a>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
@@ -467,22 +467,22 @@ export async function sendBracketAnnouncedIncompleteEmail(to: string, firstName:
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#ffffff;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Don't miss your chance to play Slipper8s 2026</p>
+      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">Don't miss your chance to play Slipper8s 2026</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
         ${greeting} The tournament bracket has been released and entry slips are open — but you still need to finish signing up before you can make your picks.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 8px;">
-        <strong style="color:#e4e4e7;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed × wins — sleeper picks can pay off big.
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        <strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed × wins — sleeper picks can pay off big.
       </p>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        <strong style="color:#eab308;">Deadline:</strong> <span style="color:#e4e4e7;">${deadlineStr}</span>
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
+        <strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span>
       </p>
       <div style="text-align:center;">
         <a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
@@ -490,7 +490,7 @@ export async function sendBracketAnnouncedIncompleteEmail(to: string, firstName:
         </a>
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
@@ -522,22 +522,22 @@ export async function sendPlayInResolvedEmail(
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#27AE60;line-height:40px;text-align:center;font-size:20px;">✓</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">Play-In Resolved!</h1>
-      <p style="color:#a1a1aa;font-size:13px;margin:0;">Your play-in slot has a winner</p>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Play-In Resolved!</h1>
+      <p style="color:#555;font-size:13px;margin:0;">Your play-in slot has a winner</p>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:15px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
         Hey ${firstName}! Your play-in pick in the <strong>${region}</strong> region has been resolved.
       </p>
-      <div style="text-align:center;padding:16px;background:#27272a;border-radius:8px;margin-bottom:16px;">
-        <p style="color:#a1a1aa;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Team</p>
+      <div style="text-align:center;padding:16px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;">
+        <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Team</p>
         <p style="color:#00A9E0;font-size:22px;font-weight:700;margin:0;">#${seed} ${resolvedTeamName}</p>
       </div>
-      <p style="color:#a1a1aa;font-size:14px;line-height:1.6;margin:0 0 20px;">
+      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
         ${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed on your part — your entry slip has been updated automatically.
       </p>
       <div style="text-align:center;">
@@ -546,7 +546,7 @@ export async function sendPlayInResolvedEmail(
         </a>
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       You can turn off optional notifications in your profile settings. — Slipper8s
     </p>
   </div>
@@ -577,21 +577,21 @@ export async function sendBroadcastEmail(
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
     <div style="text-align:center;margin-bottom:24px;">
       <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">📢</div>
-      <h1 style="color:#ffffff;font-size:20px;margin:12px 0 4px;">${subject}</h1>
+      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">${subject}</h1>
     </div>
-    <div style="background:#18181b;border:1px solid #27272a;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#e4e4e7;font-size:14px;line-height:1.6;margin:0 0 16px;">
+    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
+      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
         Hey ${firstName},
       </p>
-      <div style="color:#a1a1aa;font-size:14px;line-height:1.6;">
+      <div style="color:#555;font-size:14px;line-height:1.6;">
         ${messageHtml}
       </div>
     </div>
-    <p style="color:#52525b;font-size:12px;text-align:center;margin:0;">
+    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
       Slipper8s — slipper8s.com
     </p>
   </div>
