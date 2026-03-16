@@ -73,7 +73,8 @@ export function PicksForm({
   isPreTournament = false,
 }: PicksFormProps) {
   const router = useRouter()
-  const isEditing = existingPicks.length > 0
+  // Only treat as editing if we have an actual entry to update (not just generated picks)
+  const isEditing = existingPicks.length > 0 && !!entryId
 
   const [selected, setSelected] = useState<SelectedPick[]>(() =>
     existingPicks.map((p) =>

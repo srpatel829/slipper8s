@@ -25,6 +25,7 @@ interface PicksLiveProps {
   entries: any[]
   activeEntry: any | null
   userId: string
+  userName: string | null
   seasonId: string
   deadlinePassed: boolean
   picksDeadline: string | null
@@ -37,6 +38,7 @@ export function PicksLive({
   entries,
   activeEntry,
   userId,
+  userName,
   seasonId,
   deadlinePassed,
   picksDeadline,
@@ -183,6 +185,7 @@ export function PicksLive({
         activeEntryId={activeEntry?.id ?? null}
         seasonId={seasonId}
         deadlinePassed={deadlinePassed}
+        userName={userName}
       />
 
       {/* Deadline-passed banner */}

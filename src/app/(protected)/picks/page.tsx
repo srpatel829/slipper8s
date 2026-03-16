@@ -109,6 +109,7 @@ export default async function PicksPage({
         entries={entries}
         activeEntry={activeEntry}
         userId={session!.user.id}
+        userName={session!.user.name ?? session!.user.firstName ?? null}
         seasonId={season.id}
         deadlinePassed={deadlinePassed}
         picksDeadline={settings?.picksDeadline ? new Date(settings.picksDeadline).toISOString() : null}

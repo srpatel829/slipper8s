@@ -99,13 +99,26 @@ export async function POST(req: NextRequest) {
   })
   const entryNumber = existingEntries + 1
 
+  // Default nickname: use provided value, else fall back to user's name
+  let resolvedNickname = nickname ?? null
+  if (!resolvedNickname) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { firstName: true, lastName: true, name: true },
+    })
+    resolvedNickname =
+      dbUser?.firstName && dbUser?.lastName
+        ? `${dbUser.firstName} ${dbUser.lastName.charAt(0)}.`
+        : dbUser?.firstName ?? dbUser?.name ?? null
+  }
+
   // Create entry + picks in a transaction
   const entry = await prisma.$transaction(async (tx) => {
     const newEntry = await tx.entry.create({
       data: {
         userId: session.user.id,
         seasonId,
-        nickname: nickname ?? null,
+        nickname: resolvedNickname,
         entryNumber,
         charityPreference: charityPreference ?? null,
         draftInProgress: false,

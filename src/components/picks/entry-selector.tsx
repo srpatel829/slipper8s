@@ -20,9 +20,10 @@ interface EntrySelectorProps {
   activeEntryId: string | null
   seasonId: string
   deadlinePassed: boolean
+  userName?: string | null
 }
 
-export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed }: EntrySelectorProps) {
+export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed, userName }: EntrySelectorProps) {
   const router = useRouter()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -126,13 +127,14 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
 
   function getEntryLabel(entry: EntryInfo) {
     if (entry.nickname) return entry.nickname
+    if (userName && entries.length <= 1) return userName
     if (entry.leagueEntries.length > 0) return `${entry.leagueEntries[0].league.name} entry slip`
     if (entries.length > 1) return `Entry Slip #${entry.entryNumber}`
     return "My Entry Slip"
   }
 
-  // Don't show selector if user has 0 or 1 entries and deadline passed
-  if (entries.length <= 1 && deadlinePassed) return null
+  // Don't show selector if user has no entries
+  if (entries.length === 0 && deadlinePassed) return null
 
   return (
     <div className="space-y-2">
