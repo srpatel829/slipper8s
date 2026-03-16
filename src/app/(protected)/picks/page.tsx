@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { PicksLive } from "@/components/picks/picks-live"
+import { ClipboardList } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -66,6 +67,24 @@ export default async function PicksPage({
           <p className="text-muted-foreground text-sm mt-1">
             No active season. Check back when the tournament bracket is announced.
           </p>
+        </div>
+      </div>
+    )
+  }
+
+  // Block picks page during SETUP — only allow during REGISTRATION and later
+  if (season.status === "SETUP") {
+    return (
+      <div className="space-y-6 max-w-5xl">
+        <div>
+          <h1 className="text-2xl font-bold">My Picks</h1>
+          <div className="mt-8 flex flex-col items-center justify-center text-center py-16 border border-border rounded-xl bg-card">
+            <ClipboardList className="h-10 w-10 text-muted-foreground mb-4" />
+            <h2 className="text-lg font-semibold mb-2">Registration opens soon</h2>
+            <p className="text-sm text-muted-foreground max-w-md">
+              The tournament bracket has been seeded but registration hasn&apos;t opened yet. Check back soon to make your picks!
+            </p>
+          </div>
         </div>
       </div>
     )
