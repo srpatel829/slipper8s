@@ -61,7 +61,7 @@ const BRACKET_2026: BracketTeam[] = [
   // West 11: First Four — Texas vs NC State
   { espnId: "251",    name: "Texas",            shortName: "TEX",  seed: 11, region: "West", isPlayIn: true, conference: "SEC" },
   { espnId: "152",    name: "NC State",         shortName: "NCST", seed: 11, region: "West", isPlayIn: true, conference: "ACC" },
-  { espnId: "2314",   name: "High Point",       shortName: "HPU",  seed: 12, region: "West", isPlayIn: false, conference: "Big South" },
+  { espnId: "2272",   name: "High Point",       shortName: "HPU",  seed: 12, region: "West", isPlayIn: false, conference: "Big South" },
   { espnId: "62",     name: "Hawaii",           shortName: "HAW",  seed: 13, region: "West", isPlayIn: false, conference: "Big West" },
   { espnId: "338",    name: "Kennesaw State",   shortName: "KENN", seed: 14, region: "West", isPlayIn: false, conference: "ASUN" },
   { espnId: "2511",   name: "Queens",           shortName: "QUC",  seed: 15, region: "West", isPlayIn: false, conference: "ASUN" },

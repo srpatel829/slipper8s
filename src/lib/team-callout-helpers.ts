@@ -24,6 +24,10 @@ export interface TeamLikeForCallout {
   wins: number
   eliminated: boolean
   logoUrl: string | null
+  /** ESPN team ID — used to look up extended data for live (non-demo) teams */
+  espnId?: string | null
+  /** Conference from DB — used for live teams instead of the slug-based conference map */
+  conference?: string | null
 }
 
 export interface BuildCalloutOptions {
@@ -43,8 +47,17 @@ export function buildTeamCalloutData(
   isPreTournament: boolean,
   options?: BuildCalloutOptions,
 ): TeamCalloutData {
-  const ext = getTeamExtendedData(team.id)
-  const sb = SB_2026_MAP.get(team.id)
+  // Look up extended data by espnId (live teams) or by id (demo/slug teams)
+  const ext = team.espnId
+    ? getTeamExtendedData(team.espnId)
+    : getTeamExtendedData(team.id)
+
+  // Silver Bulletin: try espnId first, then fall back to slug id
+  const sbKey = team.espnId ?? team.id
+  const sb = SB_2026_MAP.get(sbKey)
+
+  // Conference: prefer DB field, then fall back to slug-based map
+  const conference = team.conference ?? getConferenceForTeam(team.id)
 
   // ── Shared fields ──
   const base: TeamCalloutData = {
@@ -56,7 +69,7 @@ export function buildTeamCalloutData(
     eliminated: team.eliminated,
     logoUrl: team.logoUrl,
     isPreTournament,
-    conference: getConferenceForTeam(team.id),
+    conference,
     cumulativeProbabilities: sb?.cumulative ?? null,
   }
 
@@ -64,7 +77,7 @@ export function buildTeamCalloutData(
     // ── Pre-tournament card ──
     return {
       ...base,
-      expectedScore: pretournamentExpectedScore(team.id),
+      expectedScore: pretournamentExpectedScore(sbKey),
       sCurveRank: ext?.sCurveRank ?? null,
       kenpomRank: ext?.kenpomRank ?? null,
       bpiRank: ext?.bpiRank ?? null,
@@ -87,7 +100,7 @@ export function buildTeamCalloutData(
     ppr,
     maxScore: score + ppr,
     gamesRemaining,
-    expectedScore: expectedScoreAtState(team.id, team.wins, team.eliminated),
+    expectedScore: expectedScoreAtState(sbKey, team.wins, team.eliminated),
     selectedPct: options?.selectedPct ?? null,
     // Pre-tournament data still shown in live card for context
     sCurveRank: ext?.sCurveRank ?? null,

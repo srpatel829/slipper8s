@@ -124,6 +124,8 @@ export interface ResolvedPickSummary {
   wins: number
   eliminated: boolean
   logoUrl: string | null
+  espnId?: string | null
+  conference?: string | null
   isPlayIn: boolean
   playInSlotId?: string | null
 }

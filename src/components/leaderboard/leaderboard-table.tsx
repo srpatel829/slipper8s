@@ -106,6 +106,8 @@ function PicksLogoStrip({ picks, padTo, isPreTournament = false, pickerPctMap }:
       wins: pick.wins,
       eliminated: pick.eliminated,
       logoUrl: pick.logoUrl,
+      espnId: pick.espnId,
+      conference: pick.conference,
     }
     const calloutData = buildTeamCalloutData(teamLike, isPreTournament, {
       selectedPct: pickerPctMap?.get(pick.teamId) ?? null,
@@ -188,6 +190,8 @@ function PickCard({ pick, isPreTournament = false, pickerPctMap }: { pick: Resol
     wins: pick.wins,
     eliminated: pick.eliminated,
     logoUrl: pick.logoUrl,
+    espnId: pick.espnId,
+    conference: pick.conference,
   }
   const calloutData = buildTeamCalloutData(teamLike, isPreTournament, {
     selectedPct: pickerPctMap?.get(pick.teamId) ?? null,

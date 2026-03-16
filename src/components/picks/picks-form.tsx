@@ -193,6 +193,20 @@ export function PicksForm({
     return calculateEntryExpectedScore(teamIds, teamStates, preTournament)
   }, [selectedTeamObjects])
 
+  // ── Play-in slot renderer (inline within region/seed views) ──
+  function renderPlayInSlot(slot: PlayInSlotWithTeams) {
+    return (
+      <PlayInSlotCard
+        key={slot.id}
+        slot={slot}
+        selected={selectedSlotIds.has(slot.id)}
+        onToggle={() => toggleSlot(slot.id)}
+        disabled={deadlinePassed || (selected.length >= MAX_PICKS && !selectedSlotIds.has(slot.id))}
+        isPreTournament={isPreTournament}
+      />
+    )
+  }
+
   // ── Team card renderer (shared between view modes) ──
   function renderTeamCard(team: Team) {
     return (
@@ -297,7 +311,7 @@ export function PicksForm({
             const wins = (team as { wins?: number }).wins ?? 0
             const eliminated = (team as { eliminated?: boolean }).eliminated ?? false
             const calloutData = buildTeamCalloutData(
-              { id: team.id, name: team.name, shortName: team.shortName ?? team.name, seed: team.seed, region: team.region ?? "", wins, eliminated, logoUrl: (team as { logoUrl?: string | null }).logoUrl ?? null },
+              { id: team.id, name: team.name, shortName: team.shortName ?? team.name, seed: team.seed, region: team.region ?? "", wins, eliminated, logoUrl: (team as { logoUrl?: string | null }).logoUrl ?? null, espnId: (team as { espnId?: string | null }).espnId ?? null, conference: (team as { conference?: string | null }).conference ?? null },
               isPreTournament,
             )
             return (
@@ -320,29 +334,6 @@ export function PicksForm({
           ))}
         </div>
       </div>
-
-      {/* Play-in slots */}
-      {playInSlots.length > 0 && (
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-            <span className="h-px flex-1 bg-border" />
-            First Four · Play-in Games
-            <span className="h-px flex-1 bg-border" />
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {playInSlots.map((slot) => (
-              <PlayInSlotCard
-                key={slot.id}
-                slot={slot}
-                selected={selectedSlotIds.has(slot.id)}
-                onToggle={() => toggleSlot(slot.id)}
-                disabled={deadlinePassed || (selected.length >= MAX_PICKS && !selectedSlotIds.has(slot.id))}
-                isPreTournament={isPreTournament}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* View mode selector — By Region and By Seed (no All Teams per spec) */}
       <div className="flex items-center gap-1">
@@ -369,8 +360,11 @@ export function PicksForm({
         <Tabs defaultValue={allRegions[0] ?? "East"}>
           <TabsList className="w-full grid grid-cols-4">
             {allRegions.map((region) => {
-              const regionCount = teams
+              const regionTeamCount = teams
                 .filter((t) => t.region === region && selectedTeamIds.has(t.id)).length
+              const regionSlotCount = playInSlots
+                .filter((s) => s.region === region && selectedSlotIds.has(s.id)).length
+              const regionCount = regionTeamCount + regionSlotCount
               return (
                 <TabsTrigger key={region} value={region} className="gap-1.5 text-xs">
                   {region}
@@ -383,13 +377,17 @@ export function PicksForm({
               )
             })}
           </TabsList>
-          {allRegions.map((region) => (
-            <TabsContent key={region} value={region} className="mt-0 pt-3">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {teams.filter((t) => t.region === region).map(renderTeamCard)}
-              </div>
-            </TabsContent>
-          ))}
+          {allRegions.map((region) => {
+            const regionPlayIns = playInSlots.filter(s => s.region === region)
+            return (
+              <TabsContent key={region} value={region} className="mt-0 pt-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {teams.filter((t) => t.region === region).map(renderTeamCard)}
+                  {regionPlayIns.map(renderPlayInSlot)}
+                </div>
+              </TabsContent>
+            )
+          })}
         </Tabs>
       )}
 
@@ -398,6 +396,7 @@ export function PicksForm({
         <div className="space-y-5">
           {SEED_TIERS.map(tier => {
             const tierTeams = teams.filter(t => t.seed >= tier.range[0] && t.seed <= tier.range[1])
+            const tierPlayIns = playInSlots.filter(s => s.seed >= tier.range[0] && s.seed <= tier.range[1])
             const tierSelected = tierTeams.filter(t => selectedTeamIds.has(t.id)).length
             return (
               <div key={tier.label}>
@@ -412,6 +411,7 @@ export function PicksForm({
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {tierTeams.sort((a, b) => a.seed - b.seed || a.region.localeCompare(b.region)).map(renderTeamCard)}
+                  {tierPlayIns.map(renderPlayInSlot)}
                 </div>
               </div>
             )

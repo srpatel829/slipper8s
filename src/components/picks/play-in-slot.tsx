@@ -54,7 +54,7 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled, isPreTourna
       {isResolved ? (
         <TeamCallout
           team={buildTeamCalloutData(
-            { id: slot.winner!.id, name: slot.winner!.name, shortName: slot.winner!.shortName ?? "", seed: slot.winner!.seed, region: slot.winner!.region ?? "", wins: slot.winner!.wins, eliminated: slot.winner!.eliminated, logoUrl: slot.winner!.logoUrl },
+            { id: slot.winner!.id, name: slot.winner!.name, shortName: slot.winner!.shortName ?? "", seed: slot.winner!.seed, region: slot.winner!.region ?? "", wins: slot.winner!.wins, eliminated: slot.winner!.eliminated, logoUrl: slot.winner!.logoUrl, espnId: slot.winner!.espnId, conference: slot.winner!.conference },
             isPreTournament,
           )}
           interactiveChild
@@ -77,7 +77,7 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled, isPreTourna
           <div className="flex items-center gap-2">
             <TeamCallout
               team={buildTeamCalloutData(
-                { id: slot.team1.id, name: slot.team1.name, shortName: slot.team1.shortName ?? "", seed: slot.team1.seed, region: slot.team1.region ?? "", wins: slot.team1.wins, eliminated: slot.team1.eliminated, logoUrl: slot.team1.logoUrl },
+                { id: slot.team1.id, name: slot.team1.name, shortName: slot.team1.shortName ?? "", seed: slot.team1.seed, region: slot.team1.region ?? "", wins: slot.team1.wins, eliminated: slot.team1.eliminated, logoUrl: slot.team1.logoUrl, espnId: slot.team1.espnId, conference: slot.team1.conference },
                 isPreTournament,
               )}
               interactiveChild
@@ -94,7 +94,7 @@ export function PlayInSlotCard({ slot, selected, onToggle, disabled, isPreTourna
             <span className="text-xs text-muted-foreground font-medium">vs</span>
             <TeamCallout
               team={buildTeamCalloutData(
-                { id: slot.team2.id, name: slot.team2.name, shortName: slot.team2.shortName ?? "", seed: slot.team2.seed, region: slot.team2.region ?? "", wins: slot.team2.wins, eliminated: slot.team2.eliminated, logoUrl: slot.team2.logoUrl },
+                { id: slot.team2.id, name: slot.team2.name, shortName: slot.team2.shortName ?? "", seed: slot.team2.seed, region: slot.team2.region ?? "", wins: slot.team2.wins, eliminated: slot.team2.eliminated, logoUrl: slot.team2.logoUrl, espnId: slot.team2.espnId, conference: slot.team2.conference },
                 isPreTournament,
               )}
               interactiveChild

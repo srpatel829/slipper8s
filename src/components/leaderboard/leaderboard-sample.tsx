@@ -86,7 +86,7 @@ function TeamLogo({ pick, isPreTournament }: { pick: ResolvedPickSummary; isPreT
   const regionColor = pick.region ? REGION_COLORS[pick.region] ?? "#888" : "#888"
 
   const calloutData = buildTeamCalloutData(
-    { id: pick.teamId, name: pick.name, shortName: pick.shortName, seed: pick.seed, region: pick.region ?? "", wins: pick.wins, eliminated: pick.eliminated, logoUrl: pick.logoUrl },
+    { id: pick.teamId, name: pick.name, shortName: pick.shortName, seed: pick.seed, region: pick.region ?? "", wins: pick.wins, eliminated: pick.eliminated, logoUrl: pick.logoUrl, espnId: pick.espnId, conference: pick.conference },
     isPreTournament ?? false,
   )
 

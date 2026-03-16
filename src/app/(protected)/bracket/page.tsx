@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { BracketViewer } from "@/components/bracket/bracket-viewer"
+import { PreTournamentBracket } from "@/components/bracket/pre-tournament-bracket"
 import { GitBranch } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -17,8 +18,8 @@ const ROUND_NAMES: Record<number, string> = {
 export default async function BracketPage() {
   const session = await auth()
 
-  // Get teams and games from database
-  const [teams, games] = await Promise.all([
+  // Get teams, games, and play-in slots from database
+  const [teams, games, playInSlots] = await Promise.all([
     prisma.team.findMany({
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
@@ -29,6 +30,12 @@ export default async function BracketPage() {
         winner: { select: { id: true, name: true, shortName: true, seed: true } },
       },
       orderBy: [{ round: "asc" }, { startTime: "asc" }],
+    }),
+    prisma.playInSlot.findMany({
+      include: {
+        team1: true,
+        team2: true,
+      },
     }),
   ])
 
@@ -74,6 +81,9 @@ export default async function BracketPage() {
     .filter(g => g.isComplete && g.winner)
     .sort((a, b) => (b.startTime?.getTime() ?? 0) - (a.startTime?.getTime() ?? 0))[0]
 
+  // No teams seeded yet
+  const noTeams = teams.length === 0
+
   return (
     <div className="space-y-4">
       {/* Header with game progress badges */}
@@ -115,15 +125,62 @@ export default async function BracketPage() {
             )}
           </div>
         )}
+
+        {totalGames === 0 && !noTeams && (
+          <div className="flex items-center gap-2 sm:ml-4">
+            <div className="px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] font-medium text-amber-600 dark:text-amber-400">
+              Pre-Tournament
+            </div>
+          </div>
+        )}
       </div>
 
-      {games.length === 0 ? (
+      {noTeams ? (
         <div className="bg-card border border-border rounded-xl py-16 text-center">
           <p className="text-muted-foreground">No bracket data available yet.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">
             The bracket will populate once the tournament field is announced.
           </p>
         </div>
+      ) : games.length === 0 ? (
+        /* Pre-tournament: show bracket structure from seeded teams */
+        <PreTournamentBracket
+          teams={teams.map(t => ({
+            id: t.id,
+            name: t.name,
+            shortName: t.shortName,
+            seed: t.seed,
+            region: t.region,
+            logoUrl: t.logoUrl,
+            isPlayIn: t.isPlayIn,
+          }))}
+          playInSlots={playInSlots.map(s => ({
+            id: s.id,
+            seed: s.seed,
+            region: s.region,
+            team1: {
+              id: s.team1.id,
+              name: s.team1.name,
+              shortName: s.team1.shortName,
+              seed: s.team1.seed,
+              region: s.team1.region,
+              logoUrl: s.team1.logoUrl,
+              isPlayIn: true,
+            },
+            team2: {
+              id: s.team2.id,
+              name: s.team2.name,
+              shortName: s.team2.shortName,
+              seed: s.team2.seed,
+              region: s.team2.region,
+              logoUrl: s.team2.logoUrl,
+              isPlayIn: true,
+            },
+            winnerId: s.winnerId,
+          }))}
+          regions={regions}
+          userPickTeamIds={userPickTeamIds}
+        />
       ) : (
         <BracketViewer
           teams={teams}

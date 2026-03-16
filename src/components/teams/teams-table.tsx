@@ -27,6 +27,7 @@ export interface TeamRow {
   eliminated: boolean
   wins: number
   logoUrl: string | null
+  espnId?: string | null
   conference: string | null
   pickerCount: number
 }
@@ -172,7 +173,7 @@ export function TeamsTable({ teams, totalEntries, isPreTournament = false }: Tea
 
                 {/* Team name + logo with callout */}
                 <TeamCallout team={buildTeamCalloutData(
-                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl, espnId: team.espnId, conference: team.conference },
                   isPreTournament,
                   { selectedPct: totalEntries > 0 ? Math.round((team.pickerCount / totalEntries) * 1000) / 10 : null },
                 )}>
@@ -292,7 +293,7 @@ export function TeamsTable({ teams, totalEntries, isPreTournament = false }: Tea
               {/* Top row: logo, name, seed, region */}
               <div className="flex items-center gap-2 mb-2">
                 <TeamCallout team={buildTeamCalloutData(
-                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                  { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl, espnId: team.espnId, conference: team.conference },
                   isPreTournament,
                   { selectedPct: totalEntries > 0 ? Math.round((team.pickerCount / totalEntries) * 1000) / 10 : null },
                 )}>

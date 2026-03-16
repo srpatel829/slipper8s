@@ -26,6 +26,8 @@ interface TeamLike {
     seed: number
     region: string
     logoUrl: string | null
+    espnId?: string | null
+    conference?: string | null
     eliminated: boolean
     wins: number
     isPlayIn: boolean
@@ -119,7 +121,7 @@ function SlotCell({
     return (
         <TeamCallout
             team={buildTeamCalloutData(
-                { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl },
+                { id: team.id, name: team.name, shortName: team.shortName, seed: team.seed, region: team.region, wins: team.wins, eliminated: team.eliminated, logoUrl: team.logoUrl, espnId: team.espnId, conference: team.conference },
                 isPreTournament,
             )}
         >

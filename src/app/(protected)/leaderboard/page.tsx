@@ -180,28 +180,30 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
   return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
 }
 
-async function isPicksOpen(): Promise<{ open: boolean; deadline: Date | null }> {
+async function shouldHideLeaderboard(): Promise<{ hidden: boolean; deadline: Date | null; status: string | null }> {
   const settings = await prisma.appSettings.findUnique({
     where: { id: "main" },
     select: { picksDeadline: true, currentSeasonId: true },
   })
-  if (!settings?.currentSeasonId) return { open: false, deadline: null }
+  if (!settings?.currentSeasonId) return { hidden: true, deadline: null, status: null }
   const season = await prisma.season.findUnique({
     where: { id: settings.currentSeasonId },
     select: { status: true },
   })
-  // Picks are still open if status is REGISTRATION and deadline hasn't passed
-  const deadlinePassed = settings.picksDeadline ? new Date() >= settings.picksDeadline : false
-  const stillOpen = season?.status === "REGISTRATION" && !deadlinePassed
-  return { open: stillOpen, deadline: settings.picksDeadline }
+  const status = season?.status ?? null
+  // Only show leaderboard when season is LOCKED, ACTIVE, or COMPLETED
+  const showStatuses = ["LOCKED", "ACTIVE", "COMPLETED"]
+  const hidden = !showStatuses.includes(status ?? "")
+  return { hidden, deadline: settings.picksDeadline, status }
 }
 
 export default async function LeaderboardPage() {
   const session = await auth()
-  const picksStatus = await isPicksOpen()
+  const gateStatus = await shouldHideLeaderboard()
 
-  // Don't reveal other players' picks while picks are still open
-  if (picksStatus.open) {
+  // Don't reveal other players' picks until season is LOCKED and deadline has passed
+  if (gateStatus.hidden) {
+    const isRegistration = gateStatus.status === "REGISTRATION"
     return (
       <div className="space-y-5">
         <div>
@@ -214,20 +216,22 @@ export default async function LeaderboardPage() {
             <h2 className="text-lg font-semibold mb-2">Leaderboard available after picks close</h2>
             <p className="text-sm text-muted-foreground max-w-md">
               To keep things fair, the leaderboard is hidden until the picks deadline passes.
-              {picksStatus.deadline && (
+              {isRegistration && gateStatus.deadline && (
                 <> Picks close at{" "}
                   <span className="font-medium text-foreground">
-                    {picksStatus.deadline.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
+                    {gateStatus.deadline.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York", timeZoneName: "short" })}
                   </span>.
                 </>
               )}
             </p>
-            <Link
-              href="/picks"
-              className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Make your picks
-            </Link>
+            {isRegistration && (
+              <Link
+                href="/picks"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Make your picks
+              </Link>
+            )}
           </div>
         </div>
       </div>
