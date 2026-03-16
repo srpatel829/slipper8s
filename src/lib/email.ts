@@ -17,89 +17,48 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
   const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
 
   const timingBlock = variant === "pre-bracket"
-    ? `
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        The committee will announce the bracket at 6pm ET on Sunday, March 15th. Slipper8s will go live shortly thereafter. Please log back in then to make your selections.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        You can update your picks as many times as you want before the entry slip deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).
-      </p>`
-    : `
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 24px;">
-        The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry slip deadline.
-      </p>`
+    ? `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">The committee will announce the bracket at 6pm ET on Sunday, March 15th. Slipper8s will go live shortly thereafter. Please log back in then to make your selections.</p><p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">You can update your picks as many times as you want before the entry slip deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).</p>`
+    : `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry slip deadline.</p>`
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: "Welcome to Slipper8s 2026! 🏀",
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:32px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#111;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! You&rsquo;re all set for the 2026 edition of Slipper8s!
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        <strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.
-      </p>
-      ${timingBlock}
-      <div style="text-align:center;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          Make Your Picks
-        </a>
-      </div>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 12px;">
-        <strong style="color:#222;">Playing with friends?</strong> Create a private league and share the invite link.
-      </p>
-      <a href="${APP_URL}/leagues" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
-        Create a Private League &rarr;
-      </a>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 16px;">
-        <strong style="color:#222;">Most importantly,</strong> please share this game with your family, friends, colleagues, and on your social media &mdash; this game only grows with your help!
-      </p>
-      <p style="color:#888;font-size:12px;margin:0 0 12px;">Share the link directly:</p>
-      <div style="background:#f5f6fa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
-        <a href="${shareUrl}" style="color:#00A9E0;font-size:13px;text-decoration:none;word-break:break-all;">${shareUrl}</a>
-      </div>
-      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
-        <tr>
-          <td style="padding:0 6px 0 0;">
-            <a href="${twitterShareUrl}" target="_blank" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
-              &#x1D54F; Post
-            </a>
-          </td>
-          <td style="padding:0 6px;">
-            <a href="${facebookShareUrl}" target="_blank" style="display:inline-block;background:#1877F2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
-              Facebook
-            </a>
-          </td>
-          <td style="padding:0 0 0 6px;">
-            <a href="${linkedInShareUrl}" target="_blank" style="display:inline-block;background:#0A66C2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">
-              LinkedIn
-            </a>
-          </td>
-        </tr>
-      </table>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s &mdash; slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+<h1 style="color:#111;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">Hey ${firstName}! You&rsquo;re all set for the 2026 edition of Slipper8s!</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.</p>
+${timingBlock}
+<div style="text-align:center;margin-bottom:16px;">
+<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks</a>
+</div>
+<p style="color:#555;font-size:13px;line-height:1.6;margin:0;border-top:1px solid #e5e7eb;padding-top:12px;"><strong style="color:#222;">Playing with friends?</strong> <a href="${APP_URL}/leagues" style="color:#00A9E0;text-decoration:none;font-weight:500;">Create a Private League &rarr;</a></p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#555;font-size:13px;line-height:1.6;margin:0 0 12px;"><strong style="color:#222;">Most importantly,</strong> please share this game with your family, friends, colleagues, and on your social media &mdash; this game only grows with your help!</p>
+<p style="color:#888;font-size:12px;margin:0 0 8px;">Share the link directly:</p>
+<div style="background:#f5f6fa;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:12px;">
+<a href="${shareUrl}" style="color:#00A9E0;font-size:13px;text-decoration:none;word-break:break-all;">${shareUrl}</a>
+</div>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+<tr>
+<td style="padding:0 6px 0 0;"><a href="${twitterShareUrl}" target="_blank" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">&#x1D54F; Post</a></td>
+<td style="padding:0 6px;"><a href="${facebookShareUrl}" target="_blank" style="display:inline-block;background:#1877F2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">Facebook</a></td>
+<td style="padding:0 0 0 6px;"><a href="${linkedInShareUrl}" target="_blank" style="display:inline-block;background:#0A66C2;color:#ffffff;text-decoration:none;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:600;line-height:1;">LinkedIn</a></td>
+</tr>
+</table>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -113,47 +72,63 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
 export async function sendEntryConfirmationEmail(
   to: string,
   firstName: string,
-  picks: { name: string; seed: number; region: string }[],
+  picks: { name: string; seed: number; region: string; logoUrl?: string | null; logoUrl2?: string | null }[],
+  nickname?: string | null,
   entryNumber?: number,
+  tps?: number,
+  expectedScore?: number | null,
+  archetypes?: { key: string; label: string; emoji: string; description: string }[],
 ) {
   const picksHtml = picks
-    .map((p) => `<li style="color:#222;font-size:14px;padding:4px 0;">#${p.seed} ${p.name} <span style="color:#888;">(${p.region})</span></li>`)
+    .map((p) => {
+      let logos = ""
+      if (p.logoUrl && p.logoUrl2) {
+        // Play-in slot: show both logos with "/" separator
+        logos = `<img src="${p.logoUrl}" alt="" width="20" height="20" style="vertical-align:middle;margin-right:2px;border-radius:2px;" /><span style="color:#888;font-size:11px;vertical-align:middle;margin:0 2px;">/</span><img src="${p.logoUrl2}" alt="" width="20" height="20" style="vertical-align:middle;margin-right:6px;border-radius:2px;" />`
+      } else if (p.logoUrl) {
+        logos = `<img src="${p.logoUrl}" alt="" width="20" height="20" style="vertical-align:middle;margin-right:6px;border-radius:2px;" />`
+      }
+      return `<li style="color:#222;font-size:14px;padding:4px 0;">${logos}#${p.seed} ${p.name} <span style="color:#888;">(${p.region})</span></li>`
+    })
     .join("")
 
-  const entryLabel = entryNumber && entryNumber > 1 ? ` (Entry Slip ${entryNumber})` : ""
+  const entryLabel = nickname ? ` [${nickname}]` : entryNumber && entryNumber > 1 ? ` (Entry Slip ${entryNumber})` : ""
+  const subtitleLabel = nickname || "Entry Slip"
+
+  const scoreLine = tps
+    ? `<p style="color:#555;font-size:13px;margin:0 0 12px;">Your 8 Teams with a max score of <strong style="color:#00A9E0;">${tps}</strong>${expectedScore != null ? ` and expected score of <strong style="color:#222;">${expectedScore.toFixed(1)}</strong>` : ""}</p>`
+    : ""
+
+  const archetypesHtml = archetypes && archetypes.length > 0
+    ? `<div style="background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin-top:16px;">
+        <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 8px;font-weight:600;">Based on the picks you have made your archetype(s) are:</p>
+        ${archetypes.map(a => `<p style="color:#222;font-size:13px;margin:4px 0;">${a.emoji} <strong>${a.label}</strong>: <span style="color:#555;">${a.description}</span></p>`).join("")}
+      </div>`
+    : ""
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: `Your Slipper8s picks are saved${entryLabel} ✓`,
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#22c55e;line-height:40px;text-align:center;font-size:20px;">✓</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Picks Confirmed${entryLabel}</h1>
-      <p style="color:#555;font-size:13px;margin:0;">${firstName}, your picks have been saved</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#555;font-size:12px;text-transform:uppercase;letter-spacing:1px;margin:0 0 12px;font-weight:600;">Your 8 Teams</p>
-      <ol style="margin:0;padding:0 0 0 20px;">${picksHtml}</ol>
-    </div>
-    <div style="text-align:center;margin-bottom:24px;">
-      <p style="color:#555;font-size:13px;margin:0 0 12px;">You can edit your picks anytime before the entry slip deadline.</p>
-      <a href="${APP_URL}/picks" style="color:#00A9E0;font-size:13px;text-decoration:none;font-weight:500;">
-        Edit Your Picks →
-      </a>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#22c55e;line-height:40px;text-align:center;font-size:20px;">✓</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Picks Confirmed</h1>
+<p style="color:#555;font-size:13px;margin:0;">${firstName}, your picks for entry slip ID: [${subtitleLabel}] have been saved</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+${scoreLine}
+<ol style="margin:0;padding:0 0 0 20px;">${picksHtml}</ol>
+${archetypesHtml}
+<p style="color:#555;font-size:13px;margin:16px 0 8px;text-align:center;border-top:1px solid #e5e7eb;padding-top:12px;">You can edit your picks anytime before the entry slip deadline. <a href="${APP_URL}/picks" style="color:#00A9E0;text-decoration:none;font-weight:500;">Edit Your Picks &rarr;</a></p>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -170,36 +145,25 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
       from: FROM_EMAIL,
       to,
       subject: "Entry slips are locked — the tournament is LIVE! 🔒",
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#8b5cf6;line-height:40px;text-align:center;font-size:20px;">🔒</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Entry Slips Are Locked!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">The tournament is live — let the games begin</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! All entry slips are now locked. No more changes allowed.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        Follow along on the leaderboard as the tournament unfolds. Your score updates automatically after every game.
-      </p>
-      <div style="text-align:center;">
-        <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          View Leaderboard
-        </a>
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#8b5cf6;line-height:40px;text-align:center;font-size:20px;">🔒</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Entry Slips Are Locked!</h1>
+<p style="color:#555;font-size:13px;margin:0;">The tournament is live — let the games begin</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! All entry slips are now locked. No more changes allowed.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Follow along on the leaderboard as the tournament unfolds. Your score updates automatically after every game.</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View Leaderboard</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -216,36 +180,25 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
       from: FROM_EMAIL,
       to,
       subject: "⏰ 24 hours left to submit your Slipper8s picks!",
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#eab308;line-height:40px;text-align:center;font-size:20px;">⏰</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
-      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! Just a reminder — picks lock in less than 24 hours.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        Make sure your 8 teams are exactly how you want them. Once the deadline passes, no changes allowed.
-      </p>
-      <div style="text-align:center;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          Review Your Picks
-        </a>
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#eab308;line-height:40px;text-align:center;font-size:20px;">⏰</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! Just a reminder — picks lock in less than 24 hours.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Make sure your 8 teams are exactly how you want them. Once the deadline passes, no changes allowed.</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Review Your Picks</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -269,45 +222,38 @@ export async function sendFinalResultsEmail(
       from: FROM_EMAIL,
       to,
       subject: `Your Slipper8s final results are in! 🏆 #${rank}`,
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏆</div>
-      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">Tournament Complete!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">Here's how you finished, ${firstName}</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:20px;">
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
-          <p style="color:#00A9E0;font-size:28px;font-weight:700;margin:0;">#${rank}</p>
-        </div>
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Percentile</p>
-          <p style="color:#222;font-size:28px;font-weight:700;margin:0;">Top ${percentile}%</p>
-        </div>
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
-          <p style="color:#222;font-size:28px;font-weight:700;margin:0;">${score}</p>
-        </div>
-      </div>
-      <p style="color:#888;font-size:12px;text-align:center;margin:0;">Out of ${totalEntries} entry slips</p>
-    </div>
-    <div style="text-align:center;margin-bottom:24px;">
-      <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-        View Full Leaderboard
-      </a>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Thanks for playing! See you next year. — Slipper8s
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏆</div>
+<h1 style="color:#111;font-size:22px;margin:16px 0 4px;">Tournament Complete!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Here's how you finished, ${firstName}</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px;">
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
+<p style="color:#00A9E0;font-size:28px;font-weight:700;margin:0;">#${rank}</p>
+</div>
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Percentile</p>
+<p style="color:#222;font-size:28px;font-weight:700;margin:0;">Top ${percentile}%</p>
+</div>
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
+<p style="color:#222;font-size:28px;font-weight:700;margin:0;">${score}</p>
+</div>
+</div>
+<p style="color:#888;font-size:12px;text-align:center;margin:0 0 16px;">Out of ${totalEntries} entry slips</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View Full Leaderboard</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Thanks for playing! See you next year. &mdash; Slipper8s</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -343,51 +289,42 @@ export async function sendDailyRecapEmail(
       from: FROM_EMAIL,
       to,
       subject: `Slipper8s Daily Recap: #${data.rank} · ${data.score} pts 🏀`,
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#00A9E0;line-height:40px;text-align:center;font-size:20px;">🏀</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Daily Recap — ${data.roundLabel}</h1>
-      <p style="color:#555;font-size:13px;margin:0;">All games are final for today</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 20px;">
-        Hey ${firstName}! Here's where you stand after today's games.
-      </p>
-      <div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:16px;">
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
-          <p style="color:#00A9E0;font-size:24px;font-weight:700;margin:0;">#${data.rank}</p>
-        </div>
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
-          <p style="color:#222;font-size:24px;font-weight:700;margin:0;">${data.score}</p>
-        </div>
-        <div>
-          <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Alive</p>
-          <p style="color:${data.teamsRemaining > 0 ? "#27AE60" : "#C0392B"};font-size:24px;font-weight:700;margin:0;">${data.teamsRemaining}/8</p>
-        </div>
-      </div>
-      <div style="text-align:center;padding:8px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;">
-        <p style="color:#222;font-size:14px;margin:0;">${rankChangeText}</p>
-        <p style="color:#888;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% · ${data.totalEntries} entry slips</p>
-      </div>
-      <div style="text-align:center;">
-        <a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          View Full Leaderboard
-        </a>
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      You can turn off daily recaps in your profile settings. — Slipper8s
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#00A9E0;line-height:40px;text-align:center;font-size:20px;">🏀</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Daily Recap &mdash; ${data.roundLabel}</h1>
+<p style="color:#555;font-size:13px;margin:0;">All games are final for today</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">Hey ${firstName}! Here's where you stand after today's games.</p>
+<div style="display:flex;justify-content:space-around;text-align:center;margin-bottom:12px;">
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Rank</p>
+<p style="color:#00A9E0;font-size:24px;font-weight:700;margin:0;">#${data.rank}</p>
+</div>
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Score</p>
+<p style="color:#222;font-size:24px;font-weight:700;margin:0;">${data.score}</p>
+</div>
+<div>
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Alive</p>
+<p style="color:${data.teamsRemaining > 0 ? "#27AE60" : "#C0392B"};font-size:24px;font-weight:700;margin:0;">${data.teamsRemaining}/8</p>
+</div>
+</div>
+<div style="text-align:center;padding:8px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;margin:0;">${rankChangeText}</p>
+<p style="color:#888;font-size:12px;margin:4px 0 0;">Top ${data.percentile}% &middot; ${data.totalEntries} entry slips</p>
+</div>
+<div style="text-align:center;">
+<a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View Full Leaderboard</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">You can turn off daily recaps in your profile settings. &mdash; Slipper8s</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -404,39 +341,26 @@ export async function sendBracketAnnouncedEmail(to: string, firstName: string, d
       from: FROM_EMAIL,
       to,
       subject: "The bracket is out — Slipper8s entry slips are OPEN! 🏀",
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">
-        Hey ${firstName}! The bracket is out and it's time to make your picks.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 16px;">
-        <strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span>
-      </p>
-      <div style="text-align:center;margin-bottom:16px;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          Make Your Picks
-        </a>
-      </div>
-      <p style="color:#555;font-size:13px;line-height:1.5;margin:0;border-top:1px solid #e5e7eb;padding-top:16px;">
-        <strong style="color:#222;">Playing with friends?</strong> <a href="${APP_URL}/leagues" style="color:#00A9E0;text-decoration:none;font-weight:500;">Create or join a private league →</a>
-      </p>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+<h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Slipper8s entry slips are now open for 2026</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! The bracket is out and it's time to make your picks.</p>
+<p style="color:#555;font-size:14px;line-height:1.5;margin:0 0 16px;"><strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span></p>
+<div style="text-align:center;margin-bottom:16px;">
+<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks</a>
+</div>
+<p style="color:#555;font-size:13px;line-height:1.5;margin:0;border-top:1px solid #e5e7eb;padding-top:12px;"><strong style="color:#222;">Playing with friends?</strong> <a href="${APP_URL}/leagues" style="color:#00A9E0;text-decoration:none;font-weight:500;">Create or join a private league &rarr;</a></p>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -455,39 +379,26 @@ export async function sendBracketAnnouncedIncompleteEmail(to: string, firstName:
       from: FROM_EMAIL,
       to,
       subject: "The bracket is out — finish signing up to play Slipper8s! 🏀",
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
-      <h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">Don't miss your chance to play Slipper8s 2026</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        ${greeting} The tournament bracket has been released and entry slips are open — but you still need to finish signing up before you can make your picks.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;">
-        <strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed × wins — sleeper picks can pay off big.
-      </p>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        <strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span>
-      </p>
-      <div style="text-align:center;">
-        <a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          Complete Registration
-        </a>
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">🏀</div>
+<h1 style="color:#111;font-size:22px;margin:16px 0 4px;">The Bracket Is Out!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Don't miss your chance to play Slipper8s 2026</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">${greeting} The tournament bracket has been released and entry slips are open &mdash; but you still need to finish signing up before you can make your picks.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed &times; wins &mdash; sleeper picks can pay off big.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span></p>
+<div style="text-align:center;">
+<a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Complete Registration</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -510,40 +421,29 @@ export async function sendPlayInResolvedEmail(
       from: FROM_EMAIL,
       to,
       subject: `Your play-in pick resolved — you have ${resolvedTeamName}! 🏀`,
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#27AE60;line-height:40px;text-align:center;font-size:20px;">✓</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Play-In Resolved!</h1>
-      <p style="color:#555;font-size:13px;margin:0;">Your play-in slot has a winner</p>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName}! Your play-in pick in the <strong>${region}</strong> region has been resolved.
-      </p>
-      <div style="text-align:center;padding:16px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:16px;">
-        <p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Team</p>
-        <p style="color:#00A9E0;font-size:22px;font-weight:700;margin:0;">#${seed} ${resolvedTeamName}</p>
-      </div>
-      <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 20px;">
-        ${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed on your part — your entry slip has been updated automatically.
-      </p>
-      <div style="text-align:center;">
-        <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">
-          View Your Picks
-        </a>
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      You can turn off optional notifications in your profile settings. — Slipper8s
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#27AE60;line-height:40px;text-align:center;font-size:20px;">✓</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Play-In Resolved!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Your play-in slot has a winner</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! Your play-in pick in the <strong>${region}</strong> region has been resolved.</p>
+<div style="text-align:center;padding:12px;background:#f0f1f5;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:12px;">
+<p style="color:#555;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Your Team</p>
+<p style="color:#00A9E0;font-size:22px;font-weight:700;margin:0;">#${seed} ${resolvedTeamName}</p>
+</div>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">${resolvedTeamName} won the play-in game and will represent the #${seed} seed in the ${region} region of your bracket. No action needed &mdash; your entry slip has been updated automatically.</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View Your Picks</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">You can turn off optional notifications in your profile settings. &mdash; Slipper8s</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {
@@ -565,30 +465,21 @@ export async function sendBroadcastEmail(
       from: FROM_EMAIL,
       to,
       subject: `Slipper8s: ${subject}`,
-      html: `
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">📢</div>
-      <h1 style="color:#111;font-size:20px;margin:12px 0 4px;">${subject}</h1>
-    </div>
-    <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:24px;">
-      <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 16px;">
-        Hey ${firstName},
-      </p>
-      <div style="color:#555;font-size:14px;line-height:1.6;">
-        ${messageHtml}
-      </div>
-    </div>
-    <p style="color:#999;font-size:12px;text-align:center;margin:0;">
-      Slipper8s — slipper8s.com
-    </p>
-  </div>
-</body>
-</html>`,
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:48px;height:48px;border-radius:50%;background:#00A9E0;line-height:48px;text-align:center;font-size:24px;">📢</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">${subject}</h1>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName},</p>
+<div style="color:#555;font-size:14px;line-height:1.6;">${messageHtml}</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
     })
     return { success: true }
   } catch (error) {

@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma"
 import { sendEntryConfirmationEmail } from "@/lib/email"
 import { invalidateLeaderboardCache } from "@/lib/cache"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
+import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
+import { classifyArchetypes } from "@/lib/archetypes"
 
 // ─── GET — Fetch user's entries + picks for current season ────────────────────
 export async function GET(req: NextRequest) {
@@ -99,26 +102,13 @@ export async function POST(req: NextRequest) {
   })
   const entryNumber = existingEntries + 1
 
-  // Default nickname: use provided value, else fall back to user's name
-  let resolvedNickname = nickname ?? null
-  if (!resolvedNickname) {
-    const dbUser = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { firstName: true, lastName: true, name: true },
-    })
-    resolvedNickname =
-      dbUser?.firstName && dbUser?.lastName
-        ? `${dbUser.firstName} ${dbUser.lastName.charAt(0)}.`
-        : dbUser?.firstName ?? dbUser?.name ?? null
-  }
-
   // Create entry + picks in a transaction
   const entry = await prisma.$transaction(async (tx) => {
     const newEntry = await tx.entry.create({
       data: {
         userId: session.user.id,
         seasonId,
-        nickname: resolvedNickname,
+        nickname: nickname ?? null,
         entryNumber,
         charityPreference: charityPreference ?? null,
         draftInProgress: false,
@@ -186,7 +176,7 @@ export async function POST(req: NextRequest) {
     console.error("[picks] Confirmation email failed:", err)
   )
 
-  return NextResponse.json({ success: true, entryId: entry.id, entryNumber })
+  return NextResponse.json({ success: true, entryId: entry.id, entryNumber, nickname: entry.nickname ?? null })
 }
 
 // ─── PUT — Update picks for an existing entry ────────────────────────────────
@@ -269,7 +259,7 @@ export async function PUT(req: NextRequest) {
     console.error("[picks] Confirmation email failed:", err)
   )
 
-  return NextResponse.json({ success: true, entryId })
+  return NextResponse.json({ success: true, entryId, nickname: entry.nickname ?? null })
 }
 
 // ─── DELETE — Remove an entry entirely ────────────────────────────────────────
@@ -336,27 +326,138 @@ async function sendPickConfirmationEmail(userId: string, entryId: string) {
   })
   if (!user?.email || !user?.firstName) return
 
+  const teamSelect = { id: true, name: true, shortName: true, seed: true, region: true, logoUrl: true, espnId: true, wins: true, eliminated: true } as const
   const entry = await prisma.entry.findUnique({
     where: { id: entryId },
     include: {
       entryPicks: {
-        include: { team: { select: { name: true, seed: true, region: true } } },
+        include: {
+          team: { select: teamSelect },
+          playInSlot: { include: { team1: { select: teamSelect }, team2: { select: teamSelect }, winner: { select: teamSelect } } },
+        },
       },
     },
   })
   if (!entry) return
 
-  const pickDetails = entry.entryPicks
-    .filter((p) => p.team)
-    .map((p) => ({
-      name: p.team!.name,
-      seed: p.team!.seed,
-      region: p.team!.region ?? "",
-    }))
+  // Build effective teams list: direct picks + play-in representative teams
+  type TeamData = { id: string; name: string; shortName: string; seed: number; region: string | null; logoUrl: string | null; espnId: string | null; wins: number; eliminated: boolean }
+  const effectiveTeams: TeamData[] = []
+  const playInSlotPicks: Array<{ team1: TeamData; team2: TeamData; winner: TeamData | null }> = []
 
-  if (pickDetails.length > 0) {
-    await sendEntryConfirmationEmail(user.email, user.firstName, pickDetails)
+  for (const p of entry.entryPicks) {
+    if (p.team) {
+      effectiveTeams.push(p.team)
+    } else if (p.playInSlot) {
+      const slot = p.playInSlot
+      const rep = slot.winner ?? slot.team1 // representative for TPS/archetypes
+      effectiveTeams.push(rep)
+      playInSlotPicks.push({ team1: slot.team1, team2: slot.team2, winner: slot.winner })
+    }
   }
+
+  if (effectiveTeams.length === 0) return
+
+  // Build pick details — for unresolved play-in slots, show both team names and logos
+  const pickDetails: { name: string; seed: number; region: string; logoUrl?: string | null; logoUrl2?: string | null }[] = []
+  for (const p of entry.entryPicks) {
+    if (p.team) {
+      pickDetails.push({
+        name: p.team.name,
+        seed: p.team.seed,
+        region: p.team.region ?? "",
+        logoUrl: p.team.logoUrl ?? null,
+      })
+    } else if (p.playInSlot) {
+      const slot = p.playInSlot
+      if (slot.winner) {
+        // Resolved — show winner only
+        pickDetails.push({
+          name: slot.winner.name,
+          seed: slot.winner.seed,
+          region: slot.winner.region ?? "",
+          logoUrl: slot.winner.logoUrl ?? null,
+        })
+      } else {
+        // Unresolved — show "Team1 / Team2" with both logos
+        pickDetails.push({
+          name: `${slot.team1.name} / ${slot.team2.name}`,
+          seed: slot.team1.seed,
+          region: slot.team1.region ?? "",
+          logoUrl: slot.team1.logoUrl ?? null,
+          logoUrl2: slot.team2.logoUrl ?? null,
+        })
+      }
+    }
+  }
+
+  // Compute TPS (bracket-aware)
+  const infoMap = new Map<string, TeamBracketInfo>()
+  for (const t of effectiveTeams) {
+    infoMap.set(t.id, {
+      seed: t.seed,
+      region: t.region ?? "",
+      wins: t.wins ?? 0,
+      eliminated: t.eliminated ?? false,
+    })
+  }
+  const { totalPPR } = computeBracketAwarePPR(
+    effectiveTeams.map(t => t.id),
+    infoMap,
+  )
+  const currentScore = effectiveTeams.reduce(
+    (s, t) => s + t.seed * (t.wins ?? 0), 0,
+  )
+  const tps = currentScore + totalPPR
+
+  // Compute expected score — for unresolved play-in slots, include BOTH teams
+  const sbTeamIds: string[] = []
+  const teamStates = new Map<string, { wins: number; eliminated: boolean }>()
+
+  // Direct team picks
+  for (const p of entry.entryPicks) {
+    if (p.team) {
+      const espnId = p.team.espnId ?? p.team.id
+      sbTeamIds.push(espnId)
+      teamStates.set(espnId, { wins: p.team.wins ?? 0, eliminated: p.team.eliminated ?? false })
+    }
+  }
+  // Play-in slot picks
+  for (const slot of playInSlotPicks) {
+    if (slot.winner) {
+      const espnId = slot.winner.espnId ?? slot.winner.id
+      sbTeamIds.push(espnId)
+      teamStates.set(espnId, { wins: slot.winner.wins ?? 0, eliminated: slot.winner.eliminated ?? false })
+    } else {
+      // Unresolved: add both teams so SB cumulative[0] < 1 is properly used
+      for (const t of [slot.team1, slot.team2]) {
+        const espnId = t.espnId ?? t.id
+        sbTeamIds.push(espnId)
+        teamStates.set(espnId, { wins: 0, eliminated: false })
+      }
+    }
+  }
+
+  const allZeroWins = effectiveTeams.every(t => (t.wins ?? 0) === 0)
+  const preTournament = allZeroWins && !effectiveTeams.some(t => t.eliminated)
+  const expectedScore = calculateEntryExpectedScore(sbTeamIds, teamStates, preTournament)
+
+  // Classify archetypes
+  const archetypes = classifyArchetypes(
+    effectiveTeams.map(t => t.seed),
+    effectiveTeams.map(t => t.region ?? ""),
+  )
+
+  await sendEntryConfirmationEmail(
+    user.email,
+    user.firstName,
+    pickDetails,
+    entry.nickname,
+    entry.entryNumber,
+    tps,
+    expectedScore,
+    archetypes,
+  )
 }
 
 function validatePicks(picks: unknown): string | null {

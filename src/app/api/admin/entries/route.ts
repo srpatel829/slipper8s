@@ -47,14 +47,14 @@ export async function GET(req: NextRequest) {
         leagueEntries: { select: { league: { select: { name: true } } } },
         entryPicks: {
           include: {
-            team: { select: { name: true, shortName: true, seed: true, eliminated: true } },
+            team: { select: { name: true, shortName: true, seed: true, eliminated: true, wins: true, logoUrl: true } },
             playInSlot: {
               select: {
                 seed: true,
                 region: true,
-                team1: { select: { shortName: true } },
-                team2: { select: { shortName: true } },
-                winner: { select: { shortName: true } },
+                team1: { select: { shortName: true, logoUrl: true } },
+                team2: { select: { shortName: true, logoUrl: true } },
+                winner: { select: { shortName: true, seed: true, eliminated: true, wins: true, logoUrl: true } },
               },
             },
           },

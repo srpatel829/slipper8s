@@ -89,18 +89,14 @@ const STRATEGIES: Strategy[] = [
   {
     id: "random",
     label: "Random",
-    description: "2 random teams per region — let the bracket gods decide",
+    description: "8 random teams — let the bracket gods decide",
     icon: <Shuffle className="h-4 w-4" />,
     color: "text-green-400",
     generate(teams) {
-      const ids: string[] = []
+      const pool = teams.filter(t => !t.eliminated && t.seed !== 1)
       const seed = Date.now() % 9999
-      for (const region of REGIONS) {
-        const rt = teams.filter(t => t.region === region && !t.eliminated && t.seed !== 1)
-        const picked = seededSample(rt, 2, seed + region.charCodeAt(0))
-        ids.push(...picked.map(t => t.id))
-      }
-      return ids.slice(0, 8)
+      const picked = seededSample(pool, 8, seed)
+      return picked.map(t => t.id)
     },
   },
   {

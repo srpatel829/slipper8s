@@ -285,7 +285,7 @@ export interface Optimal8Data {
   picks: ResolvedPickSummary[]
 }
 
-function Optimal8Card({ data, label = "Optimal 8", description = "Best available picks by TPS potential", variant = "rolling", isPreTournament = false, pickerPctMap }: { data: Optimal8Data; label?: string; description?: string; variant?: "rolling" | "hindsight"; isPreTournament?: boolean; pickerPctMap?: Map<string, number> }) {
+function Optimal8Card({ data, label = "Optimal 8", description = "Best available picks by max score potential", variant = "rolling", isPreTournament = false, pickerPctMap }: { data: Optimal8Data; label?: string; description?: string; variant?: "rolling" | "hindsight"; isPreTournament?: boolean; pickerPctMap?: Map<string, number> }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const isHindsight = variant === "hindsight"
 
@@ -314,7 +314,7 @@ function Optimal8Card({ data, label = "Optimal 8", description = "Best available
               <p className="font-mono text-muted-foreground">+{data.ppr}</p>
             </div>
             <div className="text-right">
-              <p className="text-muted-foreground text-[10px]">TPS</p>
+              <p className="text-muted-foreground text-[10px]">Max</p>
               <p className="font-mono font-bold text-primary text-base">{data.tps}</p>
             </div>
           </div>
@@ -519,7 +519,6 @@ function LeaderboardRow({
           </div>
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm truncate">{entry.name}</span>
-            {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
           </div>
           {entry.picks.length > 0 && (
             <div className="flex items-center gap-2">
@@ -572,7 +571,6 @@ function LeaderboardRow({
                 </ArchetypePopover>
               ))}
               <span className="font-semibold text-sm truncate">{entry.name}</span>
-              {entry.username && <span className="text-[10px] text-muted-foreground">@{entry.username}</span>}
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
               {entry.tierName && <Badge variant="outline" className="text-[10px] h-4 shrink-0">{entry.tierName}</Badge>}
             </div>

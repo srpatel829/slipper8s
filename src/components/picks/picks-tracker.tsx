@@ -166,7 +166,7 @@ export function PicksTracker({ selected, teams, maxPicks }: PicksTrackerProps) {
         {selected.length > 0 && (
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-muted-foreground">
-              Max TPS: <span className="font-mono font-bold text-foreground/80">{bracketTPS}</span>
+              Max: <span className="font-mono font-bold text-foreground/80">{bracketTPS}</span>
             </span>
           </div>
         )}

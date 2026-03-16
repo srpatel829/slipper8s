@@ -138,22 +138,22 @@ export function computePercentile(rank: number, total: number): number {
 }
 
 // ─── Entry display name ──────────────────────────────────────────────────────
-// Shown as the primary label on the leaderboard (username shown separately).
-// Single entry, no nickname:  "Main Entry Slip"
-// Single entry, with nickname: "Upset Special"
-// Multi entry, no nickname:    "Entry Slip 1" / "Entry Slip 2"
-// Multi entry, with nickname:  "Upset Special" / "Chalk City"
+// Primary display on the leaderboard uses username.
+// Single entry:  "SumeetP"
+// Multi entry:   "SumeetP (Main Entry Slip)" or "SumeetP (Upset Special)"
 
 function entryDisplayName(
-  _userName: string | null,
-  _email: string,
+  userName: string | null,
+  email: string,
+  username: string | null,
   entryNumber: number,
   nickname: string | null,
   isMultiEntry: boolean,
 ): string {
-  if (nickname) return nickname
-  if (!isMultiEntry) return "Main Entry Slip"
-  return `Entry Slip ${entryNumber}`
+  const primary = username ?? userName ?? email.split("@")[0]
+  if (!isMultiEntry) return primary
+  const entryLabel = nickname ?? (entryNumber === 1 ? "Main Entry Slip" : `Entry Slip ${entryNumber}`)
+  return `${primary} (${entryLabel})`
 }
 
 // ─── Entry-based scoring (primary) ────────────────────────────────────────────
@@ -181,7 +181,8 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
   return {
     entryId: entry.id,
     userId: entry.user.id,
-    name: entryDisplayName(entry.user.name, entry.user.email, entry.entryNumber, entry.nickname, isMultiEntry),
+    name: entryDisplayName(entry.user.name, entry.user.email, entry.user.username ?? null, entry.entryNumber, entry.nickname, isMultiEntry),
+    isMultiEntry,
     email: entry.user.email,
     isPaid: entry.user.isPaid,
     username: entry.user.username ?? null,

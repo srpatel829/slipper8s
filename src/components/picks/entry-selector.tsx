@@ -127,7 +127,6 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
 
   function getEntryLabel(entry: EntryInfo) {
     if (entry.nickname) return entry.nickname
-    if (userName && entries.length <= 1) return userName
     if (entry.leagueEntries.length > 0) return `${entry.leagueEntries[0].league.name} entry slip`
     if (entries.length > 1) return `Entry Slip #${entry.entryNumber}`
     return "My Entry Slip"

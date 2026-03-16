@@ -18,6 +18,7 @@ import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { ZoomIn, ZoomOut, Maximize2 } from "lucide-react"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
+import type { PlayInSlotDisplay } from "@/types"
 import { TeamCallout } from "@/components/team-callout"
 import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
 
@@ -47,6 +48,7 @@ type AdvancingBracketProps =
         gameSequence: DemoGameEvent[]
         gameIndex: number
         isPreTournament?: boolean
+        playInSlots?: PlayInSlotDisplay[]
         gamePicks?: never
         onPickGame?: never
     }
@@ -58,6 +60,7 @@ type AdvancingBracketProps =
         gameSequence: DemoGameEvent[]
         gameIndex: number
         isPreTournament?: boolean
+        playInSlots?: PlayInSlotDisplay[]
         selectedTeamIds?: never
         onToggleTeam?: never
         disabled?: never
@@ -213,6 +216,7 @@ function TeamSlot({
     reversed,
     disabled,
     isPreTournament = false,
+    playInSlot,
 }: {
     team: TeamLike | null
     isLocked: boolean
@@ -223,8 +227,32 @@ function TeamSlot({
     reversed?: boolean
     disabled?: boolean
     isPreTournament?: boolean
+    playInSlot?: PlayInSlotDisplay | null
 }) {
     if (!team) {
+        // Show play-in matchup names instead of "TBD" when available
+        if (playInSlot && !playInSlot.winnerId) {
+            return (
+                <div className={cn(
+                    "h-[26px] px-1.5 flex items-center gap-1 rounded text-[8px] text-muted-foreground/40 border border-border/20 bg-card/8",
+                    reversed && "flex-row-reverse"
+                )}>
+                    <span className="shrink-0 text-[7px] text-muted-foreground/50">#{playInSlot.seed}</span>
+                    {playInSlot.team1LogoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={playInSlot.team1LogoUrl} alt="" className="h-2.5 w-2.5 object-contain shrink-0 opacity-50" />
+                    )}
+                    <span className="truncate min-w-0">{playInSlot.team1ShortName}</span>
+                    <span className="text-muted-foreground/30">/</span>
+                    {playInSlot.team2LogoUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={playInSlot.team2LogoUrl} alt="" className="h-2.5 w-2.5 object-contain shrink-0 opacity-50" />
+                    )}
+                    <span className="truncate min-w-0">{playInSlot.team2ShortName}</span>
+                </div>
+            )
+        }
+
         return (
             <div className={cn(
                 "h-[26px] px-1.5 flex items-center gap-1 rounded text-[8px] text-muted-foreground/25 border border-border/12 bg-card/5",
@@ -308,6 +336,8 @@ function SimMatchup({
     onPickGame,
     reversed,
     isPreTournament,
+    topPlayIn,
+    botPlayIn,
 }: {
     gameId: string
     topTeam: TeamLike | null
@@ -318,6 +348,8 @@ function SimMatchup({
     onPickGame: (gameId: string, teamId: string) => void
     reversed?: boolean
     isPreTournament?: boolean
+    topPlayIn?: PlayInSlotDisplay | null
+    botPlayIn?: PlayInSlotDisplay | null
 }) {
     const picked = gamePicks[gameId]
 
@@ -332,6 +364,7 @@ function SimMatchup({
                 onClick={() => topTeam && onPickGame(gameId, topTeam.id)}
                 reversed={reversed}
                 isPreTournament={isPreTournament}
+                playInSlot={topPlayIn}
             />
             <TeamSlot
                 team={botTeam}
@@ -342,6 +375,7 @@ function SimMatchup({
                 onClick={() => botTeam && onPickGame(gameId, botTeam.id)}
                 reversed={reversed}
                 isPreTournament={isPreTournament}
+                playInSlot={botPlayIn}
             />
         </div>
     )
@@ -404,6 +438,8 @@ interface SimRoundColumn {
         botTeam: TeamLike | null
         effectiveWinnerId: string | null
         isLocked: boolean
+        topPlayIn?: PlayInSlotDisplay | null
+        botPlayIn?: PlayInSlotDisplay | null
     }>
 }
 
@@ -427,6 +463,7 @@ function SimRegionColumn({
     reversed?: boolean
     isPreTournament?: boolean
 }) {
+    // Play-in data is already embedded in the game objects (topPlayIn/botPlayIn)
     return (
         <div className={cn("flex flex-col", reversed ? "items-end" : "items-start")}>
             <div className={cn(
@@ -463,6 +500,8 @@ function SimRegionColumn({
                                                 onPickGame={onPickGame}
                                                 reversed={reversed}
                                                 isPreTournament={isPreTournament}
+                                                topPlayIn={g.topPlayIn}
+                                                botPlayIn={g.botPlayIn}
                                             />
                                         </div>
                                         <div style={{ width: 12, height: CELL_H * 2 }} className="shrink-0">
@@ -633,6 +672,17 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
         return computeEffectiveBracket(teams, gameSequence, gameIndex, props.gamePicks)
     }, [mode, teams, gameSequence, gameIndex, mode === "simulator" ? props.gamePicks : null])
 
+    // ── Build play-in lookup map (region-seed → PlayInSlotDisplay) ──────────
+    const playInMap = useMemo(() => {
+        const map = new Map<string, PlayInSlotDisplay>()
+        if (props.playInSlots) {
+            for (const slot of props.playInSlots) {
+                map.set(`${slot.region}-${slot.seed}`, slot)
+            }
+        }
+        return map
+    }, [props.playInSlots])
+
     // ── Build simulator round columns per region ──────────────────────────────
     const simRegionRounds = useMemo(() => {
         if (mode !== "simulator") return new Map<Region, SimRoundColumn[]>()
@@ -652,20 +702,32 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
             const rm = byRegionRound.get(region)!
             result.set(region, [1, 2, 3, 4].filter(r => (rm.get(r) ?? []).length > 0).map(r => ({
                 round: r,
-                games: (rm.get(r) ?? []).map(game => {
+                games: (rm.get(r) ?? []).map((game, gameIdx) => {
                     const data = effectiveBracket.get(game.gameId)
+
+                    // For R64 games, attach play-in slot info based on seed position
+                    let topPlayIn: PlayInSlotDisplay | null = null
+                    let botPlayIn: PlayInSlotDisplay | null = null
+                    if (r === 1 && gameIdx < R64_ORDER.length) {
+                        const [topSeed, botSeed] = R64_ORDER[gameIdx]
+                        topPlayIn = playInMap.get(`${region}-${topSeed}`) ?? null
+                        botPlayIn = playInMap.get(`${region}-${botSeed}`) ?? null
+                    }
+
                     return {
                         gameId: game.gameId,
                         topTeam: data?.topTeam ?? null,
                         botTeam: data?.botTeam ?? null,
                         effectiveWinnerId: data?.effectiveWinnerId ?? null,
                         isLocked: data?.isLocked ?? false,
+                        topPlayIn: topPlayIn && !data?.topTeam ? topPlayIn : null,
+                        botPlayIn: botPlayIn && !data?.botTeam ? botPlayIn : null,
                     }
                 }),
             })))
         }
         return result
-    }, [mode, effectiveBracket, gameSequence])
+    }, [mode, effectiveBracket, gameSequence, playInMap])
 
     // ── Build picks mode R64 matchups per region ──────────────────────────────
     const picksR64 = useMemo(() => {

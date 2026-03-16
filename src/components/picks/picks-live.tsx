@@ -210,6 +210,8 @@ export function PicksLive({
         onCharityChange={setCharity}
         entryId={activeEntry?.id ?? undefined}
         seasonId={seasonId}
+        firstName={userName?.split(" ")[0] ?? undefined}
+        entryNickname={activeEntry?.nickname ?? null}
       />
 
       {/* Bracket picking views — only shown when picks are open */}

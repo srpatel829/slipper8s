@@ -493,14 +493,14 @@ export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournam
         }
     }, [teamMap, gameSequence, gameIndex])
 
-    const [zoom, setZoom] = useState(typeof window !== "undefined" && window.innerWidth < 768 ? 0.5 : 0.85)
+    const [zoom, setZoom] = useState(1.0)
 
     return (
         <div className="relative">
             {/* Zoom controls */}
             <div className="sticky top-16 z-20 flex items-center gap-1 mb-2 justify-end">
                 <button
-                    onClick={() => setZoom(z => Math.max(0.3, z - 0.1))}
+                    onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
                     className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ZoomOut className="h-3.5 w-3.5" />
@@ -509,13 +509,13 @@ export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournam
                     {Math.round(zoom * 100)}%
                 </span>
                 <button
-                    onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}
+                    onClick={() => setZoom(z => Math.min(1.5, z + 0.25))}
                     className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <ZoomIn className="h-3.5 w-3.5" />
                 </button>
                 <button
-                    onClick={() => setZoom(0.85)}
+                    onClick={() => setZoom(1.0)}
                     className="h-7 w-7 rounded border border-border/40 bg-card/80 backdrop-blur flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 >
                     <Maximize2 className="h-3.5 w-3.5" />

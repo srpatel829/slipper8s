@@ -38,9 +38,6 @@ export function CharityInput({ charity, setCharity, disabled }: CharityInputProp
         disabled={disabled}
         className="bg-muted/50"
       />
-      <p className="text-[10px] text-muted-foreground">
-        Top 4 finishers&apos; charities are shown on the leaderboard.
-      </p>
     </div>
   )
 }

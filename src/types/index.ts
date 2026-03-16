@@ -112,6 +112,7 @@ export interface LeaderboardEntry {
   conference?: string | null
   leagueIds?: string[]
   archetypes?: string[]
+  isMultiEntry?: boolean
   picks: ResolvedPickSummary[]
 }
 
@@ -183,6 +184,20 @@ export interface SyncResult {
   playInResolved: number
   entriesRecalculated?: number
   errors: string[]
+}
+
+// ─── Play-In Slot Display Type ────────────────────────────────────────────────
+
+/** Lightweight play-in slot info for display in the bracket */
+export interface PlayInSlotDisplay {
+  id: string
+  seed: number
+  region: string
+  team1ShortName: string
+  team2ShortName: string
+  team1LogoUrl: string | null
+  team2LogoUrl: string | null
+  winnerId: string | null
 }
 
 // ─── History / Timeline Types ────────────────────────────────────────────────

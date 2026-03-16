@@ -343,7 +343,7 @@ function WinProbabilitiesSection({ team }: { team: TeamCalloutData }) {
   return (
     <div className="px-3 py-1.5">
       <div className="text-[8px] font-bold text-muted-foreground/70 uppercase tracking-wider mb-1">
-        Win Probabilities
+        Win Probabilities (per Silver Bulletin)
       </div>
       <div className="grid grid-cols-6 gap-x-1 text-center">
         {roundLabels.map((label, i) => {
@@ -442,7 +442,7 @@ function LiveBody({ team }: { team: TeamCalloutData }) {
           )}
           {!team.eliminated && (
             <div className="flex items-baseline gap-1">
-              <span className="text-muted-foreground text-[10px]">TPS</span>
+              <span className="text-muted-foreground text-[10px]">Max</span>
               <span className="font-mono font-bold text-primary text-[11px]">{maxScore}</span>
             </div>
           )}

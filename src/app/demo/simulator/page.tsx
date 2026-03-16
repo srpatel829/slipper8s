@@ -215,7 +215,7 @@ export default function DemoSimulatorPage() {
           </div>
           {hasChanges && (
             <p className="text-[10px] text-muted-foreground/70 mt-1">
-              Sorted by TPS (score + potential) with your picks applied
+              Sorted by max score (score + potential) with your picks applied
             </p>
           )}
         </div>
@@ -228,7 +228,7 @@ export default function DemoSimulatorPage() {
                 <TableHead className="w-10 text-[10px] py-2 pl-4">#</TableHead>
                 <TableHead className="text-[10px] py-2">Player</TableHead>
                 <TableHead className="text-right text-[10px] py-2">Pts</TableHead>
-                <TableHead className="text-right text-[10px] py-2 pr-4">TPS</TableHead>
+                <TableHead className="text-right text-[10px] py-2 pr-4">Max</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -275,7 +275,7 @@ export default function DemoSimulatorPage() {
         {/* Footer legend */}
         <div className="px-4 py-2.5 border-t border-border/20 shrink-0 bg-muted/10">
           <div className="flex items-center justify-between text-[9px] text-muted-foreground/60">
-            <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; TPS = Total Potential</span>
+            <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; Max = Max Score</span>
           </div>
         </div>
       </div>

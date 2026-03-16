@@ -3,26 +3,41 @@
 import { useState, useEffect, useCallback } from "react"
 import {
   ClipboardList, Loader2, Search, ChevronLeft, ChevronRight,
-  Trash2, PlusCircle, MinusCircle, Download,
+  Trash2, Download,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import Image from "next/image"
 
 interface EntryPick {
   id: string
-  team: { name: string; shortName: string; seed: number; eliminated: boolean } | null
+  team: {
+    name: string
+    shortName: string
+    seed: number
+    eliminated: boolean
+    wins: number
+    logoUrl: string | null
+  } | null
   playInSlot: {
     seed: number
     region: string
-    team1: { shortName: string }
-    team2: { shortName: string }
-    winner: { shortName: string } | null
+    team1: { shortName: string; logoUrl: string | null }
+    team2: { shortName: string; logoUrl: string | null }
+    winner: {
+      shortName: string
+      seed: number
+      eliminated: boolean
+      wins: number
+      logoUrl: string | null
+    } | null
   } | null
 }
 
 interface EntryData {
   id: string
+  userId: string
   entryNumber: number
   nickname: string | null
   score: number
@@ -42,11 +57,33 @@ interface EntryData {
 
 const PAGE_SIZE = 20
 
-function getSeedColorClasses(seed: number): string {
-  if (seed <= 4) return "bg-sky-800/20 text-sky-300 border-sky-800/30"
-  if (seed <= 8) return "bg-orange-500/20 text-orange-400 border-orange-500/30"
-  if (seed <= 12) return "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-  return "bg-amber-800/20 text-amber-600 border-amber-800/30"
+function getResolvedTeam(pick: EntryPick) {
+  return pick.team ?? pick.playInSlot?.winner ?? null
+}
+
+function computeAlive(entryPicks: EntryPick[]): number {
+  return entryPicks.filter(p => {
+    const team = getResolvedTeam(p)
+    return team && !team.eliminated
+  }).length
+}
+
+function computeScoreAndMax(entryPicks: EntryPick[]): { currentScore: number; maxScore: number } {
+  let currentScore = 0
+  let potentialRemaining = 0
+
+  for (const p of entryPicks) {
+    const team = getResolvedTeam(p)
+    if (!team) continue
+    const seed = p.team ? p.team.seed : p.playInSlot?.seed ?? 0
+    const wins = team.wins ?? 0
+    currentScore += seed * wins
+    if (!team.eliminated) {
+      potentialRemaining += seed * (6 - wins)
+    }
+  }
+
+  return { currentScore, maxScore: currentScore + potentialRemaining }
 }
 
 export default function AdminEntriesPage() {
@@ -114,39 +151,9 @@ export default function AdminEntriesPage() {
     }
   }
 
-  async function handleScoreAdjust(entryId: string, adjustment: number) {
-    const direction = adjustment > 0 ? "add" : "subtract"
-    const amount = Math.abs(adjustment)
-    const confirmed = window.confirm(
-      `${direction === "add" ? "Add" : "Subtract"} ${amount} point(s) ${direction === "add" ? "to" : "from"} this entry slip's score?`
-    )
-    if (!confirmed) return
-
-    setActionLoading(entryId)
-    try {
-      const res = await fetch("/api/admin/entries", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          entryId,
-          action: "adjustScore",
-          scoreAdjustment: adjustment,
-          reason: `Manual ${direction} of ${amount} points`,
-        }),
-      })
-      if (res.ok) {
-        toast.success("Score adjusted successfully")
-        fetchEntries()
-      } else {
-        const data = await res.json()
-        toast.error(data.error ?? "Failed to adjust score")
-      }
-    } catch {
-      toast.error("Something went wrong")
-    } finally {
-      setActionLoading(null)
-    }
-  }
+  // Build multi-entry lookup
+  const entriesPerUser = new Map<string, number>()
+  entries.forEach(e => entriesPerUser.set(e.userId, (entriesPerUser.get(e.userId) ?? 0) + 1))
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
 
@@ -160,7 +167,7 @@ export default function AdminEntriesPage() {
             <h1 className="text-2xl font-bold tracking-tight">Entry Slip Management</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            View, search, and manage player entry slips. Void entries or adjust scores if needed.
+            View, search, and manage player entry slips. Void entries if needed.
           </p>
         </div>
         <a
@@ -203,12 +210,14 @@ export default function AdminEntriesPage() {
           <div className="space-y-2">
             {entries.map((entry) => {
               const isExpanded = expandedId === entry.id
-              const playerName = [entry.user.firstName, entry.user.lastName].filter(Boolean).join(" ") || entry.user.email
-              const displayName = entry.nickname
-                ? `${entry.nickname} (${playerName} ${entry.entryNumber})`
-                : entry.entryNumber > 1
-                  ? `${playerName} ${entry.entryNumber}`
-                  : playerName
+              const isMulti = (entriesPerUser.get(entry.userId) ?? 1) > 1
+              const displayName = isMulti
+                ? `${entry.user.username ?? entry.user.email}${entry.nickname ? ` (${entry.nickname})` : ` (#${entry.entryNumber})`}`
+                : (entry.user.username ?? entry.user.email)
+
+              // Compute alive and max on-the-fly
+              const computedAlive = computeAlive(entry.entryPicks)
+              const { currentScore, maxScore } = computeScoreAndMax(entry.entryPicks)
 
               return (
                 <div
@@ -221,12 +230,9 @@ export default function AdminEntriesPage() {
                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold text-sm">{displayName}</span>
-                          {entry.user.username && (
-                            <span className="text-xs text-muted-foreground">@{entry.user.username}</span>
-                          )}
                           {entry.draftInProgress && (
                             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border bg-amber-500/20 text-amber-400 border-amber-500/30">
                               Draft
@@ -238,18 +244,68 @@ export default function AdminEntriesPage() {
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {entry.user.email}
+                        {/* Inline picks with team logos */}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {entry.entryPicks.map((pick) => {
+                            const team = getResolvedTeam(pick)
+                            if (!team) {
+                              // Unresolved play-in slot
+                              if (pick.playInSlot) {
+                                const slot = pick.playInSlot
+                                return (
+                                  <span
+                                    key={pick.id}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium border bg-muted/50 text-muted-foreground border-border"
+                                  >
+                                    <span className="font-bold text-[9px] text-muted-foreground/70">
+                                      {slot.seed}
+                                    </span>
+                                    {slot.team1.shortName}/{slot.team2.shortName}
+                                  </span>
+                                )
+                              }
+                              return null
+                            }
+                            const logoUrl = team.logoUrl
+                            const seed = pick.team ? pick.team.seed : pick.playInSlot?.seed ?? 0
+                            const eliminated = team.eliminated
+                            return (
+                              <span
+                                key={pick.id}
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium border border-border/60 bg-muted/30 ${eliminated ? "opacity-40 line-through" : ""}`}
+                              >
+                                {logoUrl ? (
+                                  <Image
+                                    src={logoUrl}
+                                    alt={team.shortName}
+                                    width={16}
+                                    height={16}
+                                    className="rounded-sm shrink-0"
+                                    unoptimized
+                                  />
+                                ) : (
+                                  <span className="w-4 h-4 rounded-sm bg-muted-foreground/20 shrink-0" />
+                                )}
+                                <span className="font-bold text-[9px] text-muted-foreground/70">
+                                  {seed}
+                                </span>
+                                <span>{team.shortName}</span>
+                              </span>
+                            )
+                          })}
+                          {entry.entryPicks.length === 0 && (
+                            <span className="text-[10px] text-muted-foreground/50">No picks yet</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4 shrink-0 text-right">
                         <div>
-                          <div className="text-lg font-bold tabular-nums">{entry.score}</div>
+                          <div className="text-lg font-bold tabular-nums">{currentScore}</div>
                           <div className="text-[10px] text-muted-foreground">pts</div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          <div>{entry.teamsAlive}/8 alive</div>
-                          <div>Max: {entry.maxPossibleScore}</div>
+                          <div>{computedAlive}/8 alive</div>
+                          <div>Max: {maxScore}</div>
                         </div>
                       </div>
                     </div>
@@ -258,71 +314,36 @@ export default function AdminEntriesPage() {
                   {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t border-border px-4 py-4 bg-muted/10">
-                      {/* Picks */}
-                      <div className="mb-4">
-                        <p className="text-xs font-semibold text-muted-foreground mb-2">PICKS ({entry.entryPicks.length}/8)</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {entry.entryPicks.map((pick) => {
-                            if (pick.team) {
-                              const color = getSeedColorClasses(pick.team.seed)
-                              return (
-                                <span
-                                  key={pick.id}
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${color} ${pick.team.eliminated ? "opacity-50 line-through" : ""}`}
-                                >
-                                  #{pick.team.seed} {pick.team.shortName}
-                                </span>
-                              )
-                            }
-                            if (pick.playInSlot) {
-                              const slot = pick.playInSlot
-                              return (
-                                <span
-                                  key={pick.id}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-muted/50 text-muted-foreground border-border"
-                                >
-                                  #{slot.seed} {slot.winner?.shortName ?? `${slot.team1.shortName}/${slot.team2.shortName}`}
-                                  <span className="text-[8px]">({slot.region})</span>
-                                </span>
-                              )
-                            }
-                            return null
-                          })}
-                          {entry.entryPicks.length === 0 && (
-                            <span className="text-xs text-muted-foreground/50">No picks yet</span>
-                          )}
+                      {/* Entry info */}
+                      <div className="mb-4 text-xs text-muted-foreground space-y-1">
+                        <div>
+                          <span className="font-semibold text-muted-foreground/80">Email:</span> {entry.user.email}
+                        </div>
+                        {entry.user.username && (
+                          <div>
+                            <span className="font-semibold text-muted-foreground/80">Username:</span> @{entry.user.username}
+                          </div>
+                        )}
+                        {entry.nickname && (
+                          <div>
+                            <span className="font-semibold text-muted-foreground/80">Entry name:</span> {entry.nickname}
+                          </div>
+                        )}
+                        <div>
+                          <span className="font-semibold text-muted-foreground/80">Created:</span>{" "}
+                          {new Date(entry.createdAt).toLocaleDateString()}
                         </div>
                       </div>
 
                       {/* Actions */}
                       <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs gap-1.5"
-                          disabled={actionLoading === entry.id}
-                          onClick={() => handleScoreAdjust(entry.id, 1)}
-                        >
-                          <PlusCircle className="h-3 w-3" />
-                          +1 pt
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs gap-1.5"
-                          disabled={actionLoading === entry.id}
-                          onClick={() => handleScoreAdjust(entry.id, -1)}
-                        >
-                          <MinusCircle className="h-3 w-3" />
-                          -1 pt
-                        </Button>
                         <div className="flex-1" />
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-7 text-xs gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10"
                           disabled={actionLoading === entry.id}
-                          onClick={() => handleVoidEntry(entry.id, playerName)}
+                          onClick={() => handleVoidEntry(entry.id, displayName)}
                         >
                           {actionLoading === entry.id ? (
                             <Loader2 className="h-3 w-3 animate-spin" />

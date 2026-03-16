@@ -197,7 +197,7 @@ export default async function SimulatorPage() {
     showLeaderboard = showStatuses.includes(season?.status ?? "")
   }
 
-  const [teams, entries, tournamentGames] = await Promise.all([
+  const [teams, entries, tournamentGames, playInSlots] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
@@ -246,6 +246,9 @@ export default async function SimulatorPage() {
       },
       orderBy: [{ round: "asc" }, { startTime: "asc" }],
     }),
+    prisma.playInSlot.findMany({
+      include: { team1: true, team2: true, winner: true },
+    }),
   ])
 
   const leaderboard = computeLeaderboardFromEntries(entries as EntryWithRelations[])
@@ -263,6 +266,16 @@ export default async function SimulatorPage() {
         gameSequence={gameSequence}
         gameIndex={gameIndex}
         showLeaderboard={showLeaderboard}
+        playInSlots={playInSlots.map(s => ({
+          id: s.id,
+          seed: s.seed,
+          region: s.region,
+          team1ShortName: s.team1.shortName,
+          team2ShortName: s.team2.shortName,
+          team1LogoUrl: s.team1.logoUrl,
+          team2LogoUrl: s.team2.logoUrl,
+          winnerId: s.winnerId,
+        }))}
       />
     </Suspense>
   )

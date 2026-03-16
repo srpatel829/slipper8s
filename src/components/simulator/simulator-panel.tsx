@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, RotateCcw, ChevronDown, ChevronRight, Lock, LayoutTemplate, List } from "lucide-react"
 import { computeSimulatedLeaderboard, type HypotheticalState } from "@/lib/scoring"
 import { seedToSlot } from "@/lib/bracket-ppr"
-import type { LeaderboardEntry } from "@/types"
+import type { LeaderboardEntry, PlayInSlotDisplay } from "@/types"
 import type { Team } from "@/generated/prisma"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
 import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
@@ -42,6 +42,8 @@ interface SimulatorPanelProps {
   gameIndex?: number
   /** Whether to show the leaderboard sidebar (hidden until entries are locked) */
   showLeaderboard?: boolean
+  /** Play-in slot data for showing matchup names instead of TBD */
+  playInSlots?: PlayInSlotDisplay[]
 }
 
 /** Unified game representation for both demo and real-app mode */
@@ -334,6 +336,7 @@ export function SimulatorPanel({
   gameSequence,
   gameIndex,
   showLeaderboard = true,
+  playInSlots,
 }: SimulatorPanelProps) {
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
   // Rounds that are collapsed (defaults: completed rounds)
@@ -625,6 +628,7 @@ export function SimulatorPanel({
                   gameSequence={gameSequence}
                   gameIndex={gameIndex ?? -1}
                   isPreTournament={isPreTournament}
+                  playInSlots={playInSlots}
                 />
               ) : (
                 <p className="text-sm text-muted-foreground py-4 text-center">
@@ -773,7 +777,7 @@ export function SimulatorPanel({
                   <TableHead className="w-10 text-[10px] py-2 pl-4">#</TableHead>
                   <TableHead className="text-[10px] py-2">Player</TableHead>
                   <TableHead className="text-right text-[10px] py-2">Pts</TableHead>
-                  <TableHead className="text-right text-[10px] py-2 pr-4">TPS</TableHead>
+                  <TableHead className="text-right text-[10px] py-2 pr-4">Max</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -820,7 +824,7 @@ export function SimulatorPanel({
           {/* Footer legend */}
           <div className="px-4 py-2.5 border-t border-border/20 shrink-0 bg-muted/10">
             <div className="flex items-center justify-between text-[9px] text-muted-foreground/60">
-              <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; TPS = Total Potential</span>
+              <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; Max = Max Score</span>
             </div>
           </div>
         </div>
