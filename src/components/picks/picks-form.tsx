@@ -17,7 +17,7 @@ import { getSeedColor } from "@/lib/colors"
 import { TeamLogoBox } from "@/components/team-logo-box"
 import { TeamCallout } from "@/components/team-callout"
 import { buildTeamCalloutData } from "@/lib/team-callout-helpers"
-import { calculateEntryExpectedScore, SB_2026_MAP } from "@/lib/silver-bulletin-2026"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
 import type { Team, PlayInSlot, Pick } from "@/generated/prisma"
 
 type PlayInSlotWithTeams = PlayInSlot & {
@@ -185,11 +185,12 @@ export function PicksForm({
   }, [selectedTeamObjects])
 
   // ── Expected score calculation ──
+  // Use espnId for SB lookups (SB_2026_MAP is keyed by ESPN ID)
   const expectedScore = useMemo(() => {
     if (selectedTeamObjects.length === 0) return null
-    const teamIds = selectedTeamObjects.map(t => t.id)
+    const teamIds = selectedTeamObjects.map(t => t.espnId ?? t.id)
     const teamStates = new Map(
-      selectedTeamObjects.map(t => [t.id, {
+      selectedTeamObjects.map(t => [t.espnId ?? t.id, {
         wins: (t as { wins?: number }).wins ?? 0,
         eliminated: (t as { eliminated?: boolean }).eliminated ?? false,
       }])
