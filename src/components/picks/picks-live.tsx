@@ -10,6 +10,7 @@ import { PicksForm } from "@/components/picks/picks-form"
 import { QuickPickGenerator } from "@/components/picks/quick-pick-generator"
 import { BracketView } from "@/components/picks/bracket-view"
 import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
+import { CharityInput } from "@/components/picks/charity-input"
 import { EntrySelector } from "@/components/picks/entry-selector"
 import { CountdownTimer } from "@/components/landing/countdown-timer"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -43,6 +44,9 @@ export function PicksLive({
 }: PicksLiveProps) {
   const [formKey, setFormKey] = useState(0)
   const [generatedPicks, setGeneratedPicks] = useState<SelectedPick[] | null>(null)
+  const [charity, setCharity] = useState<string>(
+    activeEntry?.entryPicks?.[0]?.charityPreference ?? activeEntry?.charityPreference ?? ""
+  )
 
   // Build existing picks from active entry
   const existingPicks = useMemo(() => {
@@ -75,6 +79,31 @@ export function PicksLive({
       playInSlot: ep.playInSlot,
     }))
   }, [activeEntry, generatedPicks, userId, teams])
+
+  // Build bracket teams: include synthetic entries for play-in slots ("Team1/Team2")
+  const bracketTeams = useMemo(() => {
+    const result = [...teams]
+    for (const slot of playInSlots) {
+      // Only add if no non-play-in team exists for this seed+region
+      const hasTeam = teams.some((t: any) => t.seed === slot.seed && t.region === slot.region)
+      if (!hasTeam) {
+        result.push({
+          id: `playin-${slot.id}`,
+          name: `${slot.team1.name} / ${slot.team2.name}`,
+          shortName: `${slot.team1.shortName}/${slot.team2.shortName}`,
+          seed: slot.seed,
+          region: slot.region,
+          logoUrl: null,
+          eliminated: false,
+          wins: 0,
+          isPlayIn: false, // treat as regular team for bracket rendering
+          espnId: null,
+          conference: null,
+        })
+      }
+    }
+    return result
+  }, [teams, playInSlots])
 
   // Selected team IDs for bracket view sync
   const selectedTeamIds = useMemo((): Set<string> => {
@@ -173,6 +202,9 @@ export function PicksLive({
         deadlinePassed={deadlinePassed}
         defaultCharities={defaultCharities}
         enableViewModes={true}
+        hideCharity={true}
+        charityValue={charity}
+        onCharityChange={setCharity}
         entryId={activeEntry?.id ?? undefined}
         seasonId={seasonId}
       />
@@ -197,7 +229,7 @@ export function PicksLive({
           </div>
           <TabsContent value="advancing" className="mt-0">
             <AdvancingBracket
-              teams={teams}
+              teams={bracketTeams}
               mode="picks"
               selectedTeamIds={selectedTeamIds}
               onToggleTeam={handleBracketToggle}
@@ -209,7 +241,7 @@ export function PicksLive({
           </TabsContent>
           <TabsContent value="classic" className="mt-0">
             <BracketView
-              teams={teams}
+              teams={bracketTeams}
               selectedTeamIds={selectedTeamIds}
               onToggleTeam={handleBracketToggle}
               disabled={deadlinePassed}
@@ -217,6 +249,9 @@ export function PicksLive({
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Charity preference — below bracket */}
+      <CharityInput charity={charity} setCharity={setCharity} disabled={deadlinePassed} />
     </div>
   )
 }

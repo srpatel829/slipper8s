@@ -85,7 +85,7 @@ const BRACKET_2026: BracketTeam[] = [
   { espnId: "193",  name: "Miami (OH)",         shortName: "M-OH", seed: 11, region: "Midwest", isPlayIn: true, conference: "MAC" },
   { espnId: "2006", name: "Akron",              shortName: "AKR",  seed: 12, region: "Midwest", isPlayIn: false, conference: "MAC" },
   { espnId: "2275", name: "Hofstra",            shortName: "HOF",  seed: 13, region: "Midwest", isPlayIn: false, conference: "CAA" },
-  { espnId: "2918", name: "Wright State",       shortName: "WSU",  seed: 14, region: "Midwest", isPlayIn: false, conference: "Horizon" },
+  { espnId: "2750", name: "Wright State",       shortName: "WSU",  seed: 14, region: "Midwest", isPlayIn: false, conference: "Horizon" },
   { espnId: "2634", name: "Tennessee State",    shortName: "TNST", seed: 15, region: "Midwest", isPlayIn: false, conference: "OVC" },
   // Midwest 16: First Four — UMBC vs Howard
   { espnId: "2692", name: "UMBC",               shortName: "UMBC", seed: 16, region: "Midwest", isPlayIn: true, conference: "AE" },

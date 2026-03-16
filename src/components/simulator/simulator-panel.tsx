@@ -40,6 +40,8 @@ interface SimulatorPanelProps {
   gameSequence?: DemoGameEvent[]
   /** Current timeline position (0 = some complete, -1 = pre-tournament) */
   gameIndex?: number
+  /** Whether to show the leaderboard sidebar (hidden until entries are locked) */
+  showLeaderboard?: boolean
 }
 
 /** Unified game representation for both demo and real-app mode */
@@ -331,6 +333,7 @@ export function SimulatorPanel({
   allTeams,
   gameSequence,
   gameIndex,
+  showLeaderboard = true,
 }: SimulatorPanelProps) {
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
   // Rounds that are collapsed (defaults: completed rounds)
@@ -737,89 +740,99 @@ export function SimulatorPanel({
       </div>
 
       {/* ── Right: sticky simulated leaderboard ──────────────────────── */}
-      <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col overflow-hidden max-h-[40vh] md:max-h-none">
-        {/* Leaderboard header */}
-        <div className="px-4 py-3 border-b border-border/30 shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-primary" />
-              <span className="font-semibold text-sm">Leaderboard</span>
-              {hasChanges && (
-                <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/40 py-0">
-                  Simulated
-                </Badge>
-              )}
+      {showLeaderboard ? (
+        <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col overflow-hidden max-h-[40vh] md:max-h-none">
+          {/* Leaderboard header */}
+          <div className="px-4 py-3 border-b border-border/30 shrink-0">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-primary" />
+                <span className="font-semibold text-sm">Leaderboard</span>
+                {hasChanges && (
+                  <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-400/40 py-0">
+                    Simulated
+                  </Badge>
+                )}
+              </div>
+              <span className="text-[10px] text-muted-foreground font-mono">
+                {simLeaderboard.length} players
+              </span>
             </div>
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {simLeaderboard.length} players
-            </span>
+            {hasChanges && (
+              <p className="text-[10px] text-muted-foreground/70 mt-1">
+                Sorted by score with your picks applied
+              </p>
+            )}
           </div>
-          {hasChanges && (
-            <p className="text-[10px] text-muted-foreground/70 mt-1">
-              Sorted by score with your picks applied
-            </p>
-          )}
-        </div>
 
-        {/* Scrollable leaderboard rows */}
-        <div className="flex-1 overflow-y-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/20">
-                <TableHead className="w-10 text-[10px] py-2 pl-4">#</TableHead>
-                <TableHead className="text-[10px] py-2">Player</TableHead>
-                <TableHead className="text-right text-[10px] py-2">Pts</TableHead>
-                <TableHead className="text-right text-[10px] py-2 pr-4">TPS</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {simLeaderboard.map((entry) => {
-                const original = initialLeaderboard.find(e => e.userId === entry.userId)
-                const rankDelta = original ? original.rank - entry.rank : 0 // positive = moved up
-                const scoreChanged = original && original.currentScore !== entry.currentScore
-                const tpsChanged = original && original.tps !== entry.tps
+          {/* Scrollable leaderboard rows */}
+          <div className="flex-1 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/20">
+                  <TableHead className="w-10 text-[10px] py-2 pl-4">#</TableHead>
+                  <TableHead className="text-[10px] py-2">Player</TableHead>
+                  <TableHead className="text-right text-[10px] py-2">Pts</TableHead>
+                  <TableHead className="text-right text-[10px] py-2 pr-4">TPS</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {simLeaderboard.map((entry) => {
+                  const original = initialLeaderboard.find(e => e.userId === entry.userId)
+                  const rankDelta = original ? original.rank - entry.rank : 0 // positive = moved up
+                  const scoreChanged = original && original.currentScore !== entry.currentScore
+                  const tpsChanged = original && original.tps !== entry.tps
 
-                return (
-                  <TableRow
-                    key={entry.userId}
-                    className={tpsChanged ? "bg-primary/3" : ""}
-                  >
-                    <TableCell className="py-2 pl-4">
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-xs">#{entry.rank}</span>
-                        {rankDelta > 0 && (
-                          <span className="text-[9px] text-green-500 font-bold">▲{rankDelta}</span>
-                        )}
-                        {rankDelta < 0 && (
-                          <span className="text-[9px] text-red-500 font-bold">▼{Math.abs(rankDelta)}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-2 max-w-[100px]">
-                      <span className="text-xs font-medium truncate block">{entry.name}</span>
-                    </TableCell>
-                    <TableCell className="text-right py-2 font-mono text-xs">
-                      <span className={scoreChanged && hasChanges ? "text-primary font-semibold" : ""}>
-                        {entry.currentScore}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right py-2 pr-4 font-mono font-bold text-xs text-primary">
-                      {entry.tps}
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                  return (
+                    <TableRow
+                      key={entry.userId}
+                      className={tpsChanged ? "bg-primary/3" : ""}
+                    >
+                      <TableCell className="py-2 pl-4">
+                        <div className="flex items-center gap-1">
+                          <span className="font-bold text-xs">#{entry.rank}</span>
+                          {rankDelta > 0 && (
+                            <span className="text-[9px] text-green-500 font-bold">▲{rankDelta}</span>
+                          )}
+                          {rankDelta < 0 && (
+                            <span className="text-[9px] text-red-500 font-bold">▼{Math.abs(rankDelta)}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-2 max-w-[100px]">
+                        <span className="text-xs font-medium truncate block">{entry.name}</span>
+                      </TableCell>
+                      <TableCell className="text-right py-2 font-mono text-xs">
+                        <span className={scoreChanged && hasChanges ? "text-primary font-semibold" : ""}>
+                          {entry.currentScore}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right py-2 pr-4 font-mono font-bold text-xs text-primary">
+                        {entry.tps}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
 
-        {/* Footer legend */}
-        <div className="px-4 py-2.5 border-t border-border/20 shrink-0 bg-muted/10">
-          <div className="flex items-center justify-between text-[9px] text-muted-foreground/60">
-            <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; TPS = Total Potential</span>
+          {/* Footer legend */}
+          <div className="px-4 py-2.5 border-t border-border/20 shrink-0 bg-muted/10">
+            <div className="flex items-center justify-between text-[9px] text-muted-foreground/60">
+              <span># = Rank &nbsp;·&nbsp; Pts = Score &nbsp;·&nbsp; TPS = Total Potential</span>
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col items-center justify-center px-4 py-12 max-h-[40vh] md:max-h-none">
+          <Lock className="h-8 w-8 text-muted-foreground/40 mb-3" />
+          <p className="text-sm font-medium text-muted-foreground/70 text-center">Leaderboard hidden</p>
+          <p className="text-[11px] text-muted-foreground/50 text-center mt-1">
+            Rankings will appear once picks are locked and the tournament begins.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

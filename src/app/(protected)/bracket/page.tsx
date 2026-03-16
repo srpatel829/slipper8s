@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
 import { BracketViewer } from "@/components/bracket/bracket-viewer"
-import { PreTournamentBracket } from "@/components/bracket/pre-tournament-bracket"
+import { PreTournamentBracketWrapper } from "@/components/bracket/pre-tournament-bracket-wrapper"
 import { GitBranch } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -143,8 +143,8 @@ export default async function BracketPage() {
           </p>
         </div>
       ) : games.length === 0 ? (
-        /* Pre-tournament: show bracket structure from seeded teams */
-        <PreTournamentBracket
+        /* Pre-tournament: show real bracket structure using TournamentBracket */
+        <PreTournamentBracketWrapper
           teams={teams.map(t => ({
             id: t.id,
             name: t.name,
@@ -152,34 +152,21 @@ export default async function BracketPage() {
             seed: t.seed,
             region: t.region,
             logoUrl: t.logoUrl,
+            eliminated: t.eliminated,
+            wins: t.wins,
             isPlayIn: t.isPlayIn,
+            espnId: t.espnId,
+            conference: t.conference,
           }))}
           playInSlots={playInSlots.map(s => ({
             id: s.id,
             seed: s.seed,
             region: s.region,
-            team1: {
-              id: s.team1.id,
-              name: s.team1.name,
-              shortName: s.team1.shortName,
-              seed: s.team1.seed,
-              region: s.team1.region,
-              logoUrl: s.team1.logoUrl,
-              isPlayIn: true,
-            },
-            team2: {
-              id: s.team2.id,
-              name: s.team2.name,
-              shortName: s.team2.shortName,
-              seed: s.team2.seed,
-              region: s.team2.region,
-              logoUrl: s.team2.logoUrl,
-              isPlayIn: true,
-            },
-            winnerId: s.winnerId,
+            team1ShortName: s.team1.shortName,
+            team2ShortName: s.team2.shortName,
+            team1Name: s.team1.name,
+            team2Name: s.team2.name,
           }))}
-          regions={regions}
-          userPickTeamIds={userPickTeamIds}
         />
       ) : (
         <BracketViewer

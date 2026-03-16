@@ -42,6 +42,8 @@ interface PicksFormProps {
   matchupInfoMap?: Map<string, string>  // teamId → "vs #X Opp · Max Xpts" — for demo pre-tournament
   enableViewModes?: boolean             // shows region/seed view toggles + enhanced tracker
   hideCharity?: boolean                 // hides inline charity section (render CharityInput externally)
+  charityValue?: string                 // controlled charity value (when managed externally)
+  onCharityChange?: (value: string) => void  // callback when charity changes (when managed externally)
   entryId?: string                      // current entry ID for updates
   seasonId?: string                     // current season ID for new entries
   isPreTournament?: boolean             // timeline state: true when pre-tournament
@@ -64,6 +66,8 @@ export function PicksForm({
   matchupInfoMap,
   enableViewModes,
   hideCharity,
+  charityValue,
+  onCharityChange,
   entryId,
   seasonId,
   isPreTournament = false,
@@ -76,9 +80,12 @@ export function PicksForm({
       p.teamId ? { teamId: p.teamId } : { playInSlotId: p.playInSlotId! }
     )
   )
-  const [charity, setCharity] = useState<string>(
+  const [internalCharity, setInternalCharity] = useState<string>(
     existingPicks[0]?.charityPreference ?? ""
   )
+  // Use external charity state if provided, otherwise use internal
+  const charity = charityValue ?? internalCharity
+  const setCharity = onCharityChange ?? setInternalCharity
   const [submitting, setSubmitting] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>("region")
 

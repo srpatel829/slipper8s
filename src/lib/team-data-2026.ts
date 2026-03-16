@@ -125,7 +125,7 @@ export const TEAM_DATA_2026: TeamExtendedData[] = [
   // ── 14-seeds (S-Curve 55–58) ──
   { espnId: "2449", sCurveRank: 55, kenpomRank: 110, bpiRank: 90,  record: "27-7",  confRegSeasonChamp: true,  confTourneyChamp: true,  cinderellaWins: 4, upsetLosses: 4 },  // North Dakota State
   { espnId: "338",  sCurveRank: 56, kenpomRank: 115, bpiRank: 95,  record: "21-13", confRegSeasonChamp: false, confTourneyChamp: true,  cinderellaWins: 3, upsetLosses: 7 },  // Kennesaw State
-  { espnId: "2918", sCurveRank: 57, kenpomRank: 120, bpiRank: 100, record: "23-11", confRegSeasonChamp: true,  confTourneyChamp: true,  cinderellaWins: 4, upsetLosses: 5 },  // Wright State
+  { espnId: "2750", sCurveRank: 57, kenpomRank: 120, bpiRank: 100, record: "23-11", confRegSeasonChamp: true,  confTourneyChamp: true,  cinderellaWins: 4, upsetLosses: 5 },  // Wright State
   { espnId: "219",  sCurveRank: 58, kenpomRank: 100, bpiRank: 85,  record: "22-8",  confRegSeasonChamp: true,  confTourneyChamp: true,  cinderellaWins: 2, upsetLosses: 4 },  // Penn
 
   // ── 15-seeds (S-Curve 59–62) ──

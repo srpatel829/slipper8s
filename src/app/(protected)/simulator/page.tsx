@@ -189,6 +189,14 @@ export default async function SimulatorPage() {
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
   const seasonId = settings?.currentSeasonId
 
+  // Check season status to determine if leaderboard should be visible
+  let showLeaderboard = false
+  if (seasonId) {
+    const season = await prisma.season.findUnique({ where: { id: seasonId }, select: { status: true } })
+    const showStatuses = ["LOCKED", "ACTIVE", "COMPLETED"]
+    showLeaderboard = showStatuses.includes(season?.status ?? "")
+  }
+
   const [teams, entries, tournamentGames] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
@@ -254,6 +262,7 @@ export default async function SimulatorPage() {
         allTeams={teams}
         gameSequence={gameSequence}
         gameIndex={gameIndex}
+        showLeaderboard={showLeaderboard}
       />
     </Suspense>
   )
