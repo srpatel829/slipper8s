@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Calendar, Plus, Loader2, Check, Star, Settings2,
+  Calendar, Plus, Loader2, Check, Star, Settings2, Mail,
 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -118,6 +118,25 @@ export default function SeasonsPage() {
       } else {
         const data = await res.json()
         toast.error(data.error || "Failed to update status")
+      }
+    } catch {
+      toast.error("Something went wrong")
+    }
+  }
+
+  async function handleResendBracketEmails() {
+    const confirmed = window.confirm(
+      "This will re-send the bracket announced email to ALL registered users and incomplete registrations.\n\nAre you sure?"
+    )
+    if (!confirmed) return
+
+    try {
+      const res = await fetch("/api/admin/resend-bracket-emails", { method: "POST" })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success(`Bracket emails resent: ${data.registered.sent} registered, ${data.incomplete.sent} incomplete`)
+      } else {
+        toast.error(data.error || "Failed to resend emails")
       }
     } catch {
       toast.error("Something went wrong")
@@ -266,6 +285,17 @@ export default function SeasonsPage() {
                       >
                         <Check className="h-3 w-3" />
                         Set Active
+                      </Button>
+                    )}
+                    {season.status === "REGISTRATION" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs gap-1.5"
+                        onClick={handleResendBracketEmails}
+                      >
+                        <Mail className="h-3 w-3" />
+                        Resend Bracket Emails
                       </Button>
                     )}
                     <Select

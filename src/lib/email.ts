@@ -2,7 +2,7 @@ import { Resend } from "resend"
 
 const resend = new Resend(process.env.AUTH_RESEND_KEY)
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Slipper8s <noreply@slipper8s.com>"
-const APP_URL = process.env.AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"
 
 // ─── Welcome Email (mandatory — sends on first registration) ────────────────
 // Two variants: pre-bracket (before selections are live) and live (bracket is out)
