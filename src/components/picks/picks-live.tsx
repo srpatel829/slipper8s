@@ -125,6 +125,11 @@ export function PicksLive({
     setFormKey(k => k + 1)
   }
 
+  // Sync form selections → bracket highlighting (without remounting form)
+  const handleSelectionChange = useCallback((picks: SelectedPick[]) => {
+    setGeneratedPicks(picks)
+  }, [])
+
   const handleBracketToggle = useCallback((teamId: string) => {
     if (deadlinePassed) return
     setGeneratedPicks(prev => {
@@ -133,7 +138,7 @@ export function PicksLive({
       const existing = current.find(p => p.teamId === teamId)
       if (existing) {
         return current.filter(p => p.teamId !== teamId)
-      } else if (current.filter(p => p.teamId).length < 8) {
+      } else if (current.length < 8) {
         return [...current, { teamId }]
       }
       return current
@@ -212,6 +217,7 @@ export function PicksLive({
         seasonId={seasonId}
         firstName={userName?.split(" ")[0] ?? undefined}
         entryNickname={activeEntry?.nickname ?? null}
+        onSelectionChange={handleSelectionChange}
       />
 
       {/* Bracket picking views — only shown when picks are open */}

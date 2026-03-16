@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -52,6 +52,7 @@ interface PicksFormProps {
   isPreTournament?: boolean             // timeline state: true when pre-tournament
   firstName?: string                    // user's first name for confirmation dialog
   entryNickname?: string | null         // entry nickname for confirmation dialog
+  onSelectionChange?: (picks: SelectedPick[]) => void  // notify parent when picks change (for bracket sync)
 }
 
 export type SelectedPick = { teamId?: string; playInSlotId?: string }
@@ -78,6 +79,7 @@ export function PicksForm({
   isPreTournament = false,
   firstName,
   entryNickname,
+  onSelectionChange,
 }: PicksFormProps) {
   const router = useRouter()
   // Only treat as editing if we have an actual entry to update (not just generated picks)
@@ -104,6 +106,11 @@ export function PicksForm({
     expectedScore: number | null
     archetypes: ArchetypeResult[]
   } | null>(null)
+
+  // Notify parent of selection changes (for bracket sync)
+  useEffect(() => {
+    onSelectionChange?.(selected)
+  }, [selected, onSelectionChange])
 
   const selectedTeamIds = new Set(selected.map((s) => s.teamId).filter(Boolean))
   const selectedSlotIds = new Set(selected.map((s) => s.playInSlotId).filter(Boolean))
