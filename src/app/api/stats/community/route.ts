@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
+
+// Build a team→conference lookup from the full D1 teams list
+const TEAM_TO_CONFERENCE = new Map<string, string>()
+for (const group of D1_TEAMS_BY_CONFERENCE) {
+  for (const team of group.teams) {
+    TEAM_TO_CONFERENCE.set(team, group.conference)
+  }
+}
 
 /**
  * GET /api/stats/community — Aggregated community stats
@@ -27,7 +36,6 @@ export async function GET(req: NextRequest) {
       countryGroups,
       stateGroups,
       fanBaseGroups,
-      conferenceData,
     ] = await Promise.all([
       // Unique registered players
       prisma.user.count({ where: { registrationComplete: true } }),
@@ -75,22 +83,15 @@ export async function GET(req: NextRequest) {
         orderBy: { _count: { id: "desc" } },
       }),
 
-      // Conferences — query users with a favoriteTeam that has a conference
-      prisma.user.findMany({
-        where: {
-          registrationComplete: true,
-          favoriteTeamId: { not: null },
-          favoriteTeam: { conference: { not: null } },
-        },
-        select: { favoriteTeam: { select: { conference: true } } },
-      }),
     ])
 
-    // Aggregate conferences manually
+    // Aggregate conferences from favoriteTeamName using D1 teams lookup
     const confCounts = new Map<string, number>()
-    for (const u of conferenceData) {
-      const conf = u.favoriteTeam?.conference
-      if (conf) confCounts.set(conf, (confCounts.get(conf) ?? 0) + 1)
+    for (const g of fanBaseGroups) {
+      const teamName = g.favoriteTeamName
+      if (!teamName) continue
+      const conf = TEAM_TO_CONFERENCE.get(teamName)
+      if (conf) confCounts.set(conf, (confCounts.get(conf) ?? 0) + g._count.id)
     }
     const conferences = [...confCounts.entries()]
       .map(([value, count]) => ({ value, count }))

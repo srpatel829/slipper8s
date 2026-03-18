@@ -55,14 +55,85 @@ const GENDER_LABELS: Record<string, string> = {
   NO_RESPONSE: "Prefer not to say",
 }
 
-const PIE_COLORS = ["#f97316", "#3b82f6", "#8b5cf6", "#6b7280"]
-const BAR_COLOR = "#f97316"
+const GENDER_COLORS: Record<string, string> = {
+  Male: "#3b82f6",           // blue
+  Female: "#ec4899",         // pink
+  Other: "#8b5cf6",          // purple
+  "Prefer not to say": "#6b7280", // grey
+}
+
+// Conference bar chart colors (rotating palette)
+const CONF_COLORS = [
+  "#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#ef4444",
+  "#06b6d4", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1",
+  "#84cc16", "#e11d48", "#0ea5e9", "#a855f7", "#22c55e",
+]
 
 // Country name mapping (topojson uses specific names)
 const COUNTRY_NAME_MAP: Record<string, string> = {
   "United States of America": "United States",
   "United Kingdom": "United Kingdom",
   "South Korea": "South Korea",
+}
+
+// Team primary colors for the fan bases treemap
+const TEAM_COLORS: Record<string, string> = {
+  // ACC
+  "Duke": "#003087", "North Carolina": "#7BAFD4", "Louisville": "#AD0000",
+  "Virginia": "#232D4B", "Syracuse": "#F76900", "Clemson": "#F56600",
+  "Florida State": "#782F40", "Wake Forest": "#9E7E38", "NC State": "#CC0000",
+  "Pitt": "#003594", "Georgia Tech": "#B3A369", "Miami (FL)": "#F47321",
+  "Notre Dame": "#0C2340", "Virginia Tech": "#630031", "Boston College": "#98002E",
+  "Stanford": "#8C1515", "California": "#003262", "SMU": "#0033A0",
+  // SEC
+  "Alabama": "#9E1B32", "Auburn": "#0C2340", "Florida": "#0021A5",
+  "Georgia": "#BA0C2F", "Kentucky": "#0033A0", "LSU": "#461D7C",
+  "Mississippi State": "#660000", "Ole Miss": "#CE1126", "Tennessee": "#FF8200",
+  "Texas A&M": "#500000", "Vanderbilt": "#866D4B", "Arkansas": "#9D2235",
+  "Missouri": "#F1B82D", "South Carolina": "#73000A", "Oklahoma": "#841617",
+  "Texas": "#BF5700",
+  // Big Ten
+  "Michigan": "#00274C", "Michigan State": "#18453B", "Ohio State": "#BB0000",
+  "Purdue": "#CEB888", "Indiana": "#990000", "Iowa": "#FFCD00",
+  "Illinois": "#E84A27", "Wisconsin": "#C5050C", "Minnesota": "#7A0019",
+  "Northwestern": "#4E2A84", "Maryland": "#E03A3E", "Nebraska": "#D00000",
+  "Penn State": "#041E42", "Rutgers": "#CC0033", "Oregon": "#154733",
+  "UCLA": "#2D68C4", "USC": "#990000", "Washington": "#4B2E83",
+  // Big 12
+  "Kansas": "#0051BA", "Baylor": "#003015", "Texas Tech": "#CC0000",
+  "Iowa State": "#C8102E", "TCU": "#4D1979", "West Virginia": "#002855",
+  "Oklahoma State": "#FF7300", "Kansas State": "#512888", "Cincinnati": "#E00122",
+  "Houston": "#C8102E", "UCF": "#BA9B37", "BYU": "#002E5D",
+  "Arizona": "#CC0033", "Arizona State": "#8C1D40", "Colorado": "#CFB87C",
+  "Utah": "#CC0000",
+  // Big East
+  "UConn": "#000E2F", "Villanova": "#003366", "Creighton": "#005CA9",
+  "Marquette": "#003366", "Xavier": "#0C2340", "St. John's": "#D41B2C",
+  "Seton Hall": "#004B8D", "Providence": "#000000", "Butler": "#13294B",
+  "Georgetown": "#041E42", "DePaul": "#005EB8",
+  // Other notable
+  "Gonzaga": "#002967", "San Diego State": "#A6192E", "Memphis": "#003087",
+  "Saint Mary's": "#D22630", "Dayton": "#CE1141", "VCU": "#F8B800",
+  "Drake": "#004477", "Loyola Chicago": "#6C1D45", "Davidson": "#CC0000",
+  "Wichita State": "#FFC217", "Nevada": "#003366", "Boise State": "#0033A0",
+  "New Mexico": "#BA0C2F", "UNLV": "#CF0A2C", "Colorado State": "#1E4D2B",
+  "Wyoming": "#492F24", "Fresno State": "#DB0032",
+  // Mid-majors often in tournament
+  "St. Peter's": "#003DA5", "Fairleigh Dickinson": "#003DA5",
+  "Furman": "#582C83", "Princeton": "#FF6000", "Oral Roberts": "#002855",
+  "Vermont": "#154734", "Colgate": "#821019", "Iona": "#6B2737",
+  "Montana State": "#003875", "Chattanooga": "#00386B",
+}
+
+const DEFAULT_TEAM_COLOR = "#f97316"
+
+// ── Tooltip style (always legible) ─────────────────────────────────────────
+
+const TOOLTIP_STYLE = {
+  background: "#1f2937",
+  border: "1px solid #374151",
+  borderRadius: "8px",
+  color: "#f9fafb",
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
@@ -129,10 +200,7 @@ export function StatsDashboard() {
 
       {/* Charts grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Gender pie chart */}
         <GenderPieChart data={stats.gender} />
-
-        {/* Conferences bar chart */}
         <ConferencesBarChart data={stats.conferences} />
       </div>
 
@@ -189,13 +257,13 @@ function GenderPieChart({ data }: { data: StatItem[] }) {
               label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
               labelLine={false}
             >
-              {chartData.map((_, i) => (
-                <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+              {chartData.map((entry, i) => (
+                <Cell key={i} fill={GENDER_COLORS[entry.name] ?? "#6b7280"} />
               ))}
             </Pie>
             <RechartsTooltip
               formatter={(value: unknown) => [Number(value).toLocaleString(), "Players"]}
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
+              contentStyle={TOOLTIP_STYLE}
             />
             <Legend />
           </PieChart>
@@ -206,9 +274,10 @@ function GenderPieChart({ data }: { data: StatItem[] }) {
 }
 
 function ConferencesBarChart({ data }: { data: StatItem[] }) {
-  const chartData = data.slice(0, 15).map((d) => ({
+  const chartData = data.slice(0, 15).map((d, i) => ({
     name: d.value,
     players: d.count,
+    fill: CONF_COLORS[i % CONF_COLORS.length],
   }))
 
   return (
@@ -217,16 +286,20 @@ function ConferencesBarChart({ data }: { data: StatItem[] }) {
       {chartData.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 60, right: 20, top: 5, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 28)}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 100, right: 20, top: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
             <XAxis type="number" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={55} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={95} />
             <RechartsTooltip
               formatter={(value: unknown) => [Number(value).toLocaleString(), "Players"]}
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
+              contentStyle={TOOLTIP_STYLE}
             />
-            <Bar dataKey="players" fill={BAR_COLOR} radius={[0, 4, 4, 0]} />
+            <Bar dataKey="players" radius={[0, 4, 4, 0]}>
+              {chartData.map((entry, i) => (
+                <Cell key={i} fill={entry.fill} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       )}
@@ -253,8 +326,8 @@ function WorldMap({
 
   const getColor = useCallback(
     (count: number) => {
-      if (count === 0) return "hsl(var(--muted))"
-      const intensity = Math.max(0.15, count / maxCount)
+      if (count === 0) return "#374151" // dark grey for unrepresented
+      const intensity = Math.max(0.2, count / maxCount)
       return `rgba(249, 115, 22, ${intensity})`
     },
     [maxCount]
@@ -262,7 +335,6 @@ function WorldMap({
 
   const getCountryCount = useCallback(
     (geoName: string) => {
-      // Try direct match first, then mapped name
       return countryMap.get(geoName) ?? countryMap.get(COUNTRY_NAME_MAP[geoName] ?? "") ?? 0
     },
     [countryMap]
@@ -276,7 +348,7 @@ function WorldMap({
       </div>
       <div className="relative">
         {tooltipContent && (
-          <div className="absolute top-2 right-2 z-10 bg-card border border-border rounded-lg px-3 py-1.5 text-sm shadow-lg">
+          <div className="absolute top-2 right-2 z-10 bg-gray-800 text-gray-100 border border-gray-600 rounded-lg px-3 py-1.5 text-sm shadow-lg">
             {tooltipContent}
           </div>
         )}
@@ -296,7 +368,7 @@ function WorldMap({
                       key={geo.rsmKey}
                       geography={geo}
                       fill={getColor(count)}
-                      stroke="hsl(var(--border))"
+                      stroke="#1f2937"
                       strokeWidth={0.5}
                       style={{
                         default: { outline: "none" },
@@ -338,8 +410,8 @@ function USMap({
 
   const getColor = useCallback(
     (count: number) => {
-      if (count === 0) return "hsl(var(--muted))"
-      const intensity = Math.max(0.15, count / maxCount)
+      if (count === 0) return "#374151" // dark grey for unrepresented
+      const intensity = Math.max(0.2, count / maxCount)
       return `rgba(59, 130, 246, ${intensity})`
     },
     [maxCount]
@@ -353,7 +425,7 @@ function USMap({
       </div>
       <div className="relative">
         {tooltipContent && (
-          <div className="absolute top-2 right-2 z-10 bg-card border border-border rounded-lg px-3 py-1.5 text-sm shadow-lg">
+          <div className="absolute top-2 right-2 z-10 bg-gray-800 text-gray-100 border border-gray-600 rounded-lg px-3 py-1.5 text-sm shadow-lg">
             {tooltipContent}
           </div>
         )}
@@ -372,7 +444,7 @@ function USMap({
                     key={geo.rsmKey}
                     geography={geo}
                     fill={getColor(count)}
-                    stroke="hsl(var(--border))"
+                    stroke="#1f2937"
                     strokeWidth={0.5}
                     style={{
                       default: { outline: "none" },
@@ -394,7 +466,7 @@ function USMap({
   )
 }
 
-// Custom Treemap content renderer
+// Custom Treemap content renderer — uses team colors
 function TreemapContent(props: {
   x: number
   y: number
@@ -402,12 +474,13 @@ function TreemapContent(props: {
   height: number
   name: string
   value: number
-  index: number
 }) {
-  const { x, y, width, height, name, value, index } = props
-  const colors = ["#f97316", "#fb923c", "#fdba74", "#fed7aa", "#ffedd5", "#ea580c", "#c2410c", "#9a3412"]
-  const color = colors[index % colors.length]
+  const { x, y, width, height, name, value } = props
+  const color = TEAM_COLORS[name] ?? DEFAULT_TEAM_COLOR
   const showLabel = width > 40 && height > 30
+
+  // Determine text color based on background brightness
+  const textColor = "#fff"
 
   return (
     <g>
@@ -427,7 +500,7 @@ function TreemapContent(props: {
             x={x + width / 2}
             y={y + height / 2 - 6}
             textAnchor="middle"
-            fill="#fff"
+            fill={textColor}
             fontSize={width > 80 ? 12 : 10}
             fontWeight="600"
           >
@@ -468,7 +541,7 @@ function FanBasesChart({ data }: { data: StatItem[] }) {
             data={treeData}
             dataKey="size"
             nameKey="name"
-            content={<TreemapContent x={0} y={0} width={0} height={0} name="" value={0} index={0} />}
+            content={<TreemapContent x={0} y={0} width={0} height={0} name="" value={0} />}
           >
             <RechartsTooltip
               formatter={(value: unknown, _name: unknown, props: unknown) => {
@@ -476,7 +549,7 @@ function FanBasesChart({ data }: { data: StatItem[] }) {
                 const p = props as { payload?: { name?: string } } | undefined
                 return [`${v.toLocaleString()} player${v !== 1 ? "s" : ""}`, p?.payload?.name ?? ""]
               }}
-              contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px" }}
+              contentStyle={TOOLTIP_STYLE}
             />
           </Treemap>
         </ResponsiveContainer>
