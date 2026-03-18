@@ -391,6 +391,8 @@ function PicksMatchup({
     disabled,
     reversed,
     isPreTournament,
+    topPlayIn,
+    botPlayIn,
 }: {
     topTeam: TeamLike | null
     botTeam: TeamLike | null
@@ -399,6 +401,8 @@ function PicksMatchup({
     disabled: boolean
     reversed?: boolean
     isPreTournament?: boolean
+    topPlayIn?: PlayInSlotDisplay | null
+    botPlayIn?: PlayInSlotDisplay | null
 }) {
     return (
         <div className="flex flex-col gap-px">
@@ -412,6 +416,7 @@ function PicksMatchup({
                 reversed={reversed}
                 disabled={disabled}
                 isPreTournament={isPreTournament}
+                playInSlot={topPlayIn}
             />
             <TeamSlot
                 team={botTeam}
@@ -423,6 +428,7 @@ function PicksMatchup({
                 reversed={reversed}
                 disabled={disabled}
                 isPreTournament={isPreTournament}
+                playInSlot={botPlayIn}
             />
         </div>
     )
@@ -445,7 +451,7 @@ interface SimRoundColumn {
 
 interface PicksRoundColumn {
     round: number
-    matchups: Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null }>
+    matchups: Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null; topPlayIn?: PlayInSlotDisplay | null; botPlayIn?: PlayInSlotDisplay | null }>
 }
 
 function SimRegionColumn({
@@ -560,6 +566,8 @@ function PicksRegionColumn({
                         disabled={disabled}
                         reversed={reversed}
                         isPreTournament={isPreTournament}
+                        topPlayIn={m.topPlayIn}
+                        botPlayIn={m.botPlayIn}
                     />
                 ))}
             </div>
@@ -731,17 +739,19 @@ export function AdvancingBracket(props: AdvancingBracketProps) {
 
     // ── Build picks mode R64 matchups per region ──────────────────────────────
     const picksR64 = useMemo(() => {
-        if (mode !== "picks") return new Map<Region, Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null }>>()
-        const result = new Map<Region, Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null }>>()
+        if (mode !== "picks") return new Map<Region, Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null; topPlayIn?: PlayInSlotDisplay | null; botPlayIn?: PlayInSlotDisplay | null }>>()
+        const result = new Map<Region, Array<{ topTeam: TeamLike | null; botTeam: TeamLike | null; topPlayIn?: PlayInSlotDisplay | null; botPlayIn?: PlayInSlotDisplay | null }>>()
         for (const region of REGIONS) {
-            const regionTeams = teams.filter(t => t.region === region && !t.isPlayIn)
+            const regionTeams = teams.filter(t => t.region === region)
             result.set(region, R64_ORDER.map(([seedA, seedB]) => ({
                 topTeam: regionTeams.find(t => t.seed === seedA) ?? null,
                 botTeam: regionTeams.find(t => t.seed === seedB) ?? null,
+                topPlayIn: playInMap.get(`${region}-${seedA}`) ?? null,
+                botPlayIn: playInMap.get(`${region}-${seedB}`) ?? null,
             })))
         }
         return result
-    }, [mode, teams])
+    }, [mode, teams, playInMap])
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [zoom, setZoom] = useState(1.0)
