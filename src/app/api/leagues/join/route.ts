@@ -60,6 +60,31 @@ export async function POST(request: NextRequest) {
     },
   })
 
+  // Auto-link user's sole entry to this league (if they have exactly one submitted entry)
+  try {
+    const userEntries = await prisma.entry.findMany({
+      where: {
+        userId: session.user.id,
+        seasonId: league.seasonId,
+        draftInProgress: false,
+        entryPicks: { some: {} },
+      },
+      select: { id: true },
+    })
+    if (userEntries.length === 1) {
+      await prisma.leagueEntry.create({
+        data: {
+          leagueId: league.id,
+          entryId: userEntries[0].id,
+        },
+      }).catch(() => {
+        // Skip if already linked (unique constraint)
+      })
+    }
+  } catch (err) {
+    console.error("[leagues/join] Auto-link entry failed:", err)
+  }
+
   return NextResponse.json({
     id: league.id,
     name: league.name,
