@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { seasonId, nickname } = body
+  const { seasonId, nickname, leagueIds } = body
 
   if (!seasonId) {
     return NextResponse.json({ error: "seasonId required" }, { status: 400 })
@@ -55,26 +55,29 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  // Auto-link new entry to all leagues the user is a member of for this season
-  try {
-    const memberships = await prisma.leagueMember.findMany({
-      where: { userId: session.user.id },
-      include: { league: { select: { seasonId: true } } },
-    })
-    const relevantLeagueIds = memberships
-      .filter((m) => m.league.seasonId === seasonId)
-      .map((m) => m.leagueId)
-    if (relevantLeagueIds.length > 0) {
-      await prisma.leagueEntry.createMany({
-        data: relevantLeagueIds.map((leagueId) => ({
-          leagueId,
-          entryId: entry.id,
-        })),
-        skipDuplicates: true,
+  // Link entry to selected leagues (if any provided)
+  if (Array.isArray(leagueIds) && leagueIds.length > 0) {
+    try {
+      // Validate user is a member of each league and league matches season
+      const memberships = await prisma.leagueMember.findMany({
+        where: { userId: session.user.id, leagueId: { in: leagueIds } },
+        include: { league: { select: { seasonId: true } } },
       })
+      const validLeagueIds = memberships
+        .filter((m) => m.league.seasonId === seasonId)
+        .map((m) => m.leagueId)
+      if (validLeagueIds.length > 0) {
+        await prisma.leagueEntry.createMany({
+          data: validLeagueIds.map((leagueId) => ({
+            leagueId,
+            entryId: entry.id,
+          })),
+          skipDuplicates: true,
+        })
+      }
+    } catch (err) {
+      console.error("[entries] Link to leagues failed:", err)
     }
-  } catch (err) {
-    console.error("[entries] Auto-link to leagues failed:", err)
   }
 
   return NextResponse.json({

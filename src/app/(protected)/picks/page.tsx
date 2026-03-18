@@ -17,7 +17,7 @@ async function getCurrentSeason() {
 }
 
 async function getPicksData(userId: string, seasonId: string, entryId?: string) {
-  const [teams, playInSlots, entries, settings] = await Promise.all([
+  const [teams, playInSlots, entries, settings, leagueMemberships] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
@@ -40,6 +40,10 @@ async function getPicksData(userId: string, seasonId: string, entryId?: string) 
       orderBy: { entryNumber: "asc" },
     }),
     prisma.appSettings.findUnique({ where: { id: "main" } }),
+    prisma.leagueMember.findMany({
+      where: { userId },
+      include: { league: { select: { id: true, name: true, seasonId: true } } },
+    }),
   ])
 
   // If entryId specified, find that entry; otherwise use first entry or null
@@ -47,7 +51,11 @@ async function getPicksData(userId: string, seasonId: string, entryId?: string) 
     ? entries.find((e) => e.id === entryId) ?? null
     : entries[0] ?? null
 
-  return { teams, playInSlots, entries, activeEntry, settings }
+  const userLeagues = leagueMemberships
+    .filter((m) => m.league.seasonId === seasonId)
+    .map((m) => ({ id: m.league.id, name: m.league.name }))
+
+  return { teams, playInSlots, entries, activeEntry, settings, userLeagues }
 }
 
 export default async function PicksPage({
@@ -90,7 +98,7 @@ export default async function PicksPage({
     )
   }
 
-  const { teams, playInSlots, entries, activeEntry, settings } = await getPicksData(
+  const { teams, playInSlots, entries, activeEntry, settings, userLeagues } = await getPicksData(
     session!.user.id,
     season.id,
     params.entry
@@ -114,6 +122,7 @@ export default async function PicksPage({
         deadlinePassed={deadlinePassed}
         picksDeadline={settings?.picksDeadline ? new Date(settings.picksDeadline).toISOString() : null}
         defaultCharities={defaultCharities}
+        userLeagues={userLeagues}
       />
     </div>
   )

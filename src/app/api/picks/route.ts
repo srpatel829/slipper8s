@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { picks, seasonId: requestSeasonId, nickname, charityPreference } = body
+  const { picks, seasonId: requestSeasonId, nickname, charityPreference, leagueIds } = body
 
   const validation = validatePicks(picks)
   if (validation) return NextResponse.json({ error: validation }, { status: 400 })
@@ -142,26 +142,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Auto-link new entry to all leagues the user is a member of for this season
-  try {
-    const memberships = await prisma.leagueMember.findMany({
-      where: { userId: session.user.id },
-      include: { league: { select: { seasonId: true } } },
-    })
-    const relevantLeagueIds = memberships
-      .filter((m) => m.league.seasonId === seasonId)
-      .map((m) => m.leagueId)
-    if (relevantLeagueIds.length > 0) {
-      await prisma.leagueEntry.createMany({
-        data: relevantLeagueIds.map((leagueId) => ({
-          leagueId,
-          entryId: entry.id,
-        })),
-        skipDuplicates: true,
+  // Link entry to selected leagues (if any provided)
+  if (Array.isArray(leagueIds) && leagueIds.length > 0) {
+    try {
+      const memberships = await prisma.leagueMember.findMany({
+        where: { userId: session.user.id, leagueId: { in: leagueIds } },
+        include: { league: { select: { seasonId: true } } },
       })
+      const validLeagueIds = memberships
+        .filter((m) => m.league.seasonId === seasonId)
+        .map((m) => m.leagueId)
+      if (validLeagueIds.length > 0) {
+        await prisma.leagueEntry.createMany({
+          data: validLeagueIds.map((leagueId) => ({
+            leagueId,
+            entryId: entry.id,
+          })),
+          skipDuplicates: true,
+        })
+      }
+    } catch (err) {
+      console.error("[picks] Link to leagues failed:", err)
     }
-  } catch (err) {
-    console.error("[picks] Auto-link to leagues failed:", err)
   }
 
   // Invalidate leaderboard cache (new entry changes rankings)

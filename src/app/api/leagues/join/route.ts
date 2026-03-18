@@ -5,7 +5,7 @@ import { rateLimit, getClientIp } from "@/lib/rate-limit"
 
 // POST /api/leagues/join — join a league by invite code
 // Creates LeagueMember for user-level membership.
-// If user has entries for the season, also creates LeagueEntry rows.
+// Users manage which entries are in the league from the league detail page.
 export async function POST(request: NextRequest) {
   const rateLimitResponse = rateLimit(getClientIp(request))
   if (rateLimitResponse) return rateLimitResponse
@@ -59,33 +59,6 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
     },
   })
-
-  // If user has entries for this season, auto-link them to the league
-  const userEntries = await prisma.entry.findMany({
-    where: { userId: session.user.id, seasonId: league.seasonId },
-    select: { id: true },
-  })
-
-  if (userEntries.length > 0) {
-    const existingLeagueEntries = await prisma.leagueEntry.findMany({
-      where: {
-        leagueId: league.id,
-        entryId: { in: userEntries.map((e) => e.id) },
-      },
-      select: { entryId: true },
-    })
-    const alreadyLinked = new Set(existingLeagueEntries.map((le) => le.entryId))
-    const newEntryIds = userEntries.filter((e) => !alreadyLinked.has(e.id)).map((e) => e.id)
-
-    if (newEntryIds.length > 0) {
-      await prisma.leagueEntry.createMany({
-        data: newEntryIds.map((entryId) => ({
-          leagueId: league.id,
-          entryId,
-        })),
-      })
-    }
-  }
 
   return NextResponse.json({
     id: league.id,

@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft, Crown, Copy, Check, Loader2, Users, Settings, Trash2,
-  LogOut, DollarSign, ChevronDown, ChevronUp, X, Share2, UserMinus,
+  LogOut, DollarSign, ChevronDown, ChevronUp, X, Share2, UserMinus, FileText,
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -39,6 +39,14 @@ interface LeagueDetail {
   createdAt: string
 }
 
+interface MyEntry {
+  id: string
+  entryNumber: number
+  nickname: string | null
+  pickCount: number
+  inLeague: boolean
+}
+
 export default function LeagueDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -56,6 +64,8 @@ export default function LeagueDetailPage() {
   const [leaving, setLeaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [removingUserId, setRemovingUserId] = useState<string | null>(null)
+  const [myEntries, setMyEntries] = useState<MyEntry[]>([])
+  const [togglingEntryId, setTogglingEntryId] = useState<string | null>(null)
 
   // Settings form state
   const [editName, setEditName] = useState("")
@@ -84,9 +94,22 @@ export default function LeagueDetailPage() {
     }
   }, [id])
 
+  const fetchMyEntries = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/leagues/${id}/entries`)
+      if (res.ok) {
+        const data = await res.json()
+        setMyEntries(data.entries ?? [])
+      }
+    } catch {
+      // Non-critical — silently fail
+    }
+  }, [id])
+
   useEffect(() => {
     fetchLeague()
-  }, [fetchLeague])
+    fetchMyEntries()
+  }, [fetchLeague, fetchMyEntries])
 
   function handleCopyCode() {
     if (!league) return
@@ -178,6 +201,29 @@ export default function LeagueDetailPage() {
       toast.error("Something went wrong")
     } finally {
       setLeaving(false)
+    }
+  }
+
+  async function handleToggleEntry(entryId: string, currentlyInLeague: boolean) {
+    setTogglingEntryId(entryId)
+    try {
+      const res = await fetch(`/api/leagues/${id}/entries`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryId, action: currentlyInLeague ? "remove" : "add" }),
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        toast.error(data.error || "Failed to update entry")
+        return
+      }
+      toast.success(currentlyInLeague ? "Entry removed from league" : "Entry added to league")
+      fetchMyEntries()
+      fetchLeague()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setTogglingEntryId(null)
     }
   }
 
@@ -499,6 +545,51 @@ export default function LeagueDetailPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* My Entry Slips management */}
+      {myEntries.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="font-semibold text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              My Entry Slips
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">Choose which of your entries compete in this league</p>
+          </div>
+          <div className="divide-y divide-border">
+            {myEntries.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between px-5 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-sm font-medium truncate">
+                    {entry.nickname || `Entry Slip #${entry.entryNumber}`}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    ({entry.pickCount}/8)
+                  </span>
+                </div>
+                <Button
+                  variant={entry.inLeague ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs gap-1.5 shrink-0"
+                  onClick={() => handleToggleEntry(entry.id, entry.inLeague)}
+                  disabled={togglingEntryId === entry.id}
+                >
+                  {togglingEntryId === entry.id ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : entry.inLeague ? (
+                    <>
+                      <Check className="h-3 w-3" />
+                      In league
+                    </>
+                  ) : (
+                    "Add to league"
+                  )}
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

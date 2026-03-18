@@ -5,7 +5,7 @@
  * to the live picks page. Matches the demo picks experience.
  */
 
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import { PicksForm } from "@/components/picks/picks-form"
 import { QuickPickGenerator } from "@/components/picks/quick-pick-generator"
 import { BracketView } from "@/components/picks/bracket-view"
@@ -30,6 +30,7 @@ interface PicksLiveProps {
   deadlinePassed: boolean
   picksDeadline: string | null
   defaultCharities: Array<{ name: string; url?: string }>
+  userLeagues?: Array<{ id: string; name: string }>
 }
 
 export function PicksLive({
@@ -43,12 +44,19 @@ export function PicksLive({
   deadlinePassed,
   picksDeadline,
   defaultCharities,
+  userLeagues,
 }: PicksLiveProps) {
   const [formKey, setFormKey] = useState(0)
   const [generatedPicks, setGeneratedPicks] = useState<SelectedPick[] | null>(null)
   const [charity, setCharity] = useState<string>(
     activeEntry?.entryPicks?.[0]?.charityPreference ?? activeEntry?.charityPreference ?? ""
   )
+
+  // Reset generated picks when switching entries so each entry loads its own picks
+  useEffect(() => {
+    setGeneratedPicks(null)
+    setCharity(activeEntry?.entryPicks?.[0]?.charityPreference ?? activeEntry?.charityPreference ?? "")
+  }, [activeEntry?.id])
 
   // Build existing picks from active entry
   const existingPicks = useMemo(() => {
@@ -191,6 +199,7 @@ export function PicksLive({
         seasonId={seasonId}
         deadlinePassed={deadlinePassed}
         userName={userName}
+        userLeagues={userLeagues}
       />
 
       {/* Deadline-passed banner */}
@@ -215,6 +224,7 @@ export function PicksLive({
         onCharityChange={setCharity}
         entryId={activeEntry?.id ?? undefined}
         seasonId={seasonId}
+        leagueIds={!activeEntry ? userLeagues?.map((l) => l.id) : undefined}
         firstName={userName?.split(" ")[0] ?? undefined}
         entryNickname={activeEntry?.nickname ?? null}
         onSelectionChange={handleSelectionChange}

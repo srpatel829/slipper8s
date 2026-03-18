@@ -49,6 +49,7 @@ interface PicksFormProps {
   onCharityChange?: (value: string) => void  // callback when charity changes (when managed externally)
   entryId?: string                      // current entry ID for updates
   seasonId?: string                     // current season ID for new entries
+  leagueIds?: string[]                  // league IDs to link when creating new entry
   isPreTournament?: boolean             // timeline state: true when pre-tournament
   firstName?: string                    // user's first name for confirmation dialog
   entryNickname?: string | null         // entry nickname for confirmation dialog
@@ -76,6 +77,7 @@ export function PicksForm({
   onCharityChange,
   entryId,
   seasonId,
+  leagueIds,
   isPreTournament = false,
   firstName,
   entryNickname,
@@ -156,6 +158,9 @@ export function PicksForm({
       }
       if (method === "POST" && seasonId) {
         payload.seasonId = seasonId
+        if (leagueIds && leagueIds.length > 0) {
+          payload.leagueIds = leagueIds
+        }
       }
       const res = await fetch("/api/picks", {
         method,

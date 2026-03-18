@@ -48,6 +48,9 @@ export function JoinLeagueForm() {
             Joined &quot;{joinedLeague.name}&quot;!
           </p>
         </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          Visit the league page to add your entry slips.
+        </p>
         <Link
           href={`/leagues/${joinedLeague.id}`}
           className="text-sm text-primary hover:underline"

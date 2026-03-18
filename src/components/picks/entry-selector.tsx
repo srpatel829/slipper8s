@@ -15,15 +15,21 @@ interface EntryInfo {
   entryPicks: { id: string }[]
 }
 
+interface UserLeague {
+  id: string
+  name: string
+}
+
 interface EntrySelectorProps {
   entries: EntryInfo[]
   activeEntryId: string | null
   seasonId: string
   deadlinePassed: boolean
   userName?: string | null
+  userLeagues?: UserLeague[]
 }
 
-export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed, userName }: EntrySelectorProps) {
+export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed, userName, userLeagues = [] }: EntrySelectorProps) {
   const router = useRouter()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -31,6 +37,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
   const [nicknameInput, setNicknameInput] = useState("")
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState<string[]>([])
   const nicknameRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLInputElement>(null)
 
@@ -43,17 +50,19 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
   }, [editingId])
 
   function handleNewEntryClick() {
-    // If this would be entry #2+, prompt for nickname
-    if (entries.length >= 1) {
-      const defaultName = `Entry Slip ${entries.length + 1}`
+    // Default all leagues to checked (opt-out model)
+    setSelectedLeagueIds(userLeagues.map((l) => l.id))
+    // Show prompt if entry #2+ or if user has leagues (so they can choose)
+    if (entries.length >= 1 || userLeagues.length > 0) {
+      const defaultName = entries.length >= 1 ? `Entry Slip ${entries.length + 1}` : ""
       setNicknameInput(defaultName)
       setShowNicknamePrompt(true)
     } else {
-      createNewEntry(null)
+      createNewEntry(null, [])
     }
   }
 
-  async function createNewEntry(nickname: string | null) {
+  async function createNewEntry(nickname: string | null, leagueIds: string[]) {
     setCreating(true)
     setShowNicknamePrompt(false)
     try {
@@ -63,6 +72,7 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
         body: JSON.stringify({
           seasonId,
           nickname: nickname?.trim() || null,
+          leagueIds,
         }),
       })
       if (!res.ok) {
@@ -233,39 +243,67 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
         )}
       </div>
 
-      {/* Nickname prompt for new entry */}
+      {/* New entry prompt (nickname + league selection) */}
       {showNicknamePrompt && (
-        <div className="flex items-center gap-2 bg-muted/30 border border-border rounded-lg px-3 py-2">
-          <span className="text-xs text-muted-foreground whitespace-nowrap">Name this entry slip:</span>
-          <input
-            ref={nicknameRef}
-            type="text"
-            value={nicknameInput}
-            onChange={(e) => setNicknameInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") createNewEntry(nicknameInput)
-              if (e.key === "Escape") setShowNicknamePrompt(false)
-            }}
-            maxLength={30}
-            placeholder="e.g. Upset Special"
-            className="text-xs bg-transparent border-b border-border px-1 py-0.5 flex-1 max-w-[200px] focus:outline-none focus:border-primary"
-          />
-          <Button
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => createNewEntry(nicknameInput)}
-            disabled={creating}
-          >
-            {creating ? "Creating..." : "Create"}
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => setShowNicknamePrompt(false)}
-          >
-            Cancel
-          </Button>
+        <div className="bg-muted/30 border border-border rounded-lg px-3 py-2 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Name this entry slip:</span>
+            <input
+              ref={nicknameRef}
+              type="text"
+              value={nicknameInput}
+              onChange={(e) => setNicknameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createNewEntry(nicknameInput, selectedLeagueIds)
+                if (e.key === "Escape") setShowNicknamePrompt(false)
+              }}
+              maxLength={30}
+              placeholder="e.g. Upset Special"
+              className="text-xs bg-transparent border-b border-border px-1 py-0.5 flex-1 max-w-[200px] focus:outline-none focus:border-primary"
+            />
+          </div>
+          {userLeagues.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-xs text-muted-foreground">Add to leagues:</span>
+              <div className="flex flex-wrap gap-2">
+                {userLeagues.map((league) => (
+                  <label key={league.id} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedLeagueIds.includes(league.id)}
+                      onChange={(e) => {
+                        setSelectedLeagueIds((prev) =>
+                          e.target.checked
+                            ? [...prev, league.id]
+                            : prev.filter((id) => id !== league.id)
+                        )
+                      }}
+                      className="h-3 w-3 rounded border-border"
+                    />
+                    {league.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => createNewEntry(nicknameInput, selectedLeagueIds)}
+              disabled={creating}
+            >
+              {creating ? "Creating..." : "Create"}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setShowNicknamePrompt(false)}
+            >
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
     </div>
