@@ -62,8 +62,22 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Only sync during ACTIVE (tournament in progress) or LOCKED (deadline passed, waiting for games)
-    if (season.status !== "ACTIVE" && season.status !== "LOCKED") {
+    // Auto-transition: REGISTRATION → LOCKED when picks deadline passes
+    if (season.status === "REGISTRATION" && settings?.picksDeadline) {
+      const deadline = new Date(settings.picksDeadline)
+      if (new Date() > deadline) {
+        await prisma.season.update({
+          where: { id: seasonId },
+          data: { status: "LOCKED" },
+        })
+        console.log(`[cron/sync] Auto-transitioned season ${season.year} from REGISTRATION → LOCKED (deadline passed)`)
+        season.status = "LOCKED"
+      }
+    }
+
+    // Skip sync only during COMPLETED or truly inactive seasons
+    // Allow REGISTRATION (play-in games happen before deadline), LOCKED, and ACTIVE
+    if (season.status === "COMPLETED") {
       return NextResponse.json({
         skipped: true,
         reason: `Season is ${season.status} — no sync needed`,
