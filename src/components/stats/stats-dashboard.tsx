@@ -245,9 +245,6 @@ export function StatsDashboard() {
         <StatCard icon={<Shield className="h-5 w-5 text-purple-500" />} value={stats.privateLeagues} label="Private Leagues" />
       </div>
 
-      {/* Gender chart */}
-      <GenderPieChart data={stats.gender} />
-
       {/* World map */}
       <WorldMap countries={stats.countries} />
 
@@ -256,6 +253,9 @@ export function StatsDashboard() {
 
       {/* Combined conference + fan bases nested treemap */}
       <ConferenceFanBasesTreemap conferences={stats.conferences} fanBases={stats.fanBases} />
+
+      {/* Gender chart */}
+      <GenderPieChart data={stats.gender} />
     </div>
   )
 }
