@@ -103,18 +103,20 @@ export function PicksLive({
     const result = teams.filter((t: any) => !resolvedWinnerIds.has(t.id))
     for (const slot of playInSlots) {
       const winner = slot.winnerId ? (slot.winner ?? slot.team1) : null
+      // For resolved slots, find the full team record to get espnId/conference for hover cards
+      const winnerFull = winner ? teams.find((t: any) => t.id === winner.id) : null
       result.push({
         id: `playin-${slot.id}`,
-        name: winner ? `${winner.name} (advanced)` : `${slot.team1.name} / ${slot.team2.name}`,
+        name: winner ? winner.name : `${slot.team1.name} / ${slot.team2.name}`,
         shortName: winner ? winner.shortName : `${slot.team1.shortName}/${slot.team2.shortName}`,
         seed: slot.seed,
         region: slot.region,
         logoUrl: winner?.logoUrl ?? null,
-        eliminated: false,
-        wins: (winner as any)?.wins ?? 0,
+        eliminated: (winnerFull as any)?.eliminated ?? false,
+        wins: (winnerFull as any)?.wins ?? (winner as any)?.wins ?? 0,
         isPlayIn: false, // treat as regular team for bracket rendering
-        espnId: null,
-        conference: null,
+        espnId: (winnerFull as any)?.espnId ?? null,
+        conference: (winnerFull as any)?.conference ?? null,
       })
     }
     return result
