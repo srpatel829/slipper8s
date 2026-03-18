@@ -46,8 +46,17 @@ function buildGameSequence(
   teams: Team[],
   tournamentGames: TGWithTeams[]
 ): { gameSequence: DemoGameEvent[], gameIndex: number } {
-  const teamById = new Map(teams.filter(t => !t.isPlayIn).map(t => [t.id, t]))
-  const teamBySeed = new Map(teams.filter(t => !t.isPlayIn).map(t => [`${t.region}-${t.seed}`, t]))
+  // Build lookup maps — prefer non-play-in teams over play-in teams at the same position
+  const teamById = new Map(teams.map(t => [t.id, t]))
+  const teamBySeed = new Map<string, Team>()
+  // Add play-in teams first (lower priority)
+  for (const t of teams) {
+    if (t.isPlayIn) teamBySeed.set(`${t.region}-${t.seed}`, t)
+  }
+  // Then non-play-in teams overwrite (higher priority)
+  for (const t of teams) {
+    if (!t.isPlayIn) teamBySeed.set(`${t.region}-${t.seed}`, t)
+  }
 
   // Index TournamentGames by sorted team pair for O(1) lookup
   const tgByPair = new Map<string, TGWithTeams>()
@@ -204,14 +213,8 @@ export default async function SimulatorPage() {
   })).map(s => s.winnerId!).filter(Boolean)
 
   const [teams, entries, tournamentGames, playInSlots] = await Promise.all([
+    // Get ALL teams (including play-in) — buildGameSequence handles isPlayIn filtering
     prisma.team.findMany({
-      where: {
-        OR: [
-          { isPlayIn: false },
-          // Include resolved play-in winners so they appear in the bracket
-          ...(resolvedPlayInWinnerIds.length > 0 ? [{ id: { in: resolvedPlayInWinnerIds } }] : []),
-        ],
-      },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     seasonId

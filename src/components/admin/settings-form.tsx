@@ -31,9 +31,15 @@ interface SettingsFormProps {
 }
 
 export function SettingsForm({ initialDeadline, initialPayouts, initialCharities, initialMaintenanceMode, demoMode, onDemoSave }: SettingsFormProps) {
-  const [deadline, setDeadline] = useState(
-    initialDeadline ? new Date(initialDeadline).toISOString().slice(0, 16) : ""
-  )
+  const [deadline, setDeadline] = useState(() => {
+    if (!initialDeadline) return ""
+    // Convert ISO/UTC date to local datetime-local format (YYYY-MM-DDTHH:mm)
+    // Must use local time methods so the input shows the correct local time
+    // and re-saving doesn't shift the value by the UTC offset
+    const d = new Date(initialDeadline)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  })
   const [payouts, setPayouts] = useState<Payout[]>(
     initialPayouts.length > 0
       ? initialPayouts

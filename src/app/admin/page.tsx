@@ -111,7 +111,7 @@ export default async function AdminDashboardPage() {
           </div>
           {settings?.picksDeadline ? (
             <p className="text-sm text-foreground font-medium">
-              {new Date(settings.picksDeadline).toLocaleString()}
+              {new Date(settings.picksDeadline).toLocaleString("en-US", { timeZone: "America/New_York" })} ET
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">Not set</p>

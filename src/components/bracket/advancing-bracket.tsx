@@ -123,7 +123,6 @@ function computeEffectiveBracket(
             }
         }
 
-        const regionTeams = teams.filter(t => t.region === region && !t.isPlayIn)
         let prevSlotWinners: (string | null)[] = []
 
         for (let round = 1; round <= 4; round++) {
