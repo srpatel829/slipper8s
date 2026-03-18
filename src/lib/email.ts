@@ -195,7 +195,7 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
 <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! Just a reminder — picks lock in less than 24 hours.</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Make sure your 8 teams are exactly how you want them. Once the deadline passes, no changes allowed.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Make sure your 8 teams are exactly how you want them for each of your entry slip(s). Once the deadline passes, no changes allowed.</p>
 <div style="text-align:center;">
 <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Review Your Picks</a>
 </div>
@@ -227,8 +227,8 @@ export async function sendDeadlineReminderNoPicksEmail(to: string, firstName: st
 <p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
-<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! You're signed up for Slipper8s but haven't submitted your picks yet.</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">You have less than 24 hours.</strong> Pick 8 teams, and your score is seed &times; wins &mdash; sleeper picks can pay off big.</p>
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! You're signed up for Slipper8s but haven't submitted an entry slip(s).</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">You have less than 24 hours.</strong> Pick 8 teams, and remember your score is seed &times; wins &mdash; so choose wisely.</p>
 <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Once the deadline passes, you won't be able to enter.</p>
 <div style="text-align:center;">
 <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks Now</a>
@@ -263,7 +263,7 @@ export async function sendDeadlineReminderIncompleteEmail(to: string, firstName:
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
 <p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">${greeting} You started signing up for Slipper8s but haven't finished your registration yet.</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed &times; wins &mdash; sleeper picks can pay off big.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed &times; wins &mdash; so choose wisely.</p>
 <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span></p>
 <div style="text-align:center;">
 <a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Complete Registration</a>
