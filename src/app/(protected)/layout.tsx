@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { Navbar } from "@/components/layout/navbar"
 import { MobileTabBar } from "@/components/layout/mobile-tab-bar"
 import { TimelineProvider } from "@/components/layout/timeline-provider"
@@ -55,6 +56,15 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <main className={`flex-1 container mx-auto px-4 py-6 max-w-5xl ${showTimeline ? "pb-28 md:pb-16" : "pb-20 md:pb-6"}`}>
           {children}
         </main>
+        <footer className="border-t border-border/40 py-4 text-center text-[11px] text-muted-foreground/60 space-x-4 hidden md:block">
+          <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
+          <span className="text-border">·</span>
+          <Link href="/commissioner" className="hover:text-foreground transition-colors">Commissioner</Link>
+          <span className="text-border">·</span>
+          <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+          <span className="text-border">·</span>
+          <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
+        </footer>
         <MobileTabBar />
       </div>
     </TimelineProvider>

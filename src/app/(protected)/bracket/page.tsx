@@ -35,6 +35,7 @@ export default async function BracketPage() {
       include: {
         team1: true,
         team2: true,
+        winner: true,
       },
     }),
   ])
@@ -59,9 +60,12 @@ export default async function BracketPage() {
 
   const regions = [...new Set(teams.map(t => t.region))].sort()
 
+  // Filter out play-in games (round 0) for bracket display purposes
+  const tournamentGames = games.filter(g => g.round > 0)
+
   // Game progress info
-  const completedGames = games.filter(g => g.isComplete).length
-  const totalGames = games.length
+  const completedGames = tournamentGames.filter(g => g.isComplete).length
+  const totalGames = tournamentGames.length
   const allComplete = totalGames > 0 && completedGames === totalGames
 
   // Determine current round
@@ -76,7 +80,7 @@ export default async function BracketPage() {
       ? "Tournament Complete"
       : ROUND_NAMES[currentRoundNum] ?? `Round ${currentRoundNum}`
 
-  // Last completed game
+  // Last completed game (include play-in games for the badge)
   const lastGame = [...games]
     .filter(g => g.isComplete && g.winner)
     .sort((a, b) => (b.startTime?.getTime() ?? 0) - (a.startTime?.getTime() ?? 0))[0]
@@ -127,10 +131,27 @@ export default async function BracketPage() {
         )}
 
         {totalGames === 0 && !noTeams && (
-          <div className="flex items-center gap-2 sm:ml-4">
+          <div className="flex flex-wrap items-center gap-2 sm:ml-4">
             <div className="px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] font-medium text-amber-600 dark:text-amber-400">
               Pre-Tournament
             </div>
+            {lastGame?.winner && lastGame.team1 && lastGame.team2 && (
+              <div className="px-2.5 py-1 rounded-md bg-card/60 border border-border/30 text-[11px] text-muted-foreground">
+                Last: <span className="text-foreground font-medium">
+                  #{lastGame.winner.seed} {lastGame.winner.shortName}
+                </span>
+                {" "}def.{" "}
+                <span>
+                  #{lastGame.winner.id === lastGame.team1.id ? lastGame.team2.seed : lastGame.team1.seed}{" "}
+                  {lastGame.winner.id === lastGame.team1.id ? lastGame.team2.shortName : lastGame.team1.shortName}
+                </span>
+                {lastGame.team1Score != null && lastGame.team2Score != null && (
+                  <span className="ml-1.5 text-muted-foreground/60">
+                    ({Math.max(lastGame.team1Score, lastGame.team2Score)}–{Math.min(lastGame.team1Score, lastGame.team2Score)})
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -142,7 +163,7 @@ export default async function BracketPage() {
             The bracket will populate once the tournament field is announced.
           </p>
         </div>
-      ) : games.length === 0 ? (
+      ) : tournamentGames.length === 0 ? (
         /* Pre-tournament: show real bracket structure using TournamentBracket */
         <PreTournamentBracketWrapper
           teams={teams.map(t => ({
@@ -166,6 +187,10 @@ export default async function BracketPage() {
             team2ShortName: s.team2.shortName,
             team1Name: s.team1.name,
             team2Name: s.team2.name,
+            winnerId: s.winner?.id ?? null,
+            winnerName: s.winner?.name ?? null,
+            winnerShortName: s.winner?.shortName ?? null,
+            winnerLogoUrl: s.winner?.logoUrl ?? null,
           }))}
         />
       ) : (

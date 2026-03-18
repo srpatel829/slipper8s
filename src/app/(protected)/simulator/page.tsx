@@ -197,9 +197,21 @@ export default async function SimulatorPage() {
     showLeaderboard = showStatuses.includes(season?.status ?? "")
   }
 
+  // Get resolved play-in winner IDs so we can include them in the team list
+  const resolvedPlayInWinnerIds = (await prisma.playInSlot.findMany({
+    where: { winnerId: { not: null } },
+    select: { winnerId: true },
+  })).map(s => s.winnerId!).filter(Boolean)
+
   const [teams, entries, tournamentGames, playInSlots] = await Promise.all([
     prisma.team.findMany({
-      where: { isPlayIn: false },
+      where: {
+        OR: [
+          { isPlayIn: false },
+          // Include resolved play-in winners so they appear in the bracket
+          ...(resolvedPlayInWinnerIds.length > 0 ? [{ id: { in: resolvedPlayInWinnerIds } }] : []),
+        ],
+      },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     seasonId
@@ -251,18 +263,23 @@ export default async function SimulatorPage() {
     }),
   ])
 
+  // Mark resolved play-in winners as non-play-in so they appear in the bracket
+  const teamsWithResolvedPlayIns = teams.map(t =>
+    resolvedPlayInWinnerIds.includes(t.id) ? { ...t, isPlayIn: false } : t
+  )
+
   const leaderboard = computeLeaderboardFromEntries(entries as EntryWithRelations[])
-  const aliveTeams = teams.filter(t => !t.eliminated)
+  const aliveTeams = teamsWithResolvedPlayIns.filter(t => !t.eliminated)
 
   // Build bracket game sequence from teams + actual results
-  const { gameSequence, gameIndex } = buildGameSequence(teams, tournamentGames)
+  const { gameSequence, gameIndex } = buildGameSequence(teamsWithResolvedPlayIns, tournamentGames)
 
   return (
     <Suspense fallback={null}>
       <SimulatorPanel
         initialLeaderboard={leaderboard}
         aliveTeams={aliveTeams}
-        allTeams={teams}
+        allTeams={teamsWithResolvedPlayIns}
         gameSequence={gameSequence}
         gameIndex={gameIndex}
         showLeaderboard={showLeaderboard}

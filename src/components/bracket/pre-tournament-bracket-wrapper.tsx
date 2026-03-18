@@ -32,6 +32,10 @@ interface PlayInSlotSimple {
   team2ShortName: string
   team1Name: string
   team2Name: string
+  winnerId: string | null
+  winnerName: string | null
+  winnerShortName: string | null
+  winnerLogoUrl: string | null
 }
 
 interface Props {
@@ -45,21 +49,39 @@ export function PreTournamentBracketWrapper({ teams, playInSlots }: Props) {
     // Start with non-play-in teams
     const result = teams.filter(t => !t.isPlayIn)
 
-    // For each play-in slot, create a synthetic team with "Team1/Team2" name
+    // For each play-in slot, show winner if resolved, otherwise "Team1/Team2"
     for (const slot of playInSlots) {
-      result.push({
-        id: `playin-${slot.id}`,
-        name: `${slot.team1Name} / ${slot.team2Name}`,
-        shortName: `${slot.team1ShortName}/${slot.team2ShortName}`,
-        seed: slot.seed,
-        region: slot.region,
-        logoUrl: null,
-        eliminated: false,
-        wins: 0,
-        isPlayIn: false, // treat as regular team so TournamentBracket includes it
-        espnId: null,
-        conference: null,
-      })
+      if (slot.winnerId && slot.winnerName && slot.winnerShortName) {
+        // Play-in resolved — show the winner as a regular team
+        result.push({
+          id: slot.winnerId,
+          name: slot.winnerName,
+          shortName: slot.winnerShortName,
+          seed: slot.seed,
+          region: slot.region,
+          logoUrl: slot.winnerLogoUrl,
+          eliminated: false,
+          wins: 0,
+          isPlayIn: false,
+          espnId: null,
+          conference: null,
+        })
+      } else {
+        // Unresolved — show "Team1/Team2" placeholder
+        result.push({
+          id: `playin-${slot.id}`,
+          name: `${slot.team1Name} / ${slot.team2Name}`,
+          shortName: `${slot.team1ShortName}/${slot.team2ShortName}`,
+          seed: slot.seed,
+          region: slot.region,
+          logoUrl: null,
+          eliminated: false,
+          wins: 0,
+          isPlayIn: false,
+          espnId: null,
+          conference: null,
+        })
+      }
     }
 
     return result
