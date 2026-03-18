@@ -197,8 +197,9 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-6 py-6 flex justify-center sm:justify-end">
           <div className="flex gap-4 text-xs text-muted-foreground">
             <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
-            <Link href="/commissioner" className="hover:text-foreground transition-colors">Commissioner</Link>
+            <Link href="/commissioner" className="hover:text-foreground transition-colors">Letter from Commissioner</Link>
             <Link href="/demo" className="hover:text-foreground transition-colors">Demo</Link>
+            <Link href="/stats" className="hover:text-foreground transition-colors">Stats</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
           </div>

@@ -59,7 +59,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         <footer className="border-t border-border/40 py-4 text-center text-[11px] text-muted-foreground/60 space-x-4 hidden md:block">
           <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
           <span className="text-border">·</span>
-          <Link href="/commissioner" className="hover:text-foreground transition-colors">Commissioner</Link>
+          <Link href="/commissioner" className="hover:text-foreground transition-colors">Letter from Commissioner</Link>
+          <span className="text-border">·</span>
+          <Link href="/stats" className="hover:text-foreground transition-colors">Stats</Link>
           <span className="text-border">·</span>
           <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
           <span className="text-border">·</span>
