@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
-// PATCH /api/leagues/[id]/members — toggle payment status on a LeagueMember
+// PATCH /api/leagues/[id]/members — toggle payment status on a LeagueEntry or LeagueMember
 export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -26,27 +26,40 @@ export async function PATCH(
   }
 
   const body = await request.json()
-  const { leagueMemberId, paid } = body
+  const { leagueEntryId, leagueMemberId, paid } = body
 
-  if (!leagueMemberId || typeof paid !== "boolean") {
-    return NextResponse.json({ error: "leagueMemberId and paid are required" }, { status: 400 })
+  if (typeof paid !== "boolean") {
+    return NextResponse.json({ error: "paid is required" }, { status: 400 })
   }
 
-  // Verify the member belongs to this league
-  const member = await prisma.leagueMember.findFirst({
-    where: { id: leagueMemberId, leagueId: id },
-  })
-
-  if (!member) {
-    return NextResponse.json({ error: "Member not found in this league" }, { status: 404 })
+  // Toggle on LeagueEntry (entry-level paid) or fall back to LeagueMember (member with no entries)
+  if (leagueEntryId) {
+    const entry = await prisma.leagueEntry.findFirst({
+      where: { id: leagueEntryId, leagueId: id },
+    })
+    if (!entry) {
+      return NextResponse.json({ error: "Entry not found in this league" }, { status: 404 })
+    }
+    await prisma.leagueEntry.update({
+      where: { id: leagueEntryId },
+      data: { paid },
+    })
+    return NextResponse.json({ leagueEntryId, paid })
+  } else if (leagueMemberId) {
+    const member = await prisma.leagueMember.findFirst({
+      where: { id: leagueMemberId, leagueId: id },
+    })
+    if (!member) {
+      return NextResponse.json({ error: "Member not found in this league" }, { status: 404 })
+    }
+    await prisma.leagueMember.update({
+      where: { id: leagueMemberId },
+      data: { paid },
+    })
+    return NextResponse.json({ leagueMemberId, paid })
   }
 
-  await prisma.leagueMember.update({
-    where: { id: leagueMemberId },
-    data: { paid },
-  })
-
-  return NextResponse.json({ leagueMemberId, paid })
+  return NextResponse.json({ error: "leagueEntryId or leagueMemberId is required" }, { status: 400 })
 }
 
 // DELETE /api/leagues/[id]/members — remove a member from the league (admin only)

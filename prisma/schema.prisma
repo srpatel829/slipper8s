@@ -181,6 +181,7 @@ model LeagueEntry {
   id        String   @id @default(cuid())
   leagueId  String
   entryId   String
+  paid      Boolean  @default(false)
   joinedAt  DateTime @default(now())
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)

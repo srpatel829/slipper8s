@@ -26,7 +26,7 @@ export async function GET(
       },
       leagueEntries: {
         include: {
-          entry: { select: { id: true, userId: true, entryNumber: true, score: true } },
+          entry: { select: { id: true, userId: true, entryNumber: true, nickname: true, score: true } },
         },
       },
     },
@@ -57,6 +57,39 @@ export async function GET(
     } as typeof league.members[0])
   }
 
+  // Build entry-level rows for the members table
+  // Each league entry gets its own row with player info, entry name, score, paid
+  const entryRows = league.leagueEntries.map((le) => {
+    const member = league.members.find((m) => m.userId === le.entry.userId)
+    return {
+      leagueEntryId: le.id,
+      leagueMemberId: member?.id ?? "",
+      userId: le.entry.userId,
+      playerName: member?.user.username ?? member?.user.name ?? "Unknown",
+      entryName: le.entry.nickname || `Entry Slip #${le.entry.entryNumber}`,
+      entryNumber: le.entry.entryNumber,
+      score: le.entry.score,
+      paid: le.paid,
+      joinedAt: member?.joinedAt ?? le.joinedAt,
+    }
+  })
+
+  // Members with zero entries still need to appear
+  const membersWithEntries = new Set(league.leagueEntries.map((le) => le.entry.userId))
+  const noEntryRows = league.members
+    .filter((m) => !membersWithEntries.has(m.userId))
+    .map((m) => ({
+      leagueEntryId: null,
+      leagueMemberId: m.id,
+      userId: m.userId,
+      playerName: m.user.username ?? m.user.name ?? "Unknown",
+      entryName: null,
+      entryNumber: null,
+      score: 0,
+      paid: m.paid,
+      joinedAt: m.joinedAt,
+    }))
+
   return NextResponse.json({
     id: league.id,
     name: league.name,
@@ -67,22 +100,9 @@ export async function GET(
     isAdmin: league.adminId === session.user.id,
     adminId: league.adminId,
     adminName: league.admin.username ?? league.admin.name ?? "Unknown",
-    members: league.members.map((m) => {
-      // Find entries for this member in this league
-      const memberEntries = league.leagueEntries.filter(
-        (le) => le.entry.userId === m.userId
-      )
-      const totalScore = memberEntries.reduce((sum, le) => sum + le.entry.score, 0)
-      return {
-        leagueMemberId: m.id,
-        userId: m.userId,
-        name: m.user.username ?? m.user.name ?? "Unknown",
-        score: totalScore,
-        paid: m.paid,
-        joinedAt: m.joinedAt,
-        entryCount: memberEntries.length,
-      }
-    }),
+    memberCount: league.members.length,
+    entryCount: league.leagueEntries.length,
+    entries: [...entryRows, ...noEntryRows],
     createdAt: league.createdAt,
   })
 }

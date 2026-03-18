@@ -16,14 +16,16 @@ import {
 import { toast } from "sonner"
 import Link from "next/link"
 
-interface LeagueMember {
+interface LeagueEntryRow {
+  leagueEntryId: string | null
   leagueMemberId: string
   userId: string
-  name: string
+  playerName: string
+  entryName: string | null
+  entryNumber: number | null
   score: number
   paid: boolean
   joinedAt: string
-  entryCount: number
 }
 
 interface LeagueDetail {
@@ -36,7 +38,9 @@ interface LeagueDetail {
   isAdmin: boolean
   adminId: string
   adminName: string
-  members: LeagueMember[]
+  memberCount: number
+  entryCount: number
+  entries: LeagueEntryRow[]
   createdAt: string
 }
 
@@ -226,12 +230,15 @@ export default function LeagueDetailPage() {
     }
   }
 
-  async function handleTogglePaid(leagueMemberId: string, currentPaid: boolean) {
+  async function handleTogglePaid(row: LeagueEntryRow) {
     try {
+      const body = row.leagueEntryId
+        ? { leagueEntryId: row.leagueEntryId, paid: !row.paid }
+        : { leagueMemberId: row.leagueMemberId, paid: !row.paid }
       const res = await fetch(`/api/leagues/${id}/members`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leagueMemberId, paid: !currentPaid }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -371,8 +378,8 @@ export default function LeagueDetailPage() {
     )
   }
 
-  // Rank members by score desc
-  const rankedMembers = [...league.members].sort((a, b) => b.score - a.score)
+  // Rank entries by score desc, then by player name
+  const rankedEntries = [...league.entries].sort((a, b) => b.score - a.score || a.playerName.localeCompare(b.playerName))
 
   return (
     <div className="space-y-6">
@@ -395,7 +402,7 @@ export default function LeagueDetailPage() {
         <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
           <span className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5" />
-            {league.members.length} member{league.members.length !== 1 ? "s" : ""}
+            {league.memberCount} member{league.memberCount !== 1 ? "s" : ""}
           </span>
           <span>Admin: {league.adminName}</span>
           <span>Created {new Date(league.createdAt).toLocaleDateString()}</span>
@@ -772,7 +779,7 @@ export default function LeagueDetailPage() {
               {showMsgConfirm && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
                   <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                    Send this message to {league.members.length} member{league.members.length !== 1 ? "s" : ""}?
+                    Send this message to {league.memberCount} member{league.memberCount !== 1 ? "s" : ""}?
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Each member will receive an email with this message.
@@ -894,88 +901,89 @@ export default function LeagueDetailPage() {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm">Members</h2>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{league.members.length} member{league.members.length !== 1 ? "s" : ""}</span>
+              <span>{league.memberCount} member{league.memberCount !== 1 ? "s" : ""}</span>
               <span className="text-border">·</span>
-              <span>{league.members.reduce((sum, m) => sum + m.entryCount, 0)} / {league.maxEntries ?? "∞"} entries</span>
+              <span>{league.entryCount} / {league.maxEntries ?? "∞"} entries</span>
             </div>
           </div>
         </div>
 
-        {rankedMembers.length === 0 ? (
+        {rankedEntries.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground text-sm">
             No members yet
           </div>
         ) : (
           <div className="divide-y divide-border">
             {/* Table header */}
-            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_4rem_5rem]"} gap-3 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
+            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
               <span>#</span>
               <span>Player</span>
+              <span>Entry</span>
               <span className="text-right">Score</span>
               {league.trackPayments && <span className="text-center">Paid</span>}
               <span className="text-right">Joined</span>
               {league.isAdmin && <span />}
             </div>
 
-            {rankedMembers.map((member, i) => {
-              const isMe = member.userId === session?.user?.id
-              const isLeagueAdmin = member.userId === league.adminId
+            {rankedEntries.map((row, i) => {
+              const isMe = row.userId === session?.user?.id
+              const isLeagueAdmin = row.userId === league.adminId
               const rank = i + 1
 
               return (
                 <div
-                  key={member.leagueMemberId}
-                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_4rem_5rem]"} gap-3 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
+                  key={row.leagueEntryId ?? row.leagueMemberId}
+                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
                 >
                   <span className="text-sm font-mono text-muted-foreground">{rank}</span>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className={`text-sm font-medium truncate ${isMe ? "text-primary" : ""}`}>
-                        {member.name}
+                        {row.playerName}
                       </span>
-                      {member.entryCount > 0 && (
-                        <span className="text-[10px] text-muted-foreground">{member.entryCount} {member.entryCount === 1 ? "entry slip" : "entry slips"}</span>
-                      )}
                       {isMe && (
                         <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">You</span>
                       )}
                     </div>
                   </div>
-                  <span className="text-sm font-mono text-right">{member.score}</span>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {row.entryName ?? <span className="italic">No entry</span>}
+                  </span>
+                  <span className="text-sm font-mono text-right">{row.score}</span>
                   {league.trackPayments && (
                     <div className="flex justify-center">
                       {league.isAdmin ? (
                         <button
-                          onClick={() => handleTogglePaid(member.leagueMemberId, member.paid)}
+                          onClick={() => handleTogglePaid(row)}
                           className={`text-[10px] font-semibold rounded-full px-2 py-0.5 transition-colors ${
-                            member.paid
+                            row.paid
                               ? "bg-green-500/15 text-green-500 hover:bg-green-500/25"
                               : "bg-red-500/15 text-red-400 hover:bg-red-500/25"
                           }`}
                         >
-                          {member.paid ? "Paid" : "Unpaid"}
+                          {row.paid ? "Paid" : "Unpaid"}
                         </button>
                       ) : (
                         <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${
-                          member.paid
+                          row.paid
                             ? "bg-green-500/15 text-green-500"
                             : "bg-red-500/15 text-red-400"
                         }`}>
-                          {member.paid ? "Paid" : "Unpaid"}
+                          {row.paid ? "Paid" : "Unpaid"}
                         </span>
                       )}
                     </div>
                   )}
                   <span className="text-xs text-muted-foreground text-right">
-                    {new Date(member.joinedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                    {new Date(row.joinedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                   </span>
                   {league.isAdmin && (
                     <div className="flex justify-end">
                       {!isLeagueAdmin ? (
-                        removingUserId === member.userId ? (
+                        removingUserId === row.userId ? (
                           <div className="flex items-center gap-1.5">
                             <button
-                              onClick={() => handleRemoveMember(member.userId)}
+                              onClick={() => handleRemoveMember(row.userId)}
                               className="text-[11px] font-semibold text-destructive hover:text-destructive/80 px-2 py-0.5 bg-destructive/10 rounded"
                             >
                               Confirm
@@ -989,7 +997,7 @@ export default function LeagueDetailPage() {
                           </div>
                         ) : (
                           <button
-                            onClick={() => setRemovingUserId(member.userId)}
+                            onClick={() => setRemovingUserId(row.userId)}
                             className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors px-2 py-0.5 rounded hover:bg-destructive/10"
                             title="Remove member"
                           >
