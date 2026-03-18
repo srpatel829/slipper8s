@@ -104,6 +104,18 @@ function buildGameSequence(
       winnerName = teamA.name; loserName = teamB.name
       winnerShort = teamA.shortName; loserShort = teamB.shortName
       winnerSeed = teamA.seed; loserSeed = teamB.seed
+    } else if (teamA && !teamB) {
+      // One team known (e.g. #6 seed), other is play-in / TBD
+      winnerId = teamA.id; loserId = `tbd-${slotLabel}-b`
+      winnerName = teamA.name; loserName = "TBD"
+      winnerShort = teamA.shortName; loserShort = "TBD"
+      winnerSeed = teamA.seed; loserSeed = 0
+    } else if (!teamA && teamB) {
+      // Play-in / TBD on top, known team on bottom
+      winnerId = `tbd-${slotLabel}-a`; loserId = teamB.id
+      winnerName = "TBD"; loserName = teamB.name
+      winnerShort = "TBD"; loserShort = teamB.shortName
+      winnerSeed = 0; loserSeed = teamB.seed
     } else {
       winnerId = `tbd-${slotLabel}-a`; loserId = `tbd-${slotLabel}-b`
       winnerName = "TBD"; loserName = "TBD"

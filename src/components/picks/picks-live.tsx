@@ -90,27 +90,32 @@ export function PicksLive({
     }))
   }, [activeEntry, generatedPicks, userId, teams])
 
-  // Build bracket teams: include synthetic entries for play-in slots ("Team1/Team2")
+  // Build bracket teams: always use synthetic "playin-{slotId}" entries for play-in seeds
+  // so the ID matches selectedTeamIds and highlighting works correctly.
+  // For resolved slots: show winner's name/logo. For unresolved: show "Team1/Team2".
   const bracketTeams = useMemo(() => {
-    const result = [...teams]
+    // Collect all resolved play-in winner IDs to filter them from the base team list
+    const resolvedWinnerIds = new Set<string>()
     for (const slot of playInSlots) {
-      // Only add if no non-play-in team exists for this seed+region
-      const hasTeam = teams.some((t: any) => t.seed === slot.seed && t.region === slot.region)
-      if (!hasTeam) {
-        result.push({
-          id: `playin-${slot.id}`,
-          name: `${slot.team1.name} / ${slot.team2.name}`,
-          shortName: `${slot.team1.shortName}/${slot.team2.shortName}`,
-          seed: slot.seed,
-          region: slot.region,
-          logoUrl: null,
-          eliminated: false,
-          wins: 0,
-          isPlayIn: false, // treat as regular team for bracket rendering
-          espnId: null,
-          conference: null,
-        })
-      }
+      if (slot.winnerId) resolvedWinnerIds.add(slot.winnerId)
+    }
+    // Start with teams minus any resolved play-in winners (they'll be replaced by synthetic entries)
+    const result = teams.filter((t: any) => !resolvedWinnerIds.has(t.id))
+    for (const slot of playInSlots) {
+      const winner = slot.winnerId ? (slot.winner ?? slot.team1) : null
+      result.push({
+        id: `playin-${slot.id}`,
+        name: winner ? `${winner.name} (advanced)` : `${slot.team1.name} / ${slot.team2.name}`,
+        shortName: winner ? winner.shortName : `${slot.team1.shortName}/${slot.team2.shortName}`,
+        seed: slot.seed,
+        region: slot.region,
+        logoUrl: winner?.logoUrl ?? null,
+        eliminated: false,
+        wins: (winner as any)?.wins ?? 0,
+        isPlayIn: false, // treat as regular team for bracket rendering
+        espnId: null,
+        conference: null,
+      })
     }
     return result
   }, [teams, playInSlots])

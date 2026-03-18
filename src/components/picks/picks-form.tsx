@@ -247,6 +247,16 @@ export function PicksForm({
     return map
   }, [playInSlots])
 
+  // Resolved play-in winner IDs — these teams are represented by their slot card,
+  // so we filter them from the regular team grid to avoid duplicate cards
+  const resolvedPlayInWinnerIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const slot of playInSlots) {
+      if (slot.winnerId) ids.add(slot.winnerId)
+    }
+    return ids
+  }, [playInSlots])
+
   // Selected play-in slot objects
   const selectedPlayInSlots = useMemo(() => {
     return Array.from(selectedSlotIds)
@@ -561,7 +571,7 @@ export function PicksForm({
           <TabsList className="w-full grid grid-cols-4">
             {allRegions.map((region) => {
               const regionTeamCount = teams
-                .filter((t) => t.region === region && selectedTeamIds.has(t.id)).length
+                .filter((t) => t.region === region && selectedTeamIds.has(t.id) && !resolvedPlayInWinnerIds.has(t.id)).length
               const regionSlotCount = playInSlots
                 .filter((s) => s.region === region && selectedSlotIds.has(s.id)).length
               const regionCount = regionTeamCount + regionSlotCount
@@ -578,7 +588,7 @@ export function PicksForm({
             })}
           </TabsList>
           {allRegions.map((region) => {
-            const regionTeams = teams.filter((t) => t.region === region)
+            const regionTeams = teams.filter((t) => t.region === region && !resolvedPlayInWinnerIds.has(t.id))
             const regionPlayIns = playInSlots.filter(s => s.region === region)
             // Combine teams and play-in slots, sorted by seed
             const items: Array<{ type: "team"; data: Team } | { type: "slot"; data: PlayInSlotWithTeams }> = [
@@ -608,7 +618,7 @@ export function PicksForm({
       {viewMode === "seed" && (
         <div className="space-y-5">
           {SEED_TIERS.map(tier => {
-            const tierTeams = teams.filter(t => t.seed >= tier.range[0] && t.seed <= tier.range[1])
+            const tierTeams = teams.filter(t => t.seed >= tier.range[0] && t.seed <= tier.range[1] && !resolvedPlayInWinnerIds.has(t.id))
             const tierPlayIns = playInSlots.filter(s => s.seed >= tier.range[0] && s.seed <= tier.range[1])
             const tierSelected = tierTeams.filter(t => selectedTeamIds.has(t.id)).length
             return (
