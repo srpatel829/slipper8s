@@ -28,18 +28,26 @@ export default async function WelcomePage() {
   // Player count (all registered players including this one)
   const playerCount = await prisma.user.count({ where: { registrationComplete: true } })
 
-  // Check if bracket/picks are live
-  let bracketIsLive = false
+  // Determine season state: pre-bracket | picks-open | post-deadline
+  let seasonState: "pre-bracket" | "picks-open" | "post-deadline" = "pre-bracket"
   try {
-    const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+    const settings = await prisma.appSettings.findUnique({
+      where: { id: "main" },
+      select: { currentSeasonId: true, picksDeadline: true },
+    })
     if (settings?.currentSeasonId) {
       const season = await prisma.season.findUnique({
         where: { id: settings.currentSeasonId },
         select: { status: true },
       })
-      // REGISTRATION = bracket announced, picks open
-      // LOCKED / ACTIVE / COMPLETED = also fine to show picks link
-      bracketIsLive = ["REGISTRATION", "LOCKED", "ACTIVE", "COMPLETED"].includes(season?.status ?? "")
+      const status = season?.status ?? ""
+      if (["LOCKED", "ACTIVE", "COMPLETED"].includes(status)) {
+        seasonState = "post-deadline"
+      } else if (status === "REGISTRATION") {
+        // Check if deadline has passed even if status hasn't been updated yet
+        const deadlinePassed = settings.picksDeadline && new Date() > new Date(settings.picksDeadline)
+        seasonState = deadlinePassed ? "post-deadline" : "picks-open"
+      }
     }
   } catch {
     // No-op: treat as pre-bracket
@@ -56,15 +64,52 @@ export default async function WelcomePage() {
               <path d="M12 2L15.09 8.26H22L17.55 12.5L19.64 18.74L12 14.5L4.36 18.74L6.45 12.5L2 8.26H8.91L12 2Z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Congratulations, {firstName}!</h1>
-          <p className="text-muted-foreground mt-3 text-base leading-relaxed">
-            You are the{" "}
-            <span className="text-foreground font-semibold">{ordinal(playerCount)} player</span>{" "}
-            to register for Slipper8s 2026.
-          </p>
+          {seasonState === "post-deadline" ? (
+            <>
+              <h1 className="text-3xl font-bold tracking-tight">Welcome, {firstName}!</h1>
+              <p className="text-muted-foreground mt-3 text-base leading-relaxed">
+                You are the{" "}
+                <span className="text-foreground font-semibold">{ordinal(playerCount)} player</span>{" "}
+                to register for Slipper8s.
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold tracking-tight">Congratulations, {firstName}!</h1>
+              <p className="text-muted-foreground mt-3 text-base leading-relaxed">
+                You are the{" "}
+                <span className="text-foreground font-semibold">{ordinal(playerCount)} player</span>{" "}
+                to register for Slipper8s 2026.
+              </p>
+            </>
+          )}
         </div>
 
-        {bracketIsLive ? (
+        {seasonState === "post-deadline" ? (
+          <>
+            {/* Post-deadline message */}
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-5 py-4 mb-6 text-center">
+              <p className="text-sm font-semibold text-foreground mb-2">
+                Unfortunately, the entry deadline for Slipper8s 2026 has passed.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                But you&#39;re all set for next year! Follow along this season by viewing the
+                leaderboard and tournament bracket. We&#39;ll send you an invite to play in 2027.
+              </p>
+            </div>
+
+            {/* CTA: View Leaderboard */}
+            <Button
+              asChild
+              className="w-full h-12 bg-primary text-primary-foreground hover:bg-primary/90 font-semibold shadow-lg shadow-primary/30 text-base mb-6"
+            >
+              <Link href="/leaderboard">
+                View leaderboard
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
+          </>
+        ) : seasonState === "picks-open" ? (
           <>
             {/* Countdown to picks deadline */}
             <div className="mb-6">
@@ -136,9 +181,9 @@ export default async function WelcomePage() {
         {/* YouTube Video */}
         <div className="mb-6">
           <p className="text-sm font-semibold text-foreground mb-3">
-            {bracketIsLive
-              ? "Arguably the best way to spend 6 minutes on the internet:"
-              : "While you wait for picks to go live, please enjoy Sumeet\u2019s One Shining Moment from 2025:"}
+            {seasonState === "pre-bracket"
+              ? "While you wait for picks to go live, please enjoy Sumeet\u2019s One Shining Moment from 2025:"
+              : "Arguably the best way to spend 6 minutes on the internet:"}
           </p>
           <div className="relative w-full overflow-hidden rounded-xl shadow-md" style={{ paddingBottom: "56.25%" }}>
             <iframe

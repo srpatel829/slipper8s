@@ -5,9 +5,9 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "Slipper8s <noreply@slipper8
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://slipper8s.com"
 
 // ─── Welcome Email (mandatory — sends on first registration) ────────────────
-// Two variants: pre-bracket (before selections are live) and live (bracket is out)
+// Three variants: pre-bracket, live (picks open), post-deadline (entry closed)
 
-export async function sendWelcomeEmail(to: string, firstName: string, variant: "pre-bracket" | "live" = "pre-bracket") {
+export async function sendWelcomeEmail(to: string, firstName: string, variant: "pre-bracket" | "live" | "post-deadline" = "pre-bracket") {
   // Build social share URLs for the "share with friends" section
   const shareUrl = APP_URL
   const shareText = `I'm registered to play Slipper8s for 2026!\nYou should sign up and see if you can beat me!\nPick 8 Teams | Seed x Wins = Score | Highest Score Wins!`
@@ -16,15 +16,35 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
   const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
 
+  const isPostDeadline = variant === "post-deadline"
+
   const timingBlock = variant === "pre-bracket"
     ? `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">The committee will announce the bracket at 6pm ET on Sunday, March 15th. Slipper8s will go live shortly thereafter. Please log back in then to make your selections.</p><p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">You can update your picks as many times as you want before the entry slip deadline (when the first game tips off on Thursday, March 19th at 12:15pm ET).</p>`
+    : variant === "post-deadline"
+    ? `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Unfortunately, the entry deadline for Slipper8s 2026 has passed. But you&rsquo;re all set for next year!</p><p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">You can still follow along this season by viewing the leaderboard and tournament bracket. We&rsquo;ll send you an invite to play in 2027.</p>`
     : `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">The bracket is live! Head over to make your picks now. You can update them as many times as you want before the entry slip deadline.</p>`
+
+  const subject = isPostDeadline
+    ? "Welcome to Slipper8s! 🏀"
+    : "Welcome to Slipper8s 2026! 🏀"
+
+  const greeting = isPostDeadline
+    ? `Hey ${firstName}! Welcome to Slipper8s!`
+    : `Hey ${firstName}! You&rsquo;re all set for the 2026 edition of Slipper8s!`
+
+  const ctaButton = isPostDeadline
+    ? `<a href="${APP_URL}/leaderboard" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View Leaderboard</a>`
+    : `<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks</a>`
+
+  const howItWorks = isPostDeadline
+    ? ``
+    : `<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.</p>`
 
   try {
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "Welcome to Slipper8s 2026! 🏀",
+      subject,
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -34,11 +54,11 @@ export async function sendWelcomeEmail(to: string, firstName: string, variant: "
 <h1 style="color:#111;font-size:24px;margin:16px 0 4px;">Welcome to Slipper8s!</h1>
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
-<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">Hey ${firstName}! You&rsquo;re all set for the 2026 edition of Slipper8s!</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#222;">How it works:</strong> Pick 8 teams from the tournament bracket. Your score = seed &times; wins. Higher seeds are worth more when they win, so those sleeper picks could pay off big.</p>
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 16px;">${greeting}</p>
+${howItWorks}
 ${timingBlock}
 <div style="text-align:center;margin-bottom:16px;">
-<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks</a>
+${ctaButton}
 </div>
 <p style="color:#555;font-size:13px;line-height:1.6;margin:0;border-top:1px solid #e5e7eb;padding-top:12px;"><strong style="color:#222;">Playing with friends?</strong> <a href="${APP_URL}/leagues" style="color:#00A9E0;text-decoration:none;font-weight:500;">Create a Private League &rarr;</a></p>
 </div>

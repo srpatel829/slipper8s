@@ -112,20 +112,23 @@ export async function POST(request: Request) {
     },
   })
 
-  // Determine welcome email variant based on season status
+  // Determine welcome email variant based on season status and deadline
   const settings = await prisma.appSettings.findUnique({
     where: { id: "main" },
-    select: { currentSeasonId: true },
+    select: { currentSeasonId: true, picksDeadline: true },
   })
-  let emailVariant: "pre-bracket" | "live" = "pre-bracket"
+  let emailVariant: "pre-bracket" | "live" | "post-deadline" = "pre-bracket"
   if (settings?.currentSeasonId) {
     const season = await prisma.season.findUnique({
       where: { id: settings.currentSeasonId },
       select: { status: true },
     })
-    // REGISTRATION means bracket is out and picks are open; LOCKED/ACTIVE/COMPLETED means games are live
-    if (season?.status === "REGISTRATION" || season?.status === "LOCKED" || season?.status === "ACTIVE" || season?.status === "COMPLETED") {
-      emailVariant = "live"
+    const status = season?.status ?? ""
+    if (["LOCKED", "ACTIVE", "COMPLETED"].includes(status)) {
+      emailVariant = "post-deadline"
+    } else if (status === "REGISTRATION") {
+      const deadlinePassed = settings.picksDeadline && new Date() > new Date(settings.picksDeadline)
+      emailVariant = deadlinePassed ? "post-deadline" : "live"
     }
   }
 
