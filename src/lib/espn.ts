@@ -423,13 +423,15 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
 function detectRound(competition: ESPNCompetition | undefined): number {
   if (!competition) return 1
   const headline = competition.notes?.[0]?.headline?.toLowerCase() ?? ""
+  // ESPN headlines look like "NCAA Men's Basketball Championship - East Region - 1st Round"
+  // so we must check specific round identifiers before the generic "championship" word
   if (headline.includes("first four") || headline.includes("play-in")) return 0
-  if (headline.includes("first round") || headline.includes("round of 64")) return 1
-  if (headline.includes("second round") || headline.includes("round of 32")) return 2
+  if (headline.includes("1st round") || headline.includes("first round") || headline.includes("round of 64")) return 1
+  if (headline.includes("2nd round") || headline.includes("second round") || headline.includes("round of 32")) return 2
   if (headline.includes("sweet 16") || headline.includes("sweet sixteen")) return 3
   if (headline.includes("elite 8") || headline.includes("elite eight")) return 4
-  if (headline.includes("final four")) return 5
-  if (headline.includes("championship") || headline.includes("national championship")) return 6
+  if (headline.includes("final four") || headline.includes("semifinals")) return 5
+  if (headline.includes("national championship") || headline.endsWith("championship game")) return 6
   return 1
 }
 
