@@ -69,6 +69,46 @@ const CONF_COLORS = [
   "#84cc16", "#e11d48", "#0ea5e9", "#a855f7", "#22c55e",
 ]
 
+// Conference name → ESPN CDN logo slug
+const CONF_LOGO_SLUGS: Record<string, string> = {
+  "ACC": "acc",
+  "SEC": "sec",
+  "Big Ten": "big_ten",
+  "Big 12": "big_12",
+  "Big East": "big_east",
+  "American Athletic": "american",
+  "America East": "america_east",
+  "ASUN": "atlantic_sun",
+  "Atlantic 10": "atlantic_10",
+  "Big Sky": "big_sky",
+  "Big South": "big_south",
+  "Big West": "big_west",
+  "CAA": "caa",
+  "Conference USA": "conference_usa",
+  "Horizon League": "horizon",
+  "Ivy League": "ivy",
+  "MAAC": "maac",
+  "MAC": "mac",
+  "MEAC": "meac",
+  "Missouri Valley": "missouri_valley",
+  "Mountain West": "mountain_west",
+  "NEC": "nec",
+  "Ohio Valley": "ohio_valley",
+  "Patriot League": "patriot",
+  "Southern Conference": "southern",
+  "Southland": "southland",
+  "Summit League": "summit",
+  "Sun Belt": "sun_belt",
+  "SWAC": "swac",
+  "WAC": "wac",
+  "West Coast Conference": "west_coast",
+}
+
+function getConfLogoUrl(confName: string): string | null {
+  const slug = CONF_LOGO_SLUGS[confName]
+  return slug ? `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${slug}.png` : null
+}
+
 // Country name mapping (topojson uses specific names)
 const COUNTRY_NAME_MAP: Record<string, string> = {
   "United States of America": "United States",
@@ -273,6 +313,49 @@ function GenderPieChart({ data }: { data: StatItem[] }) {
   )
 }
 
+// Custom Y-axis tick that renders conference logo + abbreviated name
+function ConferenceYAxisTick(props: { x: number; y: number; payload: { value: string } }) {
+  const { x, y, payload } = props
+  const name = payload.value
+  const logoUrl = getConfLogoUrl(name)
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      {logoUrl ? (
+        <>
+          <image
+            href={logoUrl}
+            x={-70}
+            y={-12}
+            width={24}
+            height={24}
+            preserveAspectRatio="xMidYMid meet"
+          />
+          <text
+            x={-40}
+            y={4}
+            textAnchor="start"
+            fontSize={11}
+            fill="hsl(var(--muted-foreground))"
+          >
+            {name.length > 12 ? name.slice(0, 12) + "…" : name}
+          </text>
+        </>
+      ) : (
+        <text
+          x={-5}
+          y={4}
+          textAnchor="end"
+          fontSize={11}
+          fill="hsl(var(--muted-foreground))"
+        >
+          {name}
+        </text>
+      )}
+    </g>
+  )
+}
+
 function ConferencesBarChart({ data }: { data: StatItem[] }) {
   const chartData = data.slice(0, 15).map((d, i) => ({
     name: d.value,
@@ -286,11 +369,16 @@ function ConferencesBarChart({ data }: { data: StatItem[] }) {
       {chartData.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 28)}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 100, right: 20, top: 5, bottom: 5 }}>
+        <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 32)}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 20, top: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
             <XAxis type="number" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }} width={95} />
+            <YAxis
+              type="category"
+              dataKey="name"
+              width={75}
+              tick={ConferenceYAxisTick as unknown as Record<string, unknown>}
+            />
             <RechartsTooltip
               formatter={(value: unknown) => [Number(value).toLocaleString(), "Players"]}
               contentStyle={TOOLTIP_STYLE}
