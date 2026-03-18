@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import {
   sendDeadlineReminderEmail,
+  sendDeadlineReminderNoPicksEmail,
+  sendDeadlineReminderIncompleteEmail,
   sendEntriesLockedEmail,
   sendDailyRecapEmail,
   sendFinalResultsEmail,
@@ -59,27 +61,6 @@ export async function GET(req: NextRequest) {
       if (!settings.deadlineReminderSentAt) {
         console.log("[cron/emails] Sending deadline reminder emails...")
 
-        // Get all users with entries who have notifications enabled
-        const usersToNotify = await prisma.user.findMany({
-          where: {
-            notificationsEnabled: true,
-            entries: { some: {} },
-          },
-          select: { email: true, firstName: true },
-        })
-
-        // Also get users without entries but who are registered (encourage them to pick)
-        const usersWithoutEntries = await prisma.user.findMany({
-          where: {
-            notificationsEnabled: true,
-            registrationComplete: true,
-            entries: { none: {} },
-          },
-          select: { email: true, firstName: true },
-        })
-
-        const allUsers = [...usersToNotify, ...usersWithoutEntries]
-
         // Format deadline for email
         const deadlineStr = deadline.toLocaleString("en-US", {
           weekday: "long",
@@ -93,12 +74,56 @@ export async function GET(req: NextRequest) {
         let sent = 0
         let failed = 0
 
-        for (const user of allUsers) {
+        // Group 1: Users with entries → "finalize your picks"
+        const usersWithEntries = await prisma.user.findMany({
+          where: {
+            notificationsEnabled: true,
+            entries: { some: {} },
+          },
+          select: { email: true, firstName: true },
+        })
+
+        for (const user of usersWithEntries) {
           if (!user.email || !user.firstName) continue
           const result = await sendDeadlineReminderEmail(user.email, user.firstName, deadlineStr)
           if (result.success) sent++
           else failed++
         }
+
+        // Group 2: Registered, no entries → "you haven't picked yet"
+        const usersNoPicks = await prisma.user.findMany({
+          where: {
+            notificationsEnabled: true,
+            registrationComplete: true,
+            entries: { none: {} },
+          },
+          select: { email: true, firstName: true },
+        })
+
+        for (const user of usersNoPicks) {
+          if (!user.email || !user.firstName) continue
+          const result = await sendDeadlineReminderNoPicksEmail(user.email, user.firstName, deadlineStr)
+          if (result.success) sent++
+          else failed++
+        }
+
+        // Group 3: Incomplete registration → "finish signing up"
+        const usersIncomplete = await prisma.user.findMany({
+          where: {
+            notificationsEnabled: true,
+            registrationComplete: false,
+          },
+          select: { email: true, firstName: true },
+        })
+
+        for (const user of usersIncomplete) {
+          if (!user.email) continue
+          const result = await sendDeadlineReminderIncompleteEmail(user.email, user.firstName, deadlineStr)
+          if (result.success) sent++
+          else failed++
+        }
+
+        const totalUsers = usersWithEntries.length + usersNoPicks.length + usersIncomplete.length
 
         // Mark as sent
         await prisma.appSettings.update({
@@ -106,8 +131,8 @@ export async function GET(req: NextRequest) {
           data: { deadlineReminderSentAt: now },
         })
 
-        results.deadlineReminder = { sent, failed, totalUsers: allUsers.length }
-        console.log(`[cron/emails] Deadline reminder: ${sent} sent, ${failed} failed`)
+        results.deadlineReminder = { sent, failed, totalUsers, withEntries: usersWithEntries.length, noPicks: usersNoPicks.length, incomplete: usersIncomplete.length }
+        console.log(`[cron/emails] Deadline reminder: ${sent} sent, ${failed} failed (${usersWithEntries.length} with entries, ${usersNoPicks.length} no picks, ${usersIncomplete.length} incomplete)`)
       } else {
         results.deadlineReminder = { skipped: true, reason: "Already sent" }
       }

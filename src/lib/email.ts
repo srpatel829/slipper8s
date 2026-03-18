@@ -172,7 +172,11 @@ export async function sendEntriesLockedEmail(to: string, firstName: string) {
   }
 }
 
-// ─── Deadline Reminder Email (optional — 24 hours before deadline) ──────────
+// ─── Deadline Reminder Emails (optional — 24 hours before deadline) ──────────
+// Three variants based on user state:
+//   1. Has entries → "finalize your picks"
+//   2. Registered, no entries → "you haven't picked yet"
+//   3. Incomplete registration → "finish signing up"
 
 export async function sendDeadlineReminderEmail(to: string, firstName: string, deadlineStr: string) {
   try {
@@ -203,6 +207,75 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
     return { success: true }
   } catch (error) {
     console.error("[email] Failed to send deadline reminder:", error)
+    return { success: false, error }
+  }
+}
+
+export async function sendDeadlineReminderNoPicksEmail(to: string, firstName: string, deadlineStr: string) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "⏰ 24 hours left — you haven't submitted your picks yet!",
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#ef4444;line-height:40px;text-align:center;font-size:20px;">🚨</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Don't Miss Out!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! You're signed up for Slipper8s but haven't submitted your picks yet.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">You have less than 24 hours.</strong> Pick 8 teams, and your score is seed &times; wins &mdash; sleeper picks can pay off big.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Once the deadline passes, you won't be able to enter.</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks Now</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send deadline reminder (no picks):", error)
+    return { success: false, error }
+  }
+}
+
+export async function sendDeadlineReminderIncompleteEmail(to: string, firstName: string | null, deadlineStr: string) {
+  const greeting = firstName ? `Hey ${firstName}!` : "Hey!"
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: "⏰ 24 hours left — finish signing up to play Slipper8s!",
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#ef4444;line-height:40px;text-align:center;font-size:20px;">🚨</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Time Is Running Out!</h1>
+<p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:15px;line-height:1.6;margin:0 0 12px;">${greeting} You started signing up for Slipper8s but haven't finished your registration yet.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">It only takes a minute.</strong> Complete your registration, then pick 8 teams. Score = seed &times; wins &mdash; sleeper picks can pay off big.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#b45309;">Deadline:</strong> <span style="color:#222;">${deadlineStr}</span></p>
+<div style="text-align:center;">
+<a href="${APP_URL}/register" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Complete Registration</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send deadline reminder (incomplete):", error)
     return { success: false, error }
   }
 }
