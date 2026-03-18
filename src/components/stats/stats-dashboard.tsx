@@ -15,7 +15,6 @@ import {
   Treemap,
   ResponsiveContainer,
 } from "recharts"
-// @ts-ignore — react-simple-maps lacks React 19 types
 import {
   ComposableMap,
   Geographies,
@@ -187,7 +186,7 @@ function GenderPieChart({ data }: { data: StatItem[] }) {
               outerRadius={100}
               paddingAngle={2}
               dataKey="value"
-              label={({ name, percent }: { name: string; percent: number }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+              label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ""} (${((percent ?? 0) * 100).toFixed(0)}%)`}
               labelLine={false}
             >
               {chartData.map((_, i) => (
@@ -288,7 +287,7 @@ function WorldMap({
         >
           <ZoomableGroup>
             <Geographies geography={WORLD_GEO_URL}>
-              {({ geographies }: { geographies: Array<{ rsmKey: string; properties: { name: string }; [k: string]: unknown }> }) =>
+              {({ geographies }) =>
                 geographies.map((geo) => {
                   const name = geo.properties.name
                   const count = getCountryCount(name)
