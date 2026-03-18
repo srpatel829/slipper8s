@@ -258,6 +258,16 @@ export function PicksLive({
               gameIndex={-1}
               disabled={deadlinePassed}
               isPreTournament={true}
+              playInSlots={playInSlots.map((s: any) => ({
+                id: s.id,
+                seed: s.seed,
+                region: s.region,
+                team1ShortName: s.team1.shortName,
+                team2ShortName: s.team2.shortName,
+                team1LogoUrl: s.team1.logoUrl,
+                team2LogoUrl: s.team2.logoUrl,
+                winnerId: s.winnerId,
+              }))}
             />
           </TabsContent>
           <TabsContent value="classic" className="mt-0">
