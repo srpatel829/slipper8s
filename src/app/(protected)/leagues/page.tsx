@@ -24,6 +24,7 @@ interface LeagueListItem {
   isAdmin: boolean
   adminName: string
   memberCount: number
+  entryCount: number
   createdAt: string
 }
 
@@ -278,6 +279,7 @@ export default function LeaguesPage() {
                   )}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span>{league.memberCount} member{league.memberCount !== 1 ? "s" : ""}</span>
+                    <span>{league.entryCount} / {league.maxEntries ?? "∞"} entries</span>
                     <span>Admin: {league.adminName}</span>
                   </div>
                 </div>

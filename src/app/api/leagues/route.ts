@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     },
     include: {
       admin: { select: { id: true, name: true, username: true } },
-      _count: { select: { members: true } },
+      _count: { select: { members: true, leagueEntries: true } },
     },
     orderBy: { createdAt: "desc" },
   })
@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
       isAdmin: l.adminId === session.user.id,
       adminName: l.admin.username ?? l.admin.name ?? "Unknown",
       memberCount: l._count.members,
+      entryCount: l._count.leagueEntries,
       createdAt: l.createdAt,
     }))
   )

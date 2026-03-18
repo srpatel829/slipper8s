@@ -788,7 +788,14 @@ export default function LeagueDetailPage() {
       {/* Members table */}
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border">
-          <h2 className="font-semibold text-sm">Members</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-sm">Members</h2>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span>{league.members.length} member{league.members.length !== 1 ? "s" : ""}</span>
+              <span className="text-border">·</span>
+              <span>{league.members.reduce((sum, m) => sum + m.entryCount, 0)} / {league.maxEntries ?? "∞"} entries</span>
+            </div>
+          </div>
         </div>
 
         {rankedMembers.length === 0 ? (
