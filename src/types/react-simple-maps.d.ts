@@ -7,6 +7,7 @@ declare module "react-simple-maps" {
     width?: number
     height?: number
     className?: string
+    style?: Record<string, unknown>
     children?: ReactNode
   }
 
@@ -32,6 +33,7 @@ declare module "react-simple-maps" {
       pressed?: Record<string, unknown>
     }
     onMouseEnter?: (event: unknown) => void
+    onMouseMove?: (event: unknown) => void
     onMouseLeave?: (event: unknown) => void
     key?: string
   }

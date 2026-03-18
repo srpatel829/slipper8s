@@ -118,6 +118,7 @@ export async function GET(req: NextRequest) {
         fanBases: fanBaseGroups.map((g) => ({
           value: g.favoriteTeamName!,
           count: g._count.id,
+          conference: TEAM_TO_CONFERENCE.get(g.favoriteTeamName!) ?? null,
         })),
       },
       {

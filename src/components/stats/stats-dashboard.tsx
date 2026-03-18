@@ -1,17 +1,12 @@
 "use client"
 
-import { useEffect, useState, useMemo, useCallback } from "react"
+import { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import {
   PieChart,
   Pie,
   Cell,
   Tooltip as RechartsTooltip,
   Legend,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Treemap,
   ResponsiveContainer,
 } from "recharts"
@@ -30,6 +25,7 @@ import { Users, Trophy, Shield } from "lucide-react"
 interface StatItem {
   value: string
   count: number
+  conference?: string | null
 }
 
 interface CommunityStats {
@@ -61,13 +57,6 @@ const GENDER_COLORS: Record<string, string> = {
   Other: "#8b5cf6",          // purple
   "Prefer not to say": "#6b7280", // grey
 }
-
-// Conference bar chart colors (rotating palette)
-const CONF_COLORS = [
-  "#3b82f6", "#f97316", "#10b981", "#8b5cf6", "#ef4444",
-  "#06b6d4", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1",
-  "#84cc16", "#e11d48", "#0ea5e9", "#a855f7", "#22c55e",
-]
 
 // Conference name → ESPN CDN logo slug
 const CONF_LOGO_SLUGS: Record<string, string> = {
@@ -109,63 +98,49 @@ function getConfLogoUrl(confName: string): string | null {
   return slug ? `https://a.espncdn.com/i/teamlogos/ncaa_conf/500/${slug}.png` : null
 }
 
+// Conference colors for the nested treemap
+const CONF_COLOR_MAP: Record<string, string> = {
+  "SEC": "#f59e0b",
+  "Big Ten": "#3b82f6",
+  "ACC": "#10b981",
+  "Big 12": "#ef4444",
+  "Big East": "#8b5cf6",
+  "American Athletic": "#06b6d4",
+  "West Coast Conference": "#ec4899",
+  "Mountain West": "#14b8a6",
+  "Atlantic 10": "#6366f1",
+  "Missouri Valley": "#84cc16",
+  "CAA": "#e11d48",
+  "Sun Belt": "#0ea5e9",
+  "Conference USA": "#a855f7",
+  "MAAC": "#22c55e",
+  "MAC": "#f97316",
+  "Ivy League": "#059669",
+  "ASUN": "#7c3aed",
+  "Big Sky": "#0891b2",
+  "Big South": "#dc2626",
+  "Big West": "#16a34a",
+  "Horizon League": "#2563eb",
+  "MEAC": "#9333ea",
+  "NEC": "#0d9488",
+  "Ohio Valley": "#ca8a04",
+  "Patriot League": "#4f46e5",
+  "Southern Conference": "#c026d3",
+  "Southland": "#ea580c",
+  "Summit League": "#0284c7",
+  "SWAC": "#65a30d",
+  "WAC": "#b91c1c",
+  "America East": "#7c2d12",
+}
+
+const DEFAULT_CONF_COLOR = "#6b7280"
+
 // Country name mapping (topojson uses specific names)
 const COUNTRY_NAME_MAP: Record<string, string> = {
   "United States of America": "United States",
   "United Kingdom": "United Kingdom",
   "South Korea": "South Korea",
 }
-
-// Team primary colors for the fan bases treemap
-const TEAM_COLORS: Record<string, string> = {
-  // ACC
-  "Duke": "#003087", "North Carolina": "#7BAFD4", "Louisville": "#AD0000",
-  "Virginia": "#232D4B", "Syracuse": "#F76900", "Clemson": "#F56600",
-  "Florida State": "#782F40", "Wake Forest": "#9E7E38", "NC State": "#CC0000",
-  "Pitt": "#003594", "Georgia Tech": "#B3A369", "Miami (FL)": "#F47321",
-  "Notre Dame": "#0C2340", "Virginia Tech": "#630031", "Boston College": "#98002E",
-  "Stanford": "#8C1515", "California": "#003262", "SMU": "#0033A0",
-  // SEC
-  "Alabama": "#9E1B32", "Auburn": "#0C2340", "Florida": "#0021A5",
-  "Georgia": "#BA0C2F", "Kentucky": "#0033A0", "LSU": "#461D7C",
-  "Mississippi State": "#660000", "Ole Miss": "#CE1126", "Tennessee": "#FF8200",
-  "Texas A&M": "#500000", "Vanderbilt": "#866D4B", "Arkansas": "#9D2235",
-  "Missouri": "#F1B82D", "South Carolina": "#73000A", "Oklahoma": "#841617",
-  "Texas": "#BF5700",
-  // Big Ten
-  "Michigan": "#00274C", "Michigan State": "#18453B", "Ohio State": "#BB0000",
-  "Purdue": "#CEB888", "Indiana": "#990000", "Iowa": "#FFCD00",
-  "Illinois": "#E84A27", "Wisconsin": "#C5050C", "Minnesota": "#7A0019",
-  "Northwestern": "#4E2A84", "Maryland": "#E03A3E", "Nebraska": "#D00000",
-  "Penn State": "#041E42", "Rutgers": "#CC0033", "Oregon": "#154733",
-  "UCLA": "#2D68C4", "USC": "#990000", "Washington": "#4B2E83",
-  // Big 12
-  "Kansas": "#0051BA", "Baylor": "#003015", "Texas Tech": "#CC0000",
-  "Iowa State": "#C8102E", "TCU": "#4D1979", "West Virginia": "#002855",
-  "Oklahoma State": "#FF7300", "Kansas State": "#512888", "Cincinnati": "#E00122",
-  "Houston": "#C8102E", "UCF": "#BA9B37", "BYU": "#002E5D",
-  "Arizona": "#CC0033", "Arizona State": "#8C1D40", "Colorado": "#CFB87C",
-  "Utah": "#CC0000",
-  // Big East
-  "UConn": "#000E2F", "Villanova": "#003366", "Creighton": "#005CA9",
-  "Marquette": "#003366", "Xavier": "#0C2340", "St. John's": "#D41B2C",
-  "Seton Hall": "#004B8D", "Providence": "#000000", "Butler": "#13294B",
-  "Georgetown": "#041E42", "DePaul": "#005EB8",
-  // Other notable
-  "Gonzaga": "#002967", "San Diego State": "#A6192E", "Memphis": "#003087",
-  "Saint Mary's": "#D22630", "Dayton": "#CE1141", "VCU": "#F8B800",
-  "Drake": "#004477", "Loyola Chicago": "#6C1D45", "Davidson": "#CC0000",
-  "Wichita State": "#FFC217", "Nevada": "#003366", "Boise State": "#0033A0",
-  "New Mexico": "#BA0C2F", "UNLV": "#CF0A2C", "Colorado State": "#1E4D2B",
-  "Wyoming": "#492F24", "Fresno State": "#DB0032",
-  // Mid-majors often in tournament
-  "St. Peter's": "#003DA5", "Fairleigh Dickinson": "#003DA5",
-  "Furman": "#582C83", "Princeton": "#FF6000", "Oral Roberts": "#002855",
-  "Vermont": "#154734", "Colgate": "#821019", "Iona": "#6B2737",
-  "Montana State": "#003875", "Chattanooga": "#00386B",
-}
-
-const DEFAULT_TEAM_COLOR = "#f97316"
 
 // ── Tooltip style (always legible) ─────────────────────────────────────────
 
@@ -176,12 +151,44 @@ const TOOLTIP_STYLE = {
   color: "#f9fafb",
 }
 
+// ── Mouse-tracking tooltip hook ────────────────────────────────────────────
+
+function useMouseTooltip() {
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = useCallback((e: React.MouseEvent, text: string) => {
+    if (!containerRef.current) return
+    const rect = containerRef.current.getBoundingClientRect()
+    setTooltip({
+      text,
+      x: e.clientX - rect.left + 12,
+      y: e.clientY - rect.top - 8,
+    })
+  }, [])
+
+  const hideTooltip = useCallback(() => setTooltip(null), [])
+
+  return { tooltip, containerRef, handleMouseMove, hideTooltip }
+}
+
+function MapTooltip({ tooltip }: { tooltip: { text: string; x: number; y: number } | null }) {
+  if (!tooltip) return null
+  return (
+    <div
+      className="absolute z-10 pointer-events-none bg-gray-800 text-gray-100 border border-gray-600 rounded-lg px-3 py-1.5 text-sm shadow-lg whitespace-nowrap"
+      style={{ left: tooltip.x, top: tooltip.y }}
+    >
+      {tooltip.text}
+    </div>
+  )
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function StatsDashboard() {
   const [stats, setStats] = useState<CommunityStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [tooltipContent, setTooltipContent] = useState("")
 
   useEffect(() => {
     fetch("/api/stats/community")
@@ -238,20 +245,17 @@ export function StatsDashboard() {
         <StatCard icon={<Shield className="h-5 w-5 text-purple-500" />} value={stats.privateLeagues} label="Private Leagues" />
       </div>
 
-      {/* Charts grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <GenderPieChart data={stats.gender} />
-        <ConferencesBarChart data={stats.conferences} />
-      </div>
+      {/* Gender chart */}
+      <GenderPieChart data={stats.gender} />
 
       {/* World map */}
-      <WorldMap countries={stats.countries} tooltipContent={tooltipContent} setTooltipContent={setTooltipContent} />
+      <WorldMap countries={stats.countries} />
 
       {/* US states map */}
-      <USMap states={stats.states} tooltipContent={tooltipContent} setTooltipContent={setTooltipContent} />
+      <USMap states={stats.states} />
 
-      {/* Fan bases */}
-      <FanBasesChart data={stats.fanBases} />
+      {/* Combined conference + fan bases nested treemap */}
+      <ConferenceFanBasesTreemap conferences={stats.conferences} fanBases={stats.fanBases} />
     </div>
   )
 }
@@ -313,97 +317,9 @@ function GenderPieChart({ data }: { data: StatItem[] }) {
   )
 }
 
-// Custom Y-axis tick that renders conference logo + abbreviated name
-function ConferenceYAxisTick(props: { x: number; y: number; payload: { value: string } }) {
-  const { x, y, payload } = props
-  const name = payload.value
-  const logoUrl = getConfLogoUrl(name)
+function WorldMap({ countries }: { countries: StatItem[] }) {
+  const { tooltip, containerRef, handleMouseMove, hideTooltip } = useMouseTooltip()
 
-  return (
-    <g transform={`translate(${x},${y})`}>
-      {logoUrl ? (
-        <>
-          <image
-            href={logoUrl}
-            x={-70}
-            y={-12}
-            width={24}
-            height={24}
-            preserveAspectRatio="xMidYMid meet"
-          />
-          <text
-            x={-40}
-            y={4}
-            textAnchor="start"
-            fontSize={11}
-            fill="hsl(var(--muted-foreground))"
-          >
-            {name.length > 12 ? name.slice(0, 12) + "…" : name}
-          </text>
-        </>
-      ) : (
-        <text
-          x={-5}
-          y={4}
-          textAnchor="end"
-          fontSize={11}
-          fill="hsl(var(--muted-foreground))"
-        >
-          {name}
-        </text>
-      )}
-    </g>
-  )
-}
-
-function ConferencesBarChart({ data }: { data: StatItem[] }) {
-  const chartData = data.slice(0, 15).map((d, i) => ({
-    name: d.value,
-    players: d.count,
-    fill: CONF_COLORS[i % CONF_COLORS.length],
-  }))
-
-  return (
-    <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Conferences Represented</h2>
-      {chartData.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
-      ) : (
-        <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 32)}>
-          <BarChart data={chartData} layout="vertical" margin={{ left: 80, right: 20, top: 5, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="hsl(var(--border))" />
-            <XAxis type="number" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
-            <YAxis
-              type="category"
-              dataKey="name"
-              width={75}
-              tick={ConferenceYAxisTick as unknown as Record<string, unknown>}
-            />
-            <RechartsTooltip
-              formatter={(value: unknown) => [Number(value).toLocaleString(), "Players"]}
-              contentStyle={TOOLTIP_STYLE}
-            />
-            <Bar dataKey="players" radius={[0, 4, 4, 0]}>
-              {chartData.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </Card>
-  )
-}
-
-function WorldMap({
-  countries,
-  tooltipContent,
-  setTooltipContent,
-}: {
-  countries: StatItem[]
-  tooltipContent: string
-  setTooltipContent: (s: string) => void
-}) {
   const countryMap = useMemo(() => {
     const m = new Map<string, number>()
     for (const c of countries) m.set(c.value, c.count)
@@ -414,7 +330,7 @@ function WorldMap({
 
   const getColor = useCallback(
     (count: number) => {
-      if (count === 0) return "#374151" // dark grey for unrepresented
+      if (count === 0) return "#374151"
       const intensity = Math.max(0.2, count / maxCount)
       return `rgba(249, 115, 22, ${intensity})`
     },
@@ -434,16 +350,13 @@ function WorldMap({
         <h2 className="text-lg font-semibold">Global Reach</h2>
         <Badge variant="secondary">{countries.length} countries</Badge>
       </div>
-      <div className="relative">
-        {tooltipContent && (
-          <div className="absolute top-2 right-2 z-10 bg-gray-800 text-gray-100 border border-gray-600 rounded-lg px-3 py-1.5 text-sm shadow-lg">
-            {tooltipContent}
-          </div>
-        )}
+      <div className="relative overflow-hidden" ref={containerRef}>
+        <MapTooltip tooltip={tooltip} />
         <ComposableMap
           projectionConfig={{ rotate: [-10, 0, 0], scale: 147 }}
-          className="w-full"
-          height={400}
+          width={800}
+          height={450}
+          style={{ width: "100%", height: "auto" }}
         >
           <ZoomableGroup>
             <Geographies geography={WORLD_GEO_URL}>
@@ -451,6 +364,7 @@ function WorldMap({
                 geographies.map((geo) => {
                   const name = geo.properties.name
                   const count = getCountryCount(name)
+                  const tooltipText = count > 0 ? `${name}: ${count} player${count !== 1 ? "s" : ""}` : name
                   return (
                     <Geography
                       key={geo.rsmKey}
@@ -463,10 +377,8 @@ function WorldMap({
                         hover: { outline: "none", fill: "#f97316", opacity: 0.8 },
                         pressed: { outline: "none" },
                       }}
-                      onMouseEnter={() => {
-                        setTooltipContent(count > 0 ? `${name}: ${count} player${count !== 1 ? "s" : ""}` : name)
-                      }}
-                      onMouseLeave={() => setTooltipContent("")}
+                      onMouseMove={(e: unknown) => handleMouseMove(e as React.MouseEvent, tooltipText)}
+                      onMouseLeave={hideTooltip}
                     />
                   )
                 })
@@ -479,15 +391,9 @@ function WorldMap({
   )
 }
 
-function USMap({
-  states,
-  tooltipContent,
-  setTooltipContent,
-}: {
-  states: StatItem[]
-  tooltipContent: string
-  setTooltipContent: (s: string) => void
-}) {
+function USMap({ states }: { states: StatItem[] }) {
+  const { tooltip, containerRef, handleMouseMove, hideTooltip } = useMouseTooltip()
+
   const stateMap = useMemo(() => {
     const m = new Map<string, number>()
     for (const s of states) m.set(s.value, s.count)
@@ -498,7 +404,7 @@ function USMap({
 
   const getColor = useCallback(
     (count: number) => {
-      if (count === 0) return "#374151" // dark grey for unrepresented
+      if (count === 0) return "#374151"
       const intensity = Math.max(0.2, count / maxCount)
       return `rgba(59, 130, 246, ${intensity})`
     },
@@ -511,22 +417,20 @@ function USMap({
         <h2 className="text-lg font-semibold">United States</h2>
         <Badge variant="secondary">{states.length} states</Badge>
       </div>
-      <div className="relative">
-        {tooltipContent && (
-          <div className="absolute top-2 right-2 z-10 bg-gray-800 text-gray-100 border border-gray-600 rounded-lg px-3 py-1.5 text-sm shadow-lg">
-            {tooltipContent}
-          </div>
-        )}
+      <div className="relative overflow-hidden" ref={containerRef}>
+        <MapTooltip tooltip={tooltip} />
         <ComposableMap
           projection="geoAlbersUsa"
-          className="w-full"
-          height={400}
+          width={800}
+          height={500}
+          style={{ width: "100%", height: "auto" }}
         >
           <Geographies geography={US_GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
                 const name = geo.properties.name
                 const count = stateMap.get(name) ?? 0
+                const tooltipText = count > 0 ? `${name}: ${count} player${count !== 1 ? "s" : ""}` : name
                 return (
                   <Geography
                     key={geo.rsmKey}
@@ -539,10 +443,8 @@ function USMap({
                       hover: { outline: "none", fill: "#3b82f6", opacity: 0.8 },
                       pressed: { outline: "none" },
                     }}
-                    onMouseEnter={() => {
-                      setTooltipContent(count > 0 ? `${name}: ${count} player${count !== 1 ? "s" : ""}` : name)
-                    }}
-                    onMouseLeave={() => setTooltipContent("")}
+                    onMouseMove={(e: unknown) => handleMouseMove(e as React.MouseEvent, tooltipText)}
+                    onMouseLeave={hideTooltip}
                   />
                 )
               })
@@ -554,21 +456,91 @@ function USMap({
   )
 }
 
-// Custom Treemap content renderer — uses team colors
-function TreemapContent(props: {
+// ── Nested Conference → Team Treemap ──────────────────────────────────────
+
+interface NestedTreeNode {
+  name: string
+  size?: number
+  children?: NestedTreeNode[]
+  conference?: string
+  confColor?: string
+}
+
+/**
+ * Custom content renderer for the nested treemap.
+ * - Conference parent nodes: show conference logo + name (count)
+ * - Team leaf nodes: show team name + count, using a lighter shade of the conference color
+ */
+function NestedTreemapContent(props: {
   x: number
   y: number
   width: number
   height: number
   name: string
-  value: number
+  depth: number
+  root?: NestedTreeNode
+  conference?: string
+  confColor?: string
+  value?: number
+  size?: number
 }) {
-  const { x, y, width, height, name, value } = props
-  const color = TEAM_COLORS[name] ?? DEFAULT_TEAM_COLOR
-  const showLabel = width > 40 && height > 30
+  const { x, y, width, height, name, depth, conference, confColor, size } = props
 
-  // Determine text color based on background brightness
-  const textColor = "#fff"
+  if (depth === 0) return null // root node
+
+  if (depth === 1) {
+    // Conference parent block
+    const color = confColor ?? CONF_COLOR_MAP[name] ?? DEFAULT_CONF_COLOR
+    const logoUrl = getConfLogoUrl(name)
+    const showLabel = width > 50 && height > 28
+    // Sum children to get total count
+    const total = size ?? 0
+
+    return (
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={color}
+          fillOpacity={0.25}
+          stroke={color}
+          strokeWidth={2}
+          rx={4}
+        />
+        {showLabel && (
+          <>
+            {logoUrl && width > 60 && (
+              <image
+                href={logoUrl}
+                x={x + 6}
+                y={y + 4}
+                width={20}
+                height={20}
+                preserveAspectRatio="xMidYMid meet"
+              />
+            )}
+            <text
+              x={logoUrl && width > 60 ? x + 30 : x + 6}
+              y={y + 18}
+              fontSize={11}
+              fontWeight="700"
+              fill="hsl(var(--foreground))"
+            >
+              {name.length > (width > 120 ? 18 : 10) ? name.slice(0, width > 120 ? 18 : 10) + "…" : name}
+              {width > 80 ? ` (${total})` : ""}
+            </text>
+          </>
+        )}
+      </g>
+    )
+  }
+
+  // depth === 2: Team leaf node
+  const parentConf = conference ?? ""
+  const parentColor = confColor ?? CONF_COLOR_MAP[parentConf] ?? DEFAULT_CONF_COLOR
+  const showLabel = width > 35 && height > 24
 
   return (
     <g>
@@ -577,65 +549,135 @@ function TreemapContent(props: {
         y={y}
         width={width}
         height={height}
-        fill={color}
+        fill={parentColor}
+        fillOpacity={0.7}
         stroke="hsl(var(--background))"
-        strokeWidth={2}
-        rx={4}
+        strokeWidth={1.5}
+        rx={3}
       />
       {showLabel && (
         <>
           <text
             x={x + width / 2}
-            y={y + height / 2 - 6}
+            y={y + height / 2 - (height > 32 ? 5 : 0)}
             textAnchor="middle"
-            fill={textColor}
-            fontSize={width > 80 ? 12 : 10}
+            fill="#fff"
+            fontSize={width > 70 ? 11 : 9}
             fontWeight="600"
           >
-            {name.length > (width > 80 ? 15 : 8) ? name.slice(0, width > 80 ? 15 : 8) + "…" : name}
+            {name.length > (width > 70 ? 14 : 7) ? name.slice(0, width > 70 ? 14 : 7) + "…" : name}
           </text>
-          <text
-            x={x + width / 2}
-            y={y + height / 2 + 10}
-            textAnchor="middle"
-            fill="rgba(255,255,255,0.8)"
-            fontSize={10}
-          >
-            {value}
-          </text>
+          {height > 32 && (
+            <text
+              x={x + width / 2}
+              y={y + height / 2 + 10}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.8)"
+              fontSize={9}
+            >
+              {size}
+            </text>
+          )}
         </>
       )}
     </g>
   )
 }
 
-function FanBasesChart({ data }: { data: StatItem[] }) {
-  const treeData = data.slice(0, 30).map((d) => ({
-    name: d.value,
-    size: d.count,
-  }))
+function ConferenceFanBasesTreemap({
+  conferences,
+  fanBases,
+}: {
+  conferences: StatItem[]
+  fanBases: StatItem[]
+}) {
+  // Build nested data: conferences → teams
+  const treeData = useMemo(() => {
+    // Group fan bases by conference
+    const confTeams = new Map<string, { name: string; size: number }[]>()
+    for (const fb of fanBases) {
+      const conf = fb.conference ?? "Other"
+      if (!confTeams.has(conf)) confTeams.set(conf, [])
+      confTeams.get(conf)!.push({ name: fb.value, size: fb.count })
+    }
+
+    // Sort conferences by total count (descending), use conference stats order
+    const confOrder = conferences.map((c) => c.value)
+
+    const result: NestedTreeNode[] = []
+    for (const confName of confOrder) {
+      const teams = confTeams.get(confName)
+      if (!teams || teams.length === 0) continue
+      const color = CONF_COLOR_MAP[confName] ?? DEFAULT_CONF_COLOR
+      result.push({
+        name: confName,
+        confColor: color,
+        children: teams
+          .sort((a, b) => b.size - a.size)
+          .map((t) => ({
+            name: t.name,
+            size: t.size,
+            conference: confName,
+            confColor: color,
+          })),
+      })
+    }
+
+    // Add "Other" for teams without a conference
+    const otherTeams = confTeams.get("Other")
+    if (otherTeams && otherTeams.length > 0) {
+      result.push({
+        name: "Other",
+        confColor: DEFAULT_CONF_COLOR,
+        children: otherTeams
+          .sort((a, b) => b.size - a.size)
+          .map((t) => ({
+            name: t.name,
+            size: t.size,
+            conference: "Other",
+            confColor: DEFAULT_CONF_COLOR,
+          })),
+      })
+    }
+
+    return result
+  }, [conferences, fanBases])
+
+  const totalTeams = fanBases.length
+  const totalConferences = conferences.length
 
   return (
     <Card className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Fan Bases</h2>
-        <Badge variant="secondary">{data.length} teams</Badge>
+        <h2 className="text-lg font-semibold">Conferences &amp; Fan Bases</h2>
+        <div className="flex gap-2">
+          <Badge variant="secondary">{totalConferences} conferences</Badge>
+          <Badge variant="secondary">{totalTeams} teams</Badge>
+        </div>
       </div>
       {treeData.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
       ) : (
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={450}>
           <Treemap
-            data={treeData}
+            data={treeData as unknown as Array<Record<string, unknown>>}
             dataKey="size"
             nameKey="name"
-            content={<TreemapContent x={0} y={0} width={0} height={0} name="" value={0} />}
+            content={
+              <NestedTreemapContent
+                x={0} y={0} width={0} height={0}
+                name="" depth={0}
+              />
+            }
           >
             <RechartsTooltip
               formatter={(value: unknown, _name: unknown, props: unknown) => {
                 const v = Number(value)
-                const p = props as { payload?: { name?: string } } | undefined
-                return [`${v.toLocaleString()} player${v !== 1 ? "s" : ""}`, p?.payload?.name ?? ""]
+                const p = props as { payload?: { name?: string; conference?: string } } | undefined
+                const teamName = p?.payload?.name ?? ""
+                const conf = p?.payload?.conference
+                const label = conf ? `${teamName} (${conf})` : teamName
+                return [`${v.toLocaleString()} player${v !== 1 ? "s" : ""}`, label]
               }}
               contentStyle={TOOLTIP_STYLE}
             />
