@@ -17,9 +17,21 @@ async function getCurrentSeason() {
 }
 
 async function getPicksData(userId: string, seasonId: string, entryId?: string) {
+  // Get resolved play-in winner IDs so we can include them in the team list
+  const resolvedPlayInWinnerIds = (await prisma.playInSlot.findMany({
+    where: { winnerId: { not: null } },
+    select: { winnerId: true },
+  })).map(s => s.winnerId!).filter(Boolean)
+
   const [teams, playInSlots, entries, settings, leagueMemberships] = await Promise.all([
     prisma.team.findMany({
-      where: { isPlayIn: false },
+      where: {
+        OR: [
+          { isPlayIn: false },
+          // Include resolved play-in winners so they appear in the bracket
+          ...(resolvedPlayInWinnerIds.length > 0 ? [{ id: { in: resolvedPlayInWinnerIds } }] : []),
+        ],
+      },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     prisma.playInSlot.findMany({

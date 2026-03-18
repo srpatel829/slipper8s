@@ -483,8 +483,9 @@ function NestedTreemapContent(props: {
   confColor?: string
   value?: number
   size?: number
+  children?: Array<{ size?: number }>
 }) {
-  const { x, y, width, height, name, depth, conference, confColor, size } = props
+  const { x, y, width, height, name, depth, conference, confColor, value, size, children } = props
 
   if (depth === 0) return null // root node
 
@@ -493,8 +494,8 @@ function NestedTreemapContent(props: {
     const color = confColor ?? CONF_COLOR_MAP[name] ?? DEFAULT_CONF_COLOR
     const logoUrl = getConfLogoUrl(name)
     const showLabel = width > 50 && height > 28
-    // Sum children to get total count
-    const total = size ?? 0
+    // Use value (recharts computed sum) or manually sum children, or fallback to size
+    const total = value ?? (children ? children.reduce((sum, c) => sum + (c.size ?? 0), 0) : 0) ?? size ?? 0
 
     return (
       <g>
@@ -680,6 +681,8 @@ function ConferenceFanBasesTreemap({
                 return [`${v.toLocaleString()} player${v !== 1 ? "s" : ""}`, label]
               }}
               contentStyle={TOOLTIP_STYLE}
+              itemStyle={{ color: "#f9fafb" }}
+              labelStyle={{ color: "#f9fafb" }}
             />
           </Treemap>
         </ResponsiveContainer>
