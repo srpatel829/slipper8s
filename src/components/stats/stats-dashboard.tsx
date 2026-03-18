@@ -160,11 +160,15 @@ function useMouseTooltip() {
   const handleMouseMove = useCallback((e: React.MouseEvent, text: string) => {
     if (!containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
-    setTooltip({
-      text,
-      x: e.clientX - rect.left + 12,
-      y: e.clientY - rect.top - 8,
-    })
+    const mouseX = e.clientX - rect.left
+    const mouseY = e.clientY - rect.top
+    // Estimate tooltip width (~8px per char + padding) and height
+    const estWidth = text.length * 8 + 30
+    const estHeight = 32
+    // Flip to left/above if tooltip would overflow container
+    const x = mouseX + estWidth + 12 > rect.width ? mouseX - estWidth - 8 : mouseX + 12
+    const y = mouseY + estHeight > rect.height ? mouseY - estHeight - 4 : mouseY - 8
+    setTooltip({ text, x, y })
   }, [])
 
   const hideTooltip = useCallback(() => setTooltip(null), [])
@@ -240,8 +244,8 @@ export function StatsDashboard() {
 
       {/* Hero stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard icon={<Users className="h-5 w-5 text-orange-500" />} value={stats.uniquePlayers} label="Registered Players" />
-        <StatCard icon={<Trophy className="h-5 w-5 text-blue-500" />} value={stats.totalEntries} label="Entry Slips" />
+        <StatCard icon={<Users className="h-5 w-5 text-orange-500" />} value={stats.uniquePlayers} label="Players" />
+        <StatCard icon={<Trophy className="h-5 w-5 text-blue-500" />} value={stats.totalEntries} label="Submitted Entries" />
         <StatCard icon={<Shield className="h-5 w-5 text-purple-500" />} value={stats.privateLeagues} label="Private Leagues" />
       </div>
 
@@ -546,14 +550,14 @@ function NestedTreemapContent(props: {
   return (
     <g>
       <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
+        x={x + 1}
+        y={y + 1}
+        width={Math.max(0, width - 2)}
+        height={Math.max(0, height - 2)}
         fill={parentColor}
         fillOpacity={0.7}
-        stroke="hsl(var(--background))"
-        strokeWidth={1.5}
+        stroke="rgba(0,0,0,0.5)"
+        strokeWidth={2}
         rx={3}
       />
       {showLabel && (
