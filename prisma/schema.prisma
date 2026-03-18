@@ -109,6 +109,7 @@ model User {
   adminLeagues       League[]        @relation("LeagueAdmin")
   leagueMemberships  LeagueMember[]
   feedbacks          Feedback[]
+  leagueMessages     LeagueMessage[] @relation("LeagueMessageSender")
   favoriteTeam       Team?           @relation("FavoriteTeam", fields: [favoriteTeamId], references: [id])
 }
 
@@ -142,6 +143,7 @@ model League {
   season        Season         @relation(fields: [seasonId], references: [id])
   leagueEntries LeagueEntry[]
   members       LeagueMember[]
+  messages      LeagueMessage[]
 
   @@unique([name, seasonId])
 }
@@ -371,6 +373,18 @@ model AuditLog {
   action    String
   details   Json?
   createdAt DateTime @default(now())
+}
+
+model LeagueMessage {
+  id        String   @id @default(cuid())
+  leagueId  String
+  senderId  String
+  subject   String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  sender User   @relation("LeagueMessageSender", fields: [senderId], references: [id])
 }
 
 model Feedback {

@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft, Crown, Copy, Check, Loader2, Users, Settings, Trash2,
   LogOut, DollarSign, ChevronDown, ChevronUp, X, Share2, UserMinus, FileText,
+  MessageSquare, Send,
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -47,6 +48,14 @@ interface MyEntry {
   inLeague: boolean
 }
 
+interface LeagueMsg {
+  id: string
+  subject: string
+  message: string
+  senderName: string
+  createdAt: string
+}
+
 export default function LeagueDetailPage() {
   const router = useRouter()
   const params = useParams()
@@ -66,6 +75,16 @@ export default function LeagueDetailPage() {
   const [removingUserId, setRemovingUserId] = useState<string | null>(null)
   const [myEntries, setMyEntries] = useState<MyEntry[]>([])
   const [togglingEntryId, setTogglingEntryId] = useState<string | null>(null)
+
+  // Messaging state
+  const [showMessagePanel, setShowMessagePanel] = useState(false)
+  const [msgSubject, setMsgSubject] = useState("")
+  const [msgBody, setMsgBody] = useState("")
+  const [sendingMsg, setSendingMsg] = useState(false)
+  const [showMsgConfirm, setShowMsgConfirm] = useState(false)
+  const [msgResult, setMsgResult] = useState<{ sent: number; failed: number } | null>(null)
+  const [messages, setMessages] = useState<LeagueMsg[]>([])
+  const [loadingMessages, setLoadingMessages] = useState(true)
 
   // Settings form state
   const [editName, setEditName] = useState("")
@@ -106,10 +125,25 @@ export default function LeagueDetailPage() {
     }
   }, [id])
 
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/leagues/${id}/messages`)
+      if (res.ok) {
+        const data = await res.json()
+        setMessages(data.messages ?? [])
+      }
+    } catch {
+      // Non-critical — silently fail
+    } finally {
+      setLoadingMessages(false)
+    }
+  }, [id])
+
   useEffect(() => {
     fetchLeague()
     fetchMyEntries()
-  }, [fetchLeague, fetchMyEntries])
+    fetchMessages()
+  }, [fetchLeague, fetchMyEntries, fetchMessages])
 
   function handleCopyCode() {
     if (!league) return
@@ -224,6 +258,33 @@ export default function LeagueDetailPage() {
       toast.error("Something went wrong")
     } finally {
       setTogglingEntryId(null)
+    }
+  }
+
+  async function handleSendMessage() {
+    setSendingMsg(true)
+    setMsgResult(null)
+    try {
+      const res = await fetch(`/api/leagues/${id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subject: msgSubject.trim(), message: msgBody.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || "Failed to send message")
+        return
+      }
+      setMsgResult({ sent: data.sent, failed: data.failed })
+      setMsgSubject("")
+      setMsgBody("")
+      setShowMsgConfirm(false)
+      toast.success(`Message sent to ${data.sent} member${data.sent !== 1 ? "s" : ""}`)
+      fetchMessages()
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setSendingMsg(false)
     }
   }
 
@@ -545,6 +606,137 @@ export default function LeagueDetailPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Message Members (admin only) */}
+      {league.isAdmin && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <button
+            onClick={() => setShowMessagePanel(!showMessagePanel)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium text-sm">Message Members</span>
+            </div>
+            {showMessagePanel ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+          </button>
+
+          {showMessagePanel && (
+            <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="msgSubject" className="text-sm">Subject</Label>
+                <Input
+                  id="msgSubject"
+                  value={msgSubject}
+                  onChange={(e) => setMsgSubject(e.target.value)}
+                  placeholder="Payment reminder, announcement, etc."
+                  className="bg-muted/50"
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="msgBody" className="text-sm">Message</Label>
+                <Textarea
+                  id="msgBody"
+                  value={msgBody}
+                  onChange={(e) => setMsgBody(e.target.value)}
+                  placeholder="Write your message to all league members..."
+                  className="bg-muted/50 min-h-[100px]"
+                  maxLength={2000}
+                />
+                <p className="text-xs text-muted-foreground">{msgBody.length}/2000 characters</p>
+              </div>
+
+              {/* Preview */}
+              {msgSubject.trim() && msgBody.trim() && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Email Preview</p>
+                  <div className="bg-muted/30 border border-border rounded-lg p-4 space-y-2">
+                    <p className="text-xs text-muted-foreground">Subject: <strong>[{league.name}] {msgSubject.trim()}</strong></p>
+                    <div className="border-t border-border pt-2">
+                      {msgBody.trim().split("\n").filter(l => l.trim()).map((line, i) => (
+                        <p key={i} className="text-sm mb-2">{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmation */}
+              {showMsgConfirm && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 space-y-3">
+                  <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                    Send this message to {league.members.length} member{league.members.length !== 1 ? "s" : ""}?
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Each member will receive an email with this message.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={sendingMsg}
+                      size="sm"
+                      className="gap-2"
+                    >
+                      {sendingMsg ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                      {sendingMsg ? "Sending..." : "Yes, Send"}
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShowMsgConfirm(false)} disabled={sendingMsg}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Result */}
+              {msgResult && (
+                <div className={`rounded-lg p-3 text-sm ${msgResult.failed === 0 ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400"}`}>
+                  Sent to {msgResult.sent} member{msgResult.sent !== 1 ? "s" : ""}{msgResult.failed > 0 ? ` (${msgResult.failed} failed)` : ""}
+                </div>
+              )}
+
+              {!showMsgConfirm && (
+                <Button
+                  onClick={() => { setMsgResult(null); setShowMsgConfirm(true) }}
+                  disabled={!msgSubject.trim() || !msgBody.trim() || sendingMsg}
+                  size="sm"
+                  className="gap-2"
+                >
+                  <Send className="h-3 w-3" />
+                  Send Message
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Messages feed */}
+      {!loadingMessages && messages.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="font-semibold text-sm flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              Messages
+            </h2>
+          </div>
+          <div className="divide-y divide-border">
+            {messages.map((msg) => (
+              <div key={msg.id} className="px-5 py-4 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold">{msg.subject}</span>
+                  <span className="text-[10px] text-muted-foreground shrink-0 ml-3">
+                    {new Date(msg.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">{msg.senderName}</p>
+                <p className="text-sm text-foreground/80 whitespace-pre-line">{msg.message}</p>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
