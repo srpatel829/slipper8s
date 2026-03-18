@@ -6,12 +6,26 @@ import { sendPlayInResolvedEmail } from "@/lib/email"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
 
-const ESPN_URL =
+const ESPN_BASE_URL =
   "https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&limit=500"
+
+// Build ESPN URL with a rolling date range so we get completed, live, AND upcoming games.
+// Without dates param, ESPN only returns the last day with finished games.
+function getESPNUrl(): string {
+  const now = new Date()
+  // Go back 2 days to capture recently completed games
+  const start = new Date(now)
+  start.setDate(start.getDate() - 2)
+  // Go forward 3 days to capture upcoming scheduled games
+  const end = new Date(now)
+  end.setDate(end.getDate() + 3)
+  const fmt = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, "")
+  return `${ESPN_BASE_URL}&dates=${fmt(start)}-${fmt(end)}`
+}
 
 // Fetch from ESPN with 60s Next.js Data Cache
 export async function fetchESPNScoreboard(): Promise<ESPNScoreboardResponse> {
-  const res = await fetch(ESPN_URL, {
+  const res = await fetch(getESPNUrl(), {
     next: { revalidate: 60 },
   })
   if (!res.ok) throw new Error(`ESPN fetch failed: ${res.status}`)
@@ -54,7 +68,7 @@ export async function syncTournamentData(): Promise<SyncResult> {
   let data: ESPNScoreboardResponse
   try {
     // Bypass cache for sync operations
-    const res = await fetch(ESPN_URL, { cache: "no-store" })
+    const res = await fetch(getESPNUrl(), { cache: "no-store" })
     if (!res.ok) throw new Error(`ESPN fetch failed: ${res.status}`)
     data = await res.json()
   } catch (err) {
