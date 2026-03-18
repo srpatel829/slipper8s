@@ -15,7 +15,7 @@ import {
   Treemap,
   ResponsiveContainer,
 } from "recharts"
-// @ts-expect-error — react-simple-maps lacks React 19 types
+// @ts-ignore — react-simple-maps lacks React 19 types
 import {
   ComposableMap,
   Geographies,
