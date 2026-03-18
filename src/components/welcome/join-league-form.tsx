@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Check } from "lucide-react"
+import { Loader2, Check, Clock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
@@ -11,6 +11,7 @@ export function JoinLeagueForm() {
   const [inviteCode, setInviteCode] = useState("")
   const [joining, setJoining] = useState(false)
   const [joinedLeague, setJoinedLeague] = useState<{ id: string; name: string } | null>(null)
+  const [pendingLeague, setPendingLeague] = useState<{ name: string } | null>(null)
 
   async function handleJoin(e: React.FormEvent) {
     e.preventDefault()
@@ -29,14 +30,46 @@ export function JoinLeagueForm() {
         toast.error(data.error || "Failed to join league")
         return
       }
-      toast.success(`Joined "${data.name}"!`)
-      setJoinedLeague({ id: data.id, name: data.name })
-      setInviteCode("")
+
+      if (data.requestPending) {
+        // Post-deadline: request sent to admin
+        toast.success("Join request sent!")
+        setPendingLeague({ name: data.leagueName })
+        setInviteCode("")
+      } else {
+        // Pre-deadline: joined immediately
+        toast.success(`Joined "${data.name}"!`)
+        setJoinedLeague({ id: data.id, name: data.name })
+        setInviteCode("")
+      }
     } catch {
       toast.error("Something went wrong")
     } finally {
       setJoining(false)
     }
+  }
+
+  if (pendingLeague) {
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <Clock className="h-4 w-4 text-amber-500" />
+          <p className="text-sm font-medium text-foreground">
+            Request sent for &quot;{pendingLeague.name}&quot;
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground mb-2">
+          The picks deadline has passed, so your request has been sent to the league admin for approval.
+          You&apos;ll receive an email when they respond.
+        </p>
+        <button
+          onClick={() => setPendingLeague(null)}
+          className="block text-xs text-muted-foreground hover:text-foreground mt-2 transition-colors"
+        >
+          Join another league
+        </button>
+      </div>
+    )
   }
 
   if (joinedLeague) {

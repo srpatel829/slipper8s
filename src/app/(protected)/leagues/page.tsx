@@ -101,8 +101,13 @@ export default function LeaguesPage() {
         toast.error(data.error || "Failed to join league")
         return
       }
-      toast.success(`Joined "${data.name}"!`)
-      router.push(`/leagues/${data.id}`)
+      if (data.requestPending) {
+        toast.success(`Join request sent for "${data.leagueName}". The league admin will review your request.`)
+        setInviteCode("")
+      } else {
+        toast.success(`Joined "${data.name}"!`)
+        router.push(`/leagues/${data.id}`)
+      }
     } catch {
       toast.error("Something went wrong")
     } finally {

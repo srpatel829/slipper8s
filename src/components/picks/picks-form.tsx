@@ -120,6 +120,14 @@ export function PicksForm({
 
   function toggleTeam(teamId: string) {
     if (deadlinePassed) return
+    // Prevent picking a team that's already covered by a play-in slot selection
+    const coveredBySlot = playInSlots.some(
+      s => s.winnerId === teamId && selectedSlotIds.has(s.id)
+    )
+    if (coveredBySlot) {
+      toast.error("This team is already selected via a play-in pick")
+      return
+    }
     if (selectedTeamIds.has(teamId)) {
       setSelected((prev) => prev.filter((s) => s.teamId !== teamId))
     } else if (selected.length < MAX_PICKS) {
@@ -129,6 +137,12 @@ export function PicksForm({
 
   function toggleSlot(playInSlotId: string) {
     if (deadlinePassed) return
+    // Prevent picking a play-in slot whose winner is already directly selected
+    const slot = playInSlotMap.get(playInSlotId)
+    if (slot?.winnerId && selectedTeamIds.has(slot.winnerId)) {
+      toast.error("This team is already directly selected")
+      return
+    }
     if (selectedSlotIds.has(playInSlotId)) {
       setSelected((prev) => prev.filter((s) => s.playInSlotId !== playInSlotId))
     } else if (selected.length < MAX_PICKS) {

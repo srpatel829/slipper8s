@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft, Crown, Copy, Check, Loader2, Users, Settings, Trash2,
   LogOut, DollarSign, ChevronDown, ChevronUp, X, Share2, UserMinus, FileText,
-  MessageSquare, Send,
+  MessageSquare, Send, UserPlus,
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -76,6 +76,10 @@ export default function LeagueDetailPage() {
   const [myEntries, setMyEntries] = useState<MyEntry[]>([])
   const [togglingEntryId, setTogglingEntryId] = useState<string | null>(null)
 
+  // Join requests state
+  const [joinRequests, setJoinRequests] = useState<Array<{ id: string; userId: string; user: { id: string; name: string | null; image: string | null; email: string }; requestedAt: string }>>([])
+  const [processingRequestId, setProcessingRequestId] = useState<string | null>(null)
+
   // Messaging state
   const [showMessagePanel, setShowMessagePanel] = useState(false)
   const [msgSubject, setMsgSubject] = useState("")
@@ -139,11 +143,51 @@ export default function LeagueDetailPage() {
     }
   }, [id])
 
+  const fetchJoinRequests = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/leagues/${id}/join-requests`)
+      if (res.ok) {
+        const data = await res.json()
+        setJoinRequests(data)
+      }
+    } catch {
+      // Non-critical
+    }
+  }, [id])
+
   useEffect(() => {
     fetchLeague()
     fetchMyEntries()
     fetchMessages()
   }, [fetchLeague, fetchMyEntries, fetchMessages])
+
+  // Fetch join requests after league loads (admin only)
+  useEffect(() => {
+    if (league?.isAdmin) fetchJoinRequests()
+  }, [league?.isAdmin, fetchJoinRequests])
+
+  async function handleJoinRequestAction(requestId: string, action: "approve" | "deny") {
+    setProcessingRequestId(requestId)
+    try {
+      const res = await fetch(`/api/leagues/${id}/join-requests`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action }),
+      })
+      if (res.ok) {
+        toast.success(action === "approve" ? "Request approved!" : "Request denied")
+        setJoinRequests(prev => prev.filter(r => r.id !== requestId))
+        if (action === "approve") fetchLeague() // Refresh member list
+      } else {
+        const data = await res.json()
+        toast.error(data.error || "Failed to process request")
+      }
+    } catch {
+      toast.error("Something went wrong")
+    } finally {
+      setProcessingRequestId(null)
+    }
+  }
 
   function handleCopyCode() {
     if (!league) return
@@ -606,6 +650,65 @@ export default function LeagueDetailPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pending Join Requests (admin only, shown when there are pending requests) */}
+      {league.isAdmin && joinRequests.length > 0 && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-2 mb-3">
+              <UserPlus className="h-4 w-4 text-amber-500" />
+              <span className="font-medium text-sm">Join Requests</span>
+              <span className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                {joinRequests.length}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              These players requested to join after the picks deadline. Approve to add them as members.
+            </p>
+            <div className="space-y-2">
+              {joinRequests.map(req => (
+                <div key={req.id} className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg px-3 py-2.5">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {req.user.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={req.user.image} alt="" className="h-6 w-6 rounded-full shrink-0" />
+                    ) : (
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                        {(req.user.name ?? req.user.email)[0]?.toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{req.user.name ?? req.user.email}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Requested {new Date(req.requestedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      className="h-7 px-2.5 text-xs bg-green-600 hover:bg-green-700 text-white"
+                      onClick={() => handleJoinRequestAction(req.id, "approve")}
+                      disabled={processingRequestId === req.id}
+                    >
+                      {processingRequestId === req.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => handleJoinRequestAction(req.id, "deny")}
+                      disabled={processingRequestId === req.id}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 

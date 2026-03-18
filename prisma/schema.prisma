@@ -108,6 +108,7 @@ model User {
   entries       Entry[]
   adminLeagues       League[]        @relation("LeagueAdmin")
   leagueMemberships  LeagueMember[]
+  leagueJoinRequests LeagueJoinRequest[]
   feedbacks          Feedback[]
   leagueMessages     LeagueMessage[] @relation("LeagueMessageSender")
   favoriteTeam       Team?           @relation("FavoriteTeam", fields: [favoriteTeamId], references: [id])
@@ -144,6 +145,7 @@ model League {
   leagueEntries LeagueEntry[]
   members       LeagueMember[]
   messages      LeagueMessage[]
+  joinRequests  LeagueJoinRequest[]
 
   @@unique([name, seasonId])
 }
@@ -154,6 +156,20 @@ model LeagueMember {
   userId    String
   paid      Boolean  @default(false)
   joinedAt  DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([leagueId, userId])
+}
+
+model LeagueJoinRequest {
+  id          String    @id @default(cuid())
+  leagueId    String
+  userId      String
+  status      String    @default("PENDING") // PENDING | APPROVED | DENIED
+  requestedAt DateTime  @default(now())
+  resolvedAt  DateTime?
 
   league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -452,6 +452,120 @@ export async function sendPlayInResolvedEmail(
   }
 }
 
+// ─── League Join Request Email (sent to league admin) ────────────────────────
+
+export async function sendJoinRequestEmail(
+  to: string,
+  adminName: string,
+  leagueName: string,
+  requesterName: string,
+  leagueId: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `Slipper8s: ${requesterName} wants to join ${leagueName}`,
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#8b5cf6;line-height:40px;text-align:center;font-size:20px;">👤</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">League Join Request</h1>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${adminName}!</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;"><strong style="color:#222;">${requesterName}</strong> is requesting to join your league <strong style="color:#222;">${leagueName}</strong>. Since the picks deadline has passed, they need your approval to join.</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/leagues/${leagueId}" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Review Request</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send join request email:", error)
+    return { success: false, error }
+  }
+}
+
+// ─── Join Request Approved Email (sent to requesting user) ──────────────────
+
+export async function sendJoinRequestApprovedEmail(
+  to: string,
+  userName: string,
+  leagueName: string,
+  leagueId: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `You've been approved to join ${leagueName}! ✓`,
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#22c55e;line-height:40px;text-align:center;font-size:20px;">✓</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Request Approved!</h1>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${userName}!</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Your request to join <strong style="color:#222;">${leagueName}</strong> has been approved. You're now a member!</p>
+<div style="text-align:center;">
+<a href="${APP_URL}/leagues/${leagueId}" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">View League</a>
+</div>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send join request approved email:", error)
+    return { success: false, error }
+  }
+}
+
+// ─── Join Request Denied Email (sent to requesting user) ────────────────────
+
+export async function sendJoinRequestDeniedEmail(
+  to: string,
+  userName: string,
+  leagueName: string,
+) {
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: `Your request to join ${leagueName} was not approved`,
+      html: `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<div style="max-width:560px;margin:0 auto;padding:24px 20px;">
+<div style="text-align:center;margin-bottom:16px;">
+<div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#ef4444;line-height:40px;text-align:center;font-size:20px;">✗</div>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Request Not Approved</h1>
+</div>
+<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${userName},</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0;">Unfortunately, your request to join <strong style="color:#222;">${leagueName}</strong> was not approved by the league admin. If you believe this was a mistake, please reach out to the league admin directly.</p>
+</div>
+<p style="color:#999;font-size:11px;text-align:center;margin:0;">Slipper8s &mdash; slipper8s.com</p>
+</div>
+</body></html>`,
+    })
+    return { success: true }
+  } catch (error) {
+    console.error("[email] Failed to send join request denied email:", error)
+    return { success: false, error }
+  }
+}
+
 // ─── Admin Broadcast Email (admin-triggered — to all players or subset) ──────
 
 export async function sendBroadcastEmail(

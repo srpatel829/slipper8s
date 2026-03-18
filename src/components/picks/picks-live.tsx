@@ -115,11 +115,15 @@ export function PicksLive({
     return result
   }, [teams, playInSlots])
 
-  // Selected team IDs for bracket view sync
+  // Selected team IDs for bracket view sync (includes synthetic "playin-xxx" IDs)
   const selectedTeamIds = useMemo((): Set<string> => {
-    const picks = generatedPicks
-      ?? existingPicks.map((p: any) => ({ teamId: p.teamId }))
-    const ids: string[] = picks.map((p: any) => p.teamId).filter((id: any): id is string => !!id)
+    const src = generatedPicks
+      ?? existingPicks.map((p: any) => ({ teamId: p.teamId ?? undefined, playInSlotId: p.playInSlotId ?? undefined }))
+    const ids: string[] = []
+    for (const p of src) {
+      if (p.teamId) ids.push(p.teamId)
+      else if (p.playInSlotId) ids.push(`playin-${p.playInSlotId}`)
+    }
     return new Set(ids)
   }, [generatedPicks, existingPicks])
 
@@ -138,11 +142,40 @@ export function PicksLive({
     setGeneratedPicks(picks)
   }, [])
 
+  // Build a lookup: resolved play-in winnerId → slotId (for duplicate prevention)
+  const winnerToSlotId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of playInSlots) {
+      if (s.winnerId) map.set(s.winnerId, s.id)
+    }
+    return map
+  }, [playInSlots])
+
   const handleBracketToggle = useCallback((teamId: string) => {
     if (deadlinePassed) return
     setGeneratedPicks(prev => {
       const current: SelectedPick[] = prev
         ?? existingPicks.map((p: any) => ({ teamId: p.teamId ?? undefined, playInSlotId: p.playInSlotId ?? undefined }))
+
+      // Detect synthetic play-in IDs (from bracket's synthetic "playin-xxx" teams)
+      if (teamId.startsWith("playin-")) {
+        const slotId = teamId.slice("playin-".length)
+        const existing = current.find(p => p.playInSlotId === slotId)
+        if (existing) {
+          return current.filter(p => p.playInSlotId !== slotId)
+        } else if (current.length < 8) {
+          return [...current, { playInSlotId: slotId }]
+        }
+        return current
+      }
+
+      // Check if this team is already covered by a play-in slot pick
+      const coveredSlotId = winnerToSlotId.get(teamId)
+      if (coveredSlotId && current.some(p => p.playInSlotId === coveredSlotId)) {
+        return current // Already picked via play-in slot, don't allow duplicate
+      }
+
+      // Regular team toggle
       const existing = current.find(p => p.teamId === teamId)
       if (existing) {
         return current.filter(p => p.teamId !== teamId)
@@ -152,7 +185,7 @@ export function PicksLive({
       return current
     })
     setFormKey(k => k + 1)
-  }, [deadlinePassed, existingPicks])
+  }, [deadlinePassed, existingPicks, winnerToSlotId])
 
   const hasAnyPicks = selectedTeamIds.size > 0
 
