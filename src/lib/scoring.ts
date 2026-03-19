@@ -1,6 +1,7 @@
 import type { Team, PlayInSlot } from "@/generated/prisma"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { classifyArchetypes } from "@/lib/archetypes"
 
 // ─── Entry-based types (current system) ───────────────────────────────────────
 
@@ -21,8 +22,6 @@ export type EntryWithRelations = {
   score?: number | null
   maxPossibleScore?: number | null
   expectedScore?: number | null
-  maxRank?: number | null
-  floorRank?: number | null
   user: {
     id: string
     name: string | null
@@ -202,8 +201,10 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     teamsRemaining,
     maxPossibleScore: entry.maxPossibleScore ?? null,
     expectedScore: entry.expectedScore ?? null,
-    maxRank: entry.maxRank ?? null,
-    floorRank: entry.floorRank ?? null,
+    archetypes: classifyArchetypes(
+      picks.filter(p => !p.isPlayIn).map(p => p.seed),
+      picks.filter(p => !p.isPlayIn && p.region).map(p => p.region!),
+    ).map(a => a.key),
     picks,
   }
 }
@@ -226,6 +227,10 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
 
   const total = scores.length
 
+  // Pre-compute arrays for max/floor rank calculation
+  const allCurrentScores = scores.map(s => s.currentScore)
+  const allMaxPossibleScores = scores.map(s => s.maxPossibleScore ?? 0)
+
   // Compute tied ranks: entries with the same TPS and currentScore share the same rank
   return scores.map((s, i) => {
     // Find the first entry with the same score to determine tied rank
@@ -236,10 +241,23 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
         break
       }
     }
+
+    // maxRank: best possible finish = 1 + count of entries whose current score
+    //   already exceeds this entry's max possible score (they can't be caught)
+    const maxRank = s.maxPossibleScore != null
+      ? 1 + allCurrentScores.filter(cs => cs > s.maxPossibleScore!).length
+      : null
+
+    // floorRank: worst possible finish = total - count of entries whose max possible
+    //   score is below this entry's current score (they can't catch up)
+    const floorRank = total - allMaxPossibleScores.filter(m => m < s.currentScore).length
+
     const entry = entries.find((e) => e.id === s.entryId)
     return {
       ...s,
       rank,
+      maxRank,
+      floorRank,
       percentile: computePercentile(rank, total),
       tierName: getTierName(rank),
       charity: i < 4 ? (entry?.charityPreference ?? null) : null,
@@ -319,6 +337,7 @@ export interface Optimal8Team {
   seed: number
   region: string
   wins: number
+  eliminated: boolean
   isPlayIn: boolean
   sCurveRank?: number | null
 }

@@ -55,7 +55,7 @@ async function getLeaderboard() {
       leagueEntries: { select: { leagueId: true } },
     },
     orderBy: { createdAt: "asc" },
-  }) as EntryWithRelations[]
+  }) as unknown as EntryWithRelations[]
 
   const leaderboard = computeLeaderboardFromEntries(entries)
   await setCachedLeaderboard(seasonId, leaderboard)

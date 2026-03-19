@@ -79,8 +79,6 @@ export async function GET(req: NextRequest) {
       score: true,
       maxPossibleScore: true,
       expectedScore: true,
-      maxRank: true,
-      floorRank: true,
       createdAt: true,
       user: {
         select: {
@@ -103,7 +101,7 @@ export async function GET(req: NextRequest) {
       },
     },
     orderBy: { createdAt: "asc" },
-  }) as EntryWithRelations[]
+  }) as unknown as EntryWithRelations[]
 
   let leaderboard = computeLeaderboardFromEntries(entries)
 

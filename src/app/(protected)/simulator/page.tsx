@@ -89,7 +89,7 @@ export default async function SimulatorPage() {
     resolvedPlayInWinnerIds.includes(t.id) ? { ...t, isPlayIn: false } : t
   )
 
-  const leaderboard = computeLeaderboardFromEntries(entries as EntryWithRelations[])
+  const leaderboard = computeLeaderboardFromEntries(entries as unknown as EntryWithRelations[])
   const aliveTeams = teamsWithResolvedPlayIns.filter(t => !t.eliminated)
 
   // Get user's leagues for leaderboard filter

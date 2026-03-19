@@ -179,15 +179,17 @@ export function buildGameSequence(
     }
   }
 
-  // ── F4 (round 5): East vs West, South vs Midwest ──
+  // ── F4 (round 5): East vs South, West vs Midwest ──
+  // REGIONS order is [East, West, South, Midwest] → indices [0,1,2,3]
+  // NCAA 2026 bracket: East(0) vs South(2), West(1) vs Midwest(3)
   const e8Events = events.filter(e => e.round === 4)
-  const f4Pairs: [number, number][] = [[0, 1], [2, 3]]
+  const f4Pairs: [number, number][] = [[0, 2], [1, 3]]
   for (const [idxA, idxB] of f4Pairs) {
     const wA = eventWinners[events.indexOf(e8Events[idxA])]
     const wB = eventWinners[events.indexOf(e8Events[idxB])]
     const teamA = wA ? teamById.get(wA) ?? null : null
     const teamB = wB ? teamById.get(wB) ?? null : null
-    const label = idxA === 0 ? "f4-east-west" : "f4-south-midwest"
+    const label = idxA === 0 ? "f4-east-south" : "f4-west-midwest"
     const { event, winner } = makeEvent(5, "Final Four", teamA, teamB, label)
     events.push(event)
     eventWinners.push(winner)

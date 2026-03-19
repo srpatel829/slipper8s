@@ -56,7 +56,7 @@ export default function DemoSimulatorPage() {
     // E8 → F4
     const f4Games = gameSequence.filter(g => g.round === 5)
     const e8Pairs: [string, number][] = [
-      ["East", 0], ["West", 0], ["South", 1], ["Midwest", 1]
+      ["East", 0], ["South", 0], ["West", 1], ["Midwest", 1]
     ]
     for (const [region, f4Idx] of e8Pairs) {
       const e8 = byRegionRound.get(region)?.get(4) ?? []

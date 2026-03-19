@@ -372,9 +372,9 @@ function CenterColumn({
     const f4Games = gameSequence.filter(g => g.round === 5)
     const champGame = gameSequence.find(g => g.round === 6)
 
-    // F4 pair 0: East vs West winner
-    // F4 pair 1: South vs Midwest winner
-    const f4Pairs: [Region, Region][] = [["East", "West"], ["South", "Midwest"]]
+    // F4 pair 0: East vs South winner
+    // F4 pair 1: West vs Midwest winner
+    const f4Pairs: [Region, Region][] = [["East", "South"], ["West", "Midwest"]]
 
     // Compute F4 participants and results
     const f4Data = f4Pairs.map(([rA, rB], i) => {

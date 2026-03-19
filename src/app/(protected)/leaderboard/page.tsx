@@ -39,8 +39,6 @@ async function getLeaderboard() {
       score: true,
       maxPossibleScore: true,
       expectedScore: true,
-      maxRank: true,
-      floorRank: true,
       createdAt: true,
       user: {
         select: {
@@ -64,7 +62,7 @@ async function getLeaderboard() {
       leagueEntries: { select: { leagueId: true } },
     },
     orderBy: { createdAt: "asc" },
-  }) as EntryWithRelations[]
+  }) as unknown as EntryWithRelations[]
 
   const leaderboard = computeLeaderboardFromEntries(entries)
 

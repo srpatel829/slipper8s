@@ -64,10 +64,10 @@ const REGION_MERGES: Array<[number, number[], number[]]> = [
   [4, [0, 1, 2, 3], [4, 5, 6, 7]],
 ]
 
-/** Cross-region F4 pairings */
+/** Cross-region F4 pairings (2026 NCAA bracket: East vs South, West vs Midwest) */
 const F4_REGION_MATCHUPS: [string, string][] = [
-  ["East", "West"],
-  ["South", "Midwest"],
+  ["East", "South"],
+  ["West", "Midwest"],
 ]
 
 // ─── Public API ─────────────────────────────────────────────────────────────

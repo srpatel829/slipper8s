@@ -17,7 +17,7 @@
  *   E8:     (0-3, 4-7)
  *
  * Cross-region:
- *   F4:     East vs West, South vs Midwest
+ *   F4:     East vs South, West vs Midwest
  *   Championship: F4 winner A vs F4 winner B
  */
 
@@ -28,10 +28,10 @@ const R64_SEED_MATCHUPS = [
   [1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15],
 ] as const
 
-/** Cross-region pairings for Final Four */
+/** Cross-region pairings for Final Four (2026 NCAA: East vs South, West vs Midwest) */
 const F4_REGION_MATCHUPS: [string, string][] = [
-  ["East", "West"],
-  ["South", "Midwest"],
+  ["East", "South"],
+  ["West", "Midwest"],
 ]
 
 /**

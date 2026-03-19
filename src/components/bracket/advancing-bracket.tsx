@@ -165,7 +165,7 @@ function computeEffectiveBracket(
 
     // F4 games
     const f4Games = gameSequence.filter(g => g.round === 5)
-    const f4Pairs: [Region, Region][] = [["East", "West"], ["South", "Midwest"]]
+    const f4Pairs: [Region, Region][] = [["East", "South"], ["West", "Midwest"]]
     const f4EffWinners: (string | null)[] = []
 
     for (let i = 0; i < f4Pairs.length; i++) {

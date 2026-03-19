@@ -12,6 +12,21 @@ import { ArchetypePopover } from "@/components/archetype-popover"
 import { TeamCallout } from "@/components/team-callout"
 import { buildTeamCalloutData, type TeamLikeForCallout } from "@/lib/team-callout-helpers"
 
+// ── Entry name display helper ────────────────────────────────────────────────
+/** Renders username in bold and entry label (parenthetical) in grey */
+function EntryNameDisplay({ name, className }: { name: string; className?: string }) {
+  const match = name.match(/^(.+?)(\s*\(.+\))$/)
+  if (match) {
+    return (
+      <span className={className}>
+        <span className="font-semibold">{match[1]}</span>
+        <span className="text-muted-foreground font-normal">{match[2]}</span>
+      </span>
+    )
+  }
+  return <span className={className}>{name}</span>
+}
+
 // ── Team pill status ─────────────────────────────────────────────────────────
 
 function getTeamPillStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red" {
@@ -521,7 +536,7 @@ function LeaderboardRow({
             {allArchetypes.length > 0 && (
               <span className="text-sm">{allArchetypes.map(a => a.emoji).join("")}</span>
             )}
-            <span className="font-semibold text-sm truncate">{entry.name}</span>
+            <EntryNameDisplay name={entry.name} className="text-sm truncate font-semibold" />
             {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
           </div>
           {entry.picks.length > 0 && (
@@ -574,7 +589,7 @@ function LeaderboardRow({
                   <span className="text-sm">{a.emoji}</span>
                 </ArchetypePopover>
               ))}
-              <span className="font-semibold text-sm truncate">{entry.name}</span>
+              <EntryNameDisplay name={entry.name} className="text-sm truncate font-semibold" />
               {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
               {entry.tierName && <Badge variant="outline" className="text-[10px] h-4 shrink-0">{entry.tierName}</Badge>}
             </div>

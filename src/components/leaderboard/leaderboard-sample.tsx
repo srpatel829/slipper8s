@@ -42,6 +42,21 @@ interface LeaderboardSampleProps {
 
 // ── Archetype legend (imported from centralized definitions) ────────────────
 
+// ── Entry name display helper ────────────────────────────────────────────────
+/** Renders username in bold and entry label (parenthetical) in grey */
+function EntryNameDisplay({ name, className }: { name: string; className?: string }) {
+  const match = name.match(/^(.+?)(\s*\(.+\))$/)
+  if (match) {
+    return (
+      <span className={className}>
+        <span className="font-semibold">{match[1]}</span>
+        <span className="text-muted-foreground font-normal">{match[2]}</span>
+      </span>
+    )
+  }
+  return <span className={className}>{name}</span>
+}
+
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function getTeamStatus(pick: ResolvedPickSummary): "green" | "yellow" | "red" {
@@ -315,7 +330,7 @@ function EntryRow({
               <span className="text-sm">{a.emoji}</span>
             </ArchetypePopover>
           ))}
-          <span className="text-sm font-medium">{entry.name}</span>
+          <EntryNameDisplay name={entry.name} className="text-sm font-medium" />
           {isYou && (
             <Badge variant="outline" className="text-[9px] border-primary/40 text-primary h-4 px-1.5 shrink-0">You</Badge>
           )}

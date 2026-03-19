@@ -127,7 +127,7 @@ function computeUpcomingMatchups(aliveTeams: Team[]): MatchupGame[] {
   }
 
   // Final Four (round 5)
-  const f4Pairs: [string, string][] = [["East", "West"], ["South", "Midwest"]]
+  const f4Pairs: [string, string][] = [["East", "South"], ["West", "Midwest"]]
   for (const [rA, rB] of f4Pairs) {
     const champA = aliveTeams.find(t => t.region === rA && !t.isPlayIn && t.wins >= 4 && t.wins < 5)
     const champB = aliveTeams.find(t => t.region === rB && !t.isPlayIn && t.wins >= 4 && t.wins < 5)
@@ -413,7 +413,7 @@ export function SimulatorPanel({
     // E8 → F4
     const f4Games = gameSequence.filter(g => g.round === 5)
     const e8Pairs: [string, number][] = [
-      ["East", 0], ["West", 0], ["South", 1], ["Midwest", 1]
+      ["East", 0], ["South", 0], ["West", 1], ["Midwest", 1]
     ]
     for (const [region, f4Idx] of e8Pairs) {
       const e8 = byRegionRound.get(region)?.get(4) ?? []
