@@ -915,13 +915,13 @@ export default function LeagueDetailPage() {
         ) : (
           <div className="divide-y divide-border">
             {/* Table header */}
-            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
+            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_5rem] sm:grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_3rem] sm:grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[1.5rem_1fr_3rem] sm:grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-1 sm:gap-2 px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
               <span>#</span>
               <span>Player</span>
-              <span>Entry</span>
+              <span className="hidden sm:inline">Entry</span>
               <span className="text-right">Score</span>
               {league.trackPayments && <span className="text-center">Paid</span>}
-              <span className="text-right">Joined</span>
+              <span className="text-right hidden sm:inline">Joined</span>
               {league.isAdmin && <span />}
             </div>
 
@@ -933,23 +933,27 @@ export default function LeagueDetailPage() {
               return (
                 <div
                   key={row.leagueEntryId ?? row.leagueMemberId}
-                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
+                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_3rem_5rem] sm:grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_5rem] sm:grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[1.5rem_1fr_3rem_3rem] sm:grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[1.5rem_1fr_3rem] sm:grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-1 sm:gap-2 px-3 sm:px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
                 >
-                  <span className="text-sm font-mono text-muted-foreground">{rank}</span>
+                  <span className="text-xs sm:text-sm font-mono text-muted-foreground">{rank}</span>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
                       <span className={`text-sm font-medium truncate ${isMe ? "text-primary" : ""}`}>
                         {row.playerName}
                       </span>
                       {isMe && (
-                        <span className="text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">You</span>
+                        <span className="shrink-0 text-[10px] font-medium text-primary bg-primary/10 rounded px-1.5 py-0.5">You</span>
                       )}
                     </div>
+                    {/* Entry name shown below player name on mobile, separate column on desktop */}
+                    <span className="block sm:hidden text-[11px] text-muted-foreground truncate mt-0.5">
+                      {row.entryName ?? <span className="italic">No entry</span>}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground truncate">
+                  <span className="hidden sm:inline text-xs text-muted-foreground truncate">
                     {row.entryName ?? <span className="italic">No entry</span>}
                   </span>
-                  <span className="text-sm font-mono text-right">{row.score}</span>
+                  <span className="text-xs sm:text-sm font-mono text-right">{row.score}</span>
                   {league.trackPayments && (
                     <div className="flex justify-center">
                       {league.isAdmin ? (
@@ -974,23 +978,23 @@ export default function LeagueDetailPage() {
                       )}
                     </div>
                   )}
-                  <span className="text-xs text-muted-foreground text-right">
+                  <span className="hidden sm:inline text-xs text-muted-foreground text-right">
                     {new Date(row.joinedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
                   </span>
                   {league.isAdmin && (
                     <div className="flex justify-end">
                       {!isLeagueAdmin ? (
                         removingUserId === row.userId ? (
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1 sm:gap-1.5">
                             <button
                               onClick={() => handleRemoveMember(row.userId)}
-                              className="text-[11px] font-semibold text-destructive hover:text-destructive/80 px-2 py-0.5 bg-destructive/10 rounded"
+                              className="text-[10px] sm:text-[11px] font-semibold text-destructive hover:text-destructive/80 px-1.5 sm:px-2 py-0.5 bg-destructive/10 rounded"
                             >
                               Confirm
                             </button>
                             <button
                               onClick={() => setRemovingUserId(null)}
-                              className="text-[11px] text-muted-foreground hover:text-foreground px-2 py-0.5"
+                              className="text-[10px] sm:text-[11px] text-muted-foreground hover:text-foreground px-1.5 sm:px-2 py-0.5"
                             >
                               Cancel
                             </button>
@@ -1002,7 +1006,7 @@ export default function LeagueDetailPage() {
                             title="Remove member"
                           >
                             <UserMinus className="h-3 w-3" />
-                            <span>Remove</span>
+                            <span className="hidden sm:inline">Remove</span>
                           </button>
                         )
                       ) : (

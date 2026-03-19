@@ -95,6 +95,19 @@ export async function syncTournamentData(): Promise<SyncResult> {
       const isInProgress = event.status.type.state === "in"
       const status = isCompleted ? "FINAL" : isInProgress ? "IN_PROGRESS" : "SCHEDULED"
 
+      // Skip future-round games that ESPN projects but haven't actually started.
+      // ESPN creates scheduled games for future rounds with real team IDs (projected matchups).
+      // Only import a game if it's completed, in progress, or is round 0/1 (play-in/R64).
+      // For round 2+, only import if the game is actually being played or finished.
+      if (round >= 2 && status === "SCHEDULED") {
+        // Check if this game already exists in our DB (it might have been imported before)
+        const existing = await prisma.tournamentGame.findUnique({
+          where: { espnGameId: event.id },
+          select: { id: true },
+        })
+        if (!existing) continue // Don't create new future-round placeholder games
+      }
+
       const score1 = parseInt(c1.score ?? "0", 10)
       const score2 = parseInt(c2.score ?? "0", 10)
       const seed1 = c1.curatedRank?.current ?? 0

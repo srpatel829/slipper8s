@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
-import { LiveBracketWrapper } from "@/components/bracket/live-bracket-wrapper"
+import { BracketClientWrapper } from "@/components/bracket/bracket-client-wrapper"
 import { PreTournamentBracketWrapper } from "@/components/bracket/pre-tournament-bracket-wrapper"
+import { buildGameSequence } from "@/lib/build-game-sequence"
 import { GitBranch } from "lucide-react"
 
 export const dynamic = "force-dynamic"
@@ -15,27 +16,40 @@ const ROUND_NAMES: Record<number, string> = {
 }
 
 export default async function BracketPage() {
-  // Get teams, games, and play-in slots from database
+  // Get resolved play-in winner IDs so we can include them in the team list
+  const resolvedPlayInWinnerIds = (await prisma.playInSlot.findMany({
+    where: { winnerId: { not: null } },
+    select: { winnerId: true },
+  })).map(s => s.winnerId!).filter(Boolean)
+
   const [teams, games, playInSlots] = await Promise.all([
     prisma.team.findMany({
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     prisma.tournamentGame.findMany({
-      include: {
-        team1: { select: { id: true, name: true, shortName: true, seed: true, region: true, logoUrl: true, eliminated: true } },
-        team2: { select: { id: true, name: true, shortName: true, seed: true, region: true, logoUrl: true, eliminated: true } },
-        winner: { select: { id: true, name: true, shortName: true, seed: true } },
+      select: {
+        id: true,
+        round: true,
+        region: true,
+        team1Id: true,
+        team2Id: true,
+        winnerId: true,
+        team1Score: true,
+        team2Score: true,
+        isComplete: true,
+        startTime: true,
       },
       orderBy: [{ round: "asc" }, { startTime: "asc" }],
     }),
     prisma.playInSlot.findMany({
-      include: {
-        team1: true,
-        team2: true,
-        winner: true,
-      },
+      include: { team1: true, team2: true, winner: true },
     }),
   ])
+
+  // Mark resolved play-in winners as non-play-in so they appear in the bracket
+  const teamsWithResolvedPlayIns = teams.map(t =>
+    resolvedPlayInWinnerIds.includes(t.id) ? { ...t, isPlayIn: false } : t
+  )
 
   // Filter out play-in games (round 0) for bracket display purposes
   const tournamentGames = games.filter(g => g.round > 0)
@@ -59,11 +73,24 @@ export default async function BracketPage() {
 
   // Last completed game (include play-in games for the badge)
   const lastGame = [...games]
-    .filter(g => g.isComplete && g.winner)
+    .filter(g => g.isComplete && g.winnerId)
     .sort((a, b) => (b.startTime?.getTime() ?? 0) - (a.startTime?.getTime() ?? 0))[0]
+
+  // Look up last game teams for display
+  const lastGameDisplay = lastGame ? (() => {
+    const winner = teams.find(t => t.id === lastGame.winnerId)
+    const team1 = teams.find(t => t.id === lastGame.team1Id)
+    const team2 = teams.find(t => t.id === lastGame.team2Id)
+    if (!winner || !team1 || !team2) return null
+    const loser = winner.id === team1.id ? team2 : team1
+    return { winner, loser, team1Score: lastGame.team1Score, team2Score: lastGame.team2Score }
+  })() : null
 
   // No teams seeded yet
   const noTeams = teams.length === 0
+
+  // Build bracket using the same deterministic seed-based logic as the simulator
+  const { gameSequence, gameIndex } = buildGameSequence(teamsWithResolvedPlayIns, games)
 
   return (
     <div className="space-y-4">
@@ -82,19 +109,19 @@ export default async function BracketPage() {
             <div className="px-2.5 py-1 rounded-md bg-muted/60 border border-border/30 text-[11px] text-muted-foreground font-mono">
               {completedGames} / {totalGames} games
             </div>
-            {lastGame?.winner && lastGame.team1 && lastGame.team2 && (
+            {lastGameDisplay && (
               <div className="px-2.5 py-1 rounded-md bg-card/60 border border-border/30 text-[11px] text-muted-foreground">
                 Last: <span className="text-foreground font-medium">
-                  #{lastGame.winner.seed} {lastGame.winner.shortName}
+                  #{lastGameDisplay.winner.seed} {lastGameDisplay.winner.shortName}
                 </span>
                 {" "}def.{" "}
                 <span>
-                  #{lastGame.winner.id === lastGame.team1.id ? lastGame.team2.seed : lastGame.team1.seed}{" "}
-                  {lastGame.winner.id === lastGame.team1.id ? lastGame.team2.shortName : lastGame.team1.shortName}
+                  #{lastGameDisplay.loser.seed}{" "}
+                  {lastGameDisplay.loser.shortName}
                 </span>
-                {lastGame.team1Score != null && lastGame.team2Score != null && (
+                {lastGameDisplay.team1Score != null && lastGameDisplay.team2Score != null && (
                   <span className="ml-1.5 text-muted-foreground/60">
-                    ({Math.max(lastGame.team1Score, lastGame.team2Score)}–{Math.min(lastGame.team1Score, lastGame.team2Score)})
+                    ({Math.max(lastGameDisplay.team1Score, lastGameDisplay.team2Score)}–{Math.min(lastGameDisplay.team1Score, lastGameDisplay.team2Score)})
                   </span>
                 )}
               </div>
@@ -107,19 +134,19 @@ export default async function BracketPage() {
             <div className="px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20 text-[11px] font-medium text-amber-600 dark:text-amber-400">
               Pre-Tournament
             </div>
-            {lastGame?.winner && lastGame.team1 && lastGame.team2 && (
+            {lastGameDisplay && (
               <div className="px-2.5 py-1 rounded-md bg-card/60 border border-border/30 text-[11px] text-muted-foreground">
                 Last: <span className="text-foreground font-medium">
-                  #{lastGame.winner.seed} {lastGame.winner.shortName}
+                  #{lastGameDisplay.winner.seed} {lastGameDisplay.winner.shortName}
                 </span>
                 {" "}def.{" "}
                 <span>
-                  #{lastGame.winner.id === lastGame.team1.id ? lastGame.team2.seed : lastGame.team1.seed}{" "}
-                  {lastGame.winner.id === lastGame.team1.id ? lastGame.team2.shortName : lastGame.team1.shortName}
+                  #{lastGameDisplay.loser.seed}{" "}
+                  {lastGameDisplay.loser.shortName}
                 </span>
-                {lastGame.team1Score != null && lastGame.team2Score != null && (
+                {lastGameDisplay.team1Score != null && lastGameDisplay.team2Score != null && (
                   <span className="ml-1.5 text-muted-foreground/60">
-                    ({Math.max(lastGame.team1Score, lastGame.team2Score)}–{Math.min(lastGame.team1Score, lastGame.team2Score)})
+                    ({Math.max(lastGameDisplay.team1Score, lastGameDisplay.team2Score)}–{Math.min(lastGameDisplay.team1Score, lastGameDisplay.team2Score)})
                   </span>
                 )}
               </div>
@@ -136,7 +163,6 @@ export default async function BracketPage() {
           </p>
         </div>
       ) : tournamentGames.length === 0 ? (
-        /* Pre-tournament: show real bracket structure using TournamentBracket */
         <PreTournamentBracketWrapper
           teams={teams.map(t => ({
             id: t.id,
@@ -166,8 +192,8 @@ export default async function BracketPage() {
           }))}
         />
       ) : (
-        <LiveBracketWrapper
-          teams={teams.map(t => ({
+        <BracketClientWrapper
+          teams={teamsWithResolvedPlayIns.map(t => ({
             id: t.id,
             name: t.name,
             shortName: t.shortName,
@@ -177,32 +203,18 @@ export default async function BracketPage() {
             eliminated: t.eliminated,
             wins: t.wins,
             isPlayIn: t.isPlayIn,
-            espnId: t.espnId,
-            conference: t.conference,
           }))}
-          games={games.map(g => ({
-            id: g.id,
-            round: g.round,
-            region: g.region,
-            team1: g.team1,
-            team2: g.team2,
-            winner: g.winner,
-            team1Score: g.team1Score,
-            team2Score: g.team2Score,
-            isComplete: g.isComplete,
-          }))}
+          gameSequence={gameSequence}
+          gameIndex={gameIndex}
           playInSlots={playInSlots.map(s => ({
             id: s.id,
             seed: s.seed,
             region: s.region,
             team1ShortName: s.team1.shortName,
             team2ShortName: s.team2.shortName,
-            team1Name: s.team1.name,
-            team2Name: s.team2.name,
-            winnerId: s.winner?.id ?? null,
-            winnerName: s.winner?.name ?? null,
-            winnerShortName: s.winner?.shortName ?? null,
-            winnerLogoUrl: s.winner?.logoUrl ?? null,
+            team1LogoUrl: s.team1.logoUrl,
+            team2LogoUrl: s.team2.logoUrl,
+            winnerId: s.winnerId,
           }))}
         />
       )}
