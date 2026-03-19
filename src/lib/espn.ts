@@ -450,7 +450,33 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
     updated += chunk.length
   }
 
+  // Backfill: resolve favoriteTeamId for users who have favoriteTeamName but no FK
+  await backfillFavoriteTeamIds()
+
   return { updated }
+}
+
+/**
+ * Resolve favoriteTeamId for users who have favoriteTeamName set but no FK.
+ * Happens when users registered before tournament teams were synced, or when
+ * D1 name ("Florida") didn't match ESPN name ("Florida Gators").
+ */
+async function backfillFavoriteTeamIds(): Promise<void> {
+  const users = await prisma.user.findMany({
+    where: { favoriteTeamName: { not: null }, favoriteTeamId: null },
+    select: { id: true, favoriteTeamName: true },
+  })
+  if (users.length === 0) return
+
+  const allTeams = await prisma.team.findMany({ select: { id: true, name: true } })
+
+  for (const user of users) {
+    const name = user.favoriteTeamName!
+    const match = allTeams.find(t => t.name === name || t.name.startsWith(name + " "))
+    if (match) {
+      await prisma.user.update({ where: { id: user.id }, data: { favoriteTeamId: match.id } })
+    }
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

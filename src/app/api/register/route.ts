@@ -84,12 +84,19 @@ export async function POST(request: Request) {
   }
 
   // Try to find matching team record for favoriteTeamId
+  // D1 list uses "Florida", Team table stores ESPN "Florida Gators" — try startsWith too
   let favoriteTeamId: string | null = null
   if (favoriteTeam) {
-    const team = await prisma.team.findFirst({
+    let team = await prisma.team.findFirst({
       where: { name: { equals: favoriteTeam, mode: "insensitive" } },
       select: { id: true },
     })
+    if (!team) {
+      team = await prisma.team.findFirst({
+        where: { name: { startsWith: favoriteTeam + " " } },
+        select: { id: true },
+      })
+    }
     if (team) favoriteTeamId = team.id
   }
 

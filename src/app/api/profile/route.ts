@@ -59,8 +59,12 @@ export async function PUT(request: Request) {
 
   if (favoriteTeamName && favoriteTeamName !== "none") {
     resolvedTeamName = favoriteTeamName
-    // Try to find matching team in DB (will exist once tournament is synced)
-    const team = await prisma.team.findFirst({ where: { name: favoriteTeamName } })
+    // Try to find matching team in DB — exact match first, then startsWith
+    // (D1 list uses "Florida", Team table stores ESPN "Florida Gators")
+    let team = await prisma.team.findFirst({ where: { name: favoriteTeamName } })
+    if (!team) {
+      team = await prisma.team.findFirst({ where: { name: { startsWith: favoriteTeamName + " " } } })
+    }
     if (team) {
       resolvedTeamId = team.id
     }
