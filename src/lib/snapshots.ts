@@ -168,12 +168,26 @@ export async function checkAndCreateCheckpoint(gameId: string): Promise<{
   })
 
   if (round >= 1 && round <= 4) {
-    // Rounds 1-4: split into Day 1 / Day 2 by startTime
-    const half = Math.ceil(roundGames.length / 2)
-    const dayHalves: Array<{ dayIndex: number; games: typeof roundGames }> = [
-      { dayIndex: 0, games: roundGames.slice(0, half) },
-      { dayIndex: 1, games: roundGames.slice(half) },
-    ]
+    // Rounds 1-4: split into Day 1 / Day 2 by start time date (ET timezone)
+    // We use startTime (not completion time) so a 10:30pm ET game that finishes
+    // past midnight still counts as the day it started.
+    const dateOfStart = (g: { startTime: Date | null }) => {
+      if (!g.startTime) return "unknown"
+      return g.startTime.toLocaleDateString("en-US", { timeZone: "America/New_York" })
+    }
+    const uniqueDates = [...new Set(roundGames.map(dateOfStart))]
+    // Sort dates chronologically
+    uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+
+    const dayHalves: Array<{ dayIndex: number; games: typeof roundGames }> = uniqueDates.length >= 2
+      ? [
+          { dayIndex: 0, games: roundGames.filter(g => dateOfStart(g) === uniqueDates[0]) },
+          { dayIndex: 1, games: roundGames.filter(g => dateOfStart(g) !== uniqueDates[0]) },
+        ]
+      : [
+          // All games on the same date — treat as Day 1 only
+          { dayIndex: 0, games: roundGames },
+        ]
 
     for (const { dayIndex, games: dayGames } of dayHalves) {
       // Only check the half this game belongs to

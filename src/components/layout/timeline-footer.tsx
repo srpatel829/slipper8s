@@ -133,11 +133,49 @@ export function TimelineFooter({
   return (
     <TooltipProvider delayDuration={300}>
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 z-40 bg-card/95 border-t-2 border-primary/40 backdrop-blur-sm",
+        "fixed bottom-0 left-0 right-0 z-40 bg-muted border-t-2 border-primary/50 shadow-xl shadow-foreground/10 ring-1 ring-inset ring-primary/10",
         className
       )}>
-        <div className="max-w-5xl mx-auto px-4 py-2.5">
-          <div className="flex items-center gap-2 sm:gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-3 space-y-2.5">
+          {/* Row 1: LIVE indicator + Round badge + Game/Day counters */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* LIVE button */}
+            <button
+              onClick={onGoLive}
+              disabled={isLive}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
+                isLive
+                  ? "bg-background/30 text-muted-foreground cursor-default"
+                  : "bg-red-500/90 text-white hover:bg-red-500 shadow-sm shadow-red-500/30 animate-pulse"
+              )}
+            >
+              <Radio className={cn("h-3 w-3", isLive && "text-red-500")} />
+              LIVE
+              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
+            </button>
+
+            {/* Current checkpoint badge */}
+            <Badge
+              variant="outline"
+              className="text-xs border-primary/40 text-primary bg-primary/10 shrink-0"
+            >
+              {currentLabel}
+            </Badge>
+
+            {/* Games + Days counters (right-aligned) */}
+            <div className="ml-auto flex items-center gap-3 shrink-0">
+              <span className="text-xs text-muted-foreground">
+                Games: <strong className="text-foreground font-mono">{totalCompletedGames}</strong>/{TOTAL_TOURNAMENT_GAMES}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Days: <strong className="text-foreground font-mono">{Math.max(0, currentCheckpoint)}</strong>/{CHECKPOINT_LABELS.length - 1}
+              </span>
+            </div>
+          </div>
+
+          {/* Row 2: Controls + Scrubber */}
+          <div className="flex items-center gap-3">
             {/* Checkpoint jump back */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -169,22 +207,6 @@ export function TimelineFooter({
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">Previous game (←)</TooltipContent>
             </Tooltip>
-
-            {/* LIVE button */}
-            <button
-              onClick={onGoLive}
-              disabled={isLive}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0",
-                isLive
-                  ? "bg-muted/30 text-muted-foreground cursor-default"
-                  : "bg-red-500/90 text-white hover:bg-red-500 shadow-sm shadow-red-500/30 animate-pulse"
-              )}
-            >
-              <Radio className={cn("h-3 w-3", isLive && "text-red-500")} />
-              LIVE
-              {isLive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />}
-            </button>
 
             {/* Step forward one game */}
             <Tooltip>
@@ -239,21 +261,6 @@ export function TimelineFooter({
                   [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:shadow-primary/30
                   relative"
               />
-            </div>
-
-            {/* Current checkpoint label */}
-            <Badge
-              variant="outline"
-              className="text-xs border-primary/40 text-primary bg-primary/10 shrink-0"
-            >
-              {currentLabel}
-            </Badge>
-
-            {/* Games counter */}
-            <div className="hidden sm:flex items-center gap-3 shrink-0">
-              <span className="text-xs text-muted-foreground">
-                Games: <strong className="text-foreground font-mono">{totalCompletedGames}</strong>/{TOTAL_TOURNAMENT_GAMES}
-              </span>
             </div>
           </div>
         </div>

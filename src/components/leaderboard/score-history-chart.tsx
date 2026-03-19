@@ -514,6 +514,24 @@ export function ScoreHistoryChart() {
               />
             ))}
 
+            {/* "NOW" marker at the latest checkpoint */}
+            {data.checkpoints.length > 0 && (
+              <ReferenceLine
+                x={data.checkpoints.length - 1}
+                stroke="#00A9E0"
+                strokeOpacity={0.4}
+                strokeWidth={1.5}
+                strokeDasharray="4 2"
+                label={{
+                  value: "NOW",
+                  position: "top",
+                  fill: "#00A9E0",
+                  fontSize: 9,
+                  fontWeight: 600,
+                }}
+              />
+            )}
+
             <XAxis
               dataKey="index"
               type="number"
