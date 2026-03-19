@@ -117,9 +117,20 @@ export default async function TeamsPage() {
     )
   }
 
+  // Include play-in winners so team count shows 64 (not 62)
+  const playInWinnerIds = (await prisma.playInSlot.findMany({
+    where: { winnerId: { not: null } },
+    select: { winnerId: true },
+  })).map(s => s.winnerId!).filter(Boolean)
+
   const [teams, leaderboard, userLeagues] = await Promise.all([
     prisma.team.findMany({
-      where: { isPlayIn: false },
+      where: {
+        OR: [
+          { isPlayIn: false },
+          { id: { in: playInWinnerIds } },
+        ],
+      },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     getLeaderboard(),

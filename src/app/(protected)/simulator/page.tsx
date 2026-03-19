@@ -1,5 +1,6 @@
 import { Suspense } from "react"
 import { prisma } from "@/lib/prisma"
+import { auth } from "@/lib/auth"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { SimulatorPanel } from "@/components/simulator/simulator-panel"
 import { buildGameSequence } from "@/lib/build-game-sequence"
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic"
 // ── Page component ──────────────────────────────────────────────────────────
 
 export default async function SimulatorPage() {
+  const session = await auth()
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
   const seasonId = settings?.currentSeasonId
 
@@ -49,6 +51,7 @@ export default async function SimulatorPage() {
                 country: true,
                 state: true,
                 gender: true,
+                favoriteTeam: { select: { id: true, name: true, conference: true } },
               },
             },
             entryPicks: {
@@ -57,6 +60,7 @@ export default async function SimulatorPage() {
                 playInSlot: { include: { team1: true, team2: true, winner: true } },
               },
             },
+            leagueEntries: { select: { leagueId: true } },
           },
           orderBy: { createdAt: "asc" },
         })
@@ -88,6 +92,20 @@ export default async function SimulatorPage() {
   const leaderboard = computeLeaderboardFromEntries(entries as EntryWithRelations[])
   const aliveTeams = teamsWithResolvedPlayIns.filter(t => !t.eliminated)
 
+  // Get user's leagues for leaderboard filter
+  const userLeagues = session?.user?.id
+    ? await prisma.league.findMany({
+        where: {
+          OR: [
+            { adminId: session.user.id },
+            { members: { some: { userId: session.user.id } } },
+          ],
+        },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+    : []
+
   // Build bracket game sequence from teams + actual results
   const { gameSequence, gameIndex } = buildGameSequence(teamsWithResolvedPlayIns, tournamentGames)
 
@@ -100,6 +118,8 @@ export default async function SimulatorPage() {
         gameSequence={gameSequence}
         gameIndex={gameIndex}
         showLeaderboard={showLeaderboard}
+        userLeagues={userLeagues}
+        currentUserId={session?.user?.id}
         playInSlots={playInSlots.map(s => ({
           id: s.id,
           seed: s.seed,

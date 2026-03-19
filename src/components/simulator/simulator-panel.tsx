@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trophy, RotateCcw, ChevronDown, ChevronRight, Lock, LayoutTemplate, List } from "lucide-react"
 import { computeSimulatedLeaderboard, type HypotheticalState } from "@/lib/scoring"
 import { seedToSlot } from "@/lib/bracket-ppr"
@@ -44,6 +45,10 @@ interface SimulatorPanelProps {
   showLeaderboard?: boolean
   /** Play-in slot data for showing matchup names instead of TBD */
   playInSlots?: PlayInSlotDisplay[]
+  /** User's leagues for private league filter */
+  userLeagues?: Array<{ id: string; name: string }>
+  /** Current user ID for default dimension selection */
+  currentUserId?: string
 }
 
 /** Unified game representation for both demo and real-app mode */
@@ -337,8 +342,12 @@ export function SimulatorPanel({
   gameIndex,
   showLeaderboard = true,
   playInSlots,
+  userLeagues,
+  currentUserId,
 }: SimulatorPanelProps) {
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
+  const [lbFilter, setLbFilter] = useState<string>("global")
+  const [lbLeagueId, setLbLeagueId] = useState<string>("")
   // Rounds that are collapsed (defaults: completed rounds)
   const [collapsedRounds, setCollapsedRounds] = useState<Set<number>>(() => new Set())
   const searchParams = useSearchParams()
@@ -499,12 +508,39 @@ export function SimulatorPanel({
   }, [gamePicks, allGames, initialLeaderboard])
 
   // ── Simulated leaderboard (re-sorted by score then TPS) ───────────────────
-  const simLeaderboard = useMemo(() => {
+  const simLeaderboardFull = useMemo(() => {
     const lb = computeSimulatedLeaderboard(initialLeaderboard, hypothetical)
     return [...lb].sort(
       (a, b) => b.currentScore - a.currentScore || b.tps - a.tps || a.name.localeCompare(b.name)
     ).map((s, i) => ({ ...s, rank: i + 1 }))
   }, [initialLeaderboard, hypothetical])
+
+  // ── Filter leaderboard by selected dimension ─────────────────────────────
+  const simLeaderboard = useMemo(() => {
+    if (lbFilter === "global") return simLeaderboardFull
+    let filtered: typeof simLeaderboardFull
+    if (lbFilter === "league") {
+      filtered = lbLeagueId
+        ? simLeaderboardFull.filter(e => e.leagueIds?.includes(lbLeagueId))
+        : simLeaderboardFull
+    } else if (lbFilter === "country") {
+      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
+      const myCountry = myEntry?.country
+      filtered = myCountry ? simLeaderboardFull.filter(e => e.country === myCountry) : simLeaderboardFull
+    } else if (lbFilter === "state") {
+      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
+      const myState = myEntry?.state
+      filtered = myState ? simLeaderboardFull.filter(e => e.state === myState) : simLeaderboardFull
+    } else if (lbFilter === "conference") {
+      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
+      const myConf = myEntry?.conference
+      filtered = myConf ? simLeaderboardFull.filter(e => e.conference === myConf) : simLeaderboardFull
+    } else {
+      filtered = simLeaderboardFull
+    }
+    // Re-rank within the filter
+    return filtered.map((s, i) => ({ ...s, rank: i + 1 }))
+  }, [simLeaderboardFull, lbFilter, lbLeagueId, currentUserId])
 
   const hasChanges = Object.keys(gamePicks).length > 0
   const futureCount = allGames.filter(g => !g.isLocked).length
@@ -747,7 +783,7 @@ export function SimulatorPanel({
       {showLeaderboard ? (
         <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-border/40 bg-card/20 backdrop-blur-sm flex flex-col overflow-hidden max-h-[40vh] md:max-h-none">
           {/* Leaderboard header */}
-          <div className="px-4 py-3 border-b border-border/30 shrink-0">
+          <div className="px-4 py-3 border-b border-border/30 shrink-0 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-primary" />
@@ -762,11 +798,32 @@ export function SimulatorPanel({
                 {simLeaderboard.length} players
               </span>
             </div>
-            {hasChanges && (
-              <p className="text-[10px] text-muted-foreground/70 mt-1">
-                Sorted by score with your picks applied
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              <Select value={lbFilter} onValueChange={(v) => { setLbFilter(v); setLbLeagueId(""); }}>
+                <SelectTrigger className="h-7 text-[11px] w-auto min-w-[100px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="global">Global</SelectItem>
+                  <SelectItem value="country">My Country</SelectItem>
+                  <SelectItem value="state">My State</SelectItem>
+                  <SelectItem value="conference">My Conference</SelectItem>
+                  {(userLeagues ?? []).length > 0 && <SelectItem value="league">Private League</SelectItem>}
+                </SelectContent>
+              </Select>
+              {lbFilter === "league" && (userLeagues ?? []).length > 0 && (
+                <Select value={lbLeagueId} onValueChange={setLbLeagueId}>
+                  <SelectTrigger className="h-7 text-[11px] w-auto min-w-[100px]">
+                    <SelectValue placeholder="Select league" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(userLeagues ?? []).map(l => (
+                      <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           {/* Scrollable leaderboard rows */}
