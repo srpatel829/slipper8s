@@ -133,7 +133,7 @@ export function TimelineFooter({
   return (
     <TooltipProvider delayDuration={300}>
       <div className={cn(
-        "fixed bottom-0 left-0 right-0 z-40 bg-[oklch(0.08_0.015_245)] border-t-2 border-primary/40 backdrop-blur-sm",
+        "fixed bottom-0 left-0 right-0 z-40 bg-card/95 border-t-2 border-primary/40 backdrop-blur-sm",
         className
       )}>
         <div className="max-w-5xl mx-auto px-4 py-2.5">

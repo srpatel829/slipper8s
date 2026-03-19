@@ -6,17 +6,19 @@
  * Fetches data from /api/scores/history and renders a line chart matching
  * the demo's LeaderboardHistoryChart design:
  *
- * 5 default lines:
- * 1. Optimal 8 (Rolling) — dashed blue
- * 2. Optimal 8 (Final/Hindsight) — dashed orange (only after tournament)
+ * 5 default lines (all solid — actual scores):
+ * 1. Optimal 8 (Rolling) — solid blue
+ * 2. Optimal 8 (Final/Hindsight) — solid orange (only after tournament)
  * 3. Leader — solid green
  * 4. Median — solid purple
  * 5. Your entries — solid yellow/warm colors (each entry gets distinct color)
  *
+ * Dashed lines are reserved for projected optimal trajectories (future max score).
+ *
  * Features:
  * - Vertical dashed gridlines at checkpoints only, no horizontal gridlines
- * - Player filter dropdown with Benchmarks/Players sections
- * - Legend with solid = actual, dashed = benchmark/projection
+ * - Player filter dropdown with search and Benchmarks/Players sections
+ * - Legend with color swatches
  * - Multiple user entries each get distinct warm colors
  */
 
@@ -30,7 +32,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts"
-import { Check, ChevronDown, Loader2 } from "lucide-react"
+import { Check, ChevronDown, Loader2, Search } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 
@@ -84,7 +86,6 @@ interface LineDef {
   isDefault: boolean
   isBenchmark: boolean
   dataKey: string
-  isDashed: boolean
 }
 
 // ─── Colors (matching demo) ──────────────────────────────────────────────────
@@ -106,7 +107,7 @@ const OTHER_PLAYER_PALETTE = [
   "#818cf8", "#4ade80", "#e879f9", "#94a3b8",
 ]
 
-// ─── Player Filter Dropdown ──────────────────────────────────────────────────
+// ─── Player Filter Dropdown with Search ──────────────────────────────────────
 
 function PlayerFilter({ allLines, visibleIds, onToggle }: {
   allLines: LineDef[]
@@ -114,12 +115,17 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
   onToggle: (id: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState("")
 
   const benchmarkLines = allLines.filter(l => l.isBenchmark)
   const playerLines = allLines.filter(l => !l.isBenchmark)
 
+  const filteredPlayers = search.trim()
+    ? playerLines.filter(l => l.label.toLowerCase().includes(search.toLowerCase()))
+    : playerLines
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSearch("") }}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="gap-1.5 text-xs h-8">
           Players ({visibleIds.size})
@@ -127,35 +133,29 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="end">
-        <div className="max-h-72 overflow-y-auto">
-          <div className="px-3 pt-2 pb-1">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Benchmarks</span>
+        {/* Search input */}
+        <div className="px-3 pt-2 pb-1.5 border-b border-border/50">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search players..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-7 pr-2 py-1.5 text-xs bg-muted/50 rounded border border-border/50 outline-none focus:border-primary/50 transition-colors"
+              autoFocus
+            />
           </div>
-          {benchmarkLines.map(line => (
-            <button
-              key={line.id}
-              className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
-              onClick={() => onToggle(line.id)}
-            >
-              <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                visibleIds.has(line.id) ? "bg-primary border-primary" : "border-border"
-              }`}>
-                {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
-              </div>
-              <span
-                className="w-3 h-0.5 rounded-full shrink-0"
-                style={{ backgroundColor: line.color }}
-              />
-              <span className="text-xs">{line.label}</span>
-            </button>
-          ))}
-          {playerLines.length > 0 && (
+        </div>
+
+        <div className="max-h-72 overflow-y-auto">
+          {/* Benchmarks section (hidden when searching) */}
+          {!search.trim() && (
             <>
-              <div className="border-t border-border/50 my-1" />
-              <div className="px-3 pt-1 pb-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Players</span>
+              <div className="px-3 pt-2 pb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Benchmarks</span>
               </div>
-              {playerLines.map(line => (
+              {benchmarkLines.map(line => (
                 <button
                   key={line.id}
                   className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
@@ -173,7 +173,43 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
                   <span className="text-xs">{line.label}</span>
                 </button>
               ))}
+              {filteredPlayers.length > 0 && <div className="border-t border-border/50 my-1" />}
             </>
+          )}
+
+          {/* Players section */}
+          {filteredPlayers.length > 0 && (
+            <>
+              <div className="px-3 pt-1 pb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Players{search.trim() ? ` (${filteredPlayers.length})` : ""}
+                </span>
+              </div>
+              {filteredPlayers.map(line => (
+                <button
+                  key={line.id}
+                  className="flex items-center gap-2 w-full px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                  onClick={() => onToggle(line.id)}
+                >
+                  <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                    visibleIds.has(line.id) ? "bg-primary border-primary" : "border-border"
+                  }`}>
+                    {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
+                  </div>
+                  <span
+                    className="w-3 h-0.5 rounded-full shrink-0"
+                    style={{ backgroundColor: line.color }}
+                  />
+                  <span className="text-xs truncate">{line.label}</span>
+                </button>
+              ))}
+            </>
+          )}
+
+          {search.trim() && filteredPlayers.length === 0 && (
+            <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+              No players found
+            </div>
           )}
         </div>
       </PopoverContent>
@@ -252,7 +288,7 @@ export function ScoreHistoryChart() {
 
     const lines: LineDef[] = []
 
-    // Benchmarks (always available)
+    // Benchmarks — solid lines (these ARE actual scores, not projections)
     lines.push({
       id: "optimal_rolling",
       label: "Optimal 8 (Rolling)",
@@ -260,7 +296,6 @@ export function ScoreHistoryChart() {
       isDefault: true,
       isBenchmark: true,
       dataKey: "optimal8",
-      isDashed: true,
     })
 
     // Check if any hindsight data exists
@@ -273,7 +308,6 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: true,
         dataKey: "hindsight",
-        isDashed: true,
       })
     }
 
@@ -292,7 +326,6 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: leaderEntry.entryId,
-        isDashed: false,
       })
     }
 
@@ -305,7 +338,6 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: medianEntry.entryId,
-        isDashed: false,
       })
     }
 
@@ -325,7 +357,6 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: entry.entryId,
-        isDashed: false,
       })
     })
 
@@ -346,7 +377,6 @@ export function ScoreHistoryChart() {
         isDefault: false,
         isBenchmark: false,
         dataKey: entry.entryId,
-        isDashed: false,
       })
       colorIdx++
     }
@@ -459,30 +489,13 @@ export function ScoreHistoryChart() {
       </div>
 
       {/* Legend */}
-      <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
-          {visibleLines.map(line => (
-            <div key={line.id} className="flex items-center gap-1.5">
-              {line.isDashed ? (
-                <span className="w-4 h-0 inline-block border-t-2 border-dashed" style={{ borderColor: line.color }} />
-              ) : (
-                <span className="w-4 h-0.5 rounded-full inline-block" style={{ backgroundColor: line.color }} />
-              )}
-              <span className="text-muted-foreground">{line.label}</span>
-            </div>
-          ))}
-        </div>
-        {/* Line style legend */}
-        <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-0.5 rounded-full inline-block bg-foreground/40" />
-            <span>Solid = actual score</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+        {visibleLines.map(line => (
+          <div key={line.id} className="flex items-center gap-1.5">
+            <span className="w-4 h-0.5 rounded-full inline-block" style={{ backgroundColor: line.color }} />
+            <span className="text-muted-foreground">{line.label}</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-4 h-0 inline-block border-t border-dashed border-foreground/40" />
-            <span>Dashed = benchmark</span>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Chart */}
@@ -542,7 +555,7 @@ export function ScoreHistoryChart() {
               cursor={{ stroke: "currentColor", strokeOpacity: 0.1 }}
             />
 
-            {/* Render lines for all visible entries */}
+            {/* All lines are solid — dashed is reserved for future projections */}
             {visibleLines.map(line => (
               <Line
                 key={line.id}
@@ -550,7 +563,6 @@ export function ScoreHistoryChart() {
                 dataKey={line.dataKey}
                 stroke={line.color}
                 strokeWidth={line.isDefault ? 2 : 1.5}
-                strokeDasharray={line.isDashed ? "6 3" : undefined}
                 dot={false}
                 connectNulls
                 activeDot={{ r: 3, strokeWidth: 0, fill: line.color }}

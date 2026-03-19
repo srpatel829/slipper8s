@@ -78,9 +78,20 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           if (!rGames) continue
 
           if (cpIndices.length === 2) {
-            const half = Math.ceil(rGames.length / 2)
-            const day1 = rGames.slice(0, half)
-            const day2 = rGames.slice(half)
+            // Split by actual calendar date (ET), not by position
+            // Games on the first unique date = D1, second unique date = D2
+            const dateOf = (g: { startTime: Date | null }) => {
+              if (!g.startTime) return "unknown"
+              // Convert to ET date string for grouping
+              return g.startTime.toLocaleDateString("en-US", { timeZone: "America/New_York" })
+            }
+            const uniqueDates = [...new Set(rGames.map(dateOf))]
+            const day1 = uniqueDates.length >= 1
+              ? rGames.filter(g => dateOf(g) === uniqueDates[0])
+              : rGames
+            const day2 = uniqueDates.length >= 2
+              ? rGames.filter(g => dateOf(g) !== uniqueDates[0])
+              : []
 
             if (day1.length > 0) {
               const lastDay1 = day1[day1.length - 1]

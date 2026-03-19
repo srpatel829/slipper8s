@@ -36,24 +36,12 @@ function gameIndexToCheckpoint(
   checkpointGameBoundaries: Map<number, number>,
 ): number {
   if (gameIdx < 0) return 0
-  // Find the highest checkpoint whose boundary is >= this game index
-  let cp = 0
-  for (const [cpIdx, boundaryGameIdx] of checkpointGameBoundaries) {
-    if (gameIdx <= boundaryGameIdx && cpIdx > cp) {
-      cp = cpIdx
-    }
-  }
-  // If game is beyond all boundaries, use the latest
-  for (const [cpIdx, boundaryGameIdx] of checkpointGameBoundaries) {
-    if (gameIdx > boundaryGameIdx && cpIdx >= cp) {
-      // Game is past this checkpoint, so it's in a later one
-    }
-  }
-  // Simpler: walk checkpoints and find the one this game is within
+  // Walk checkpoints in order, find the first whose boundary >= this game index
   const sortedBoundaries = [...checkpointGameBoundaries.entries()].sort((a, b) => a[0] - b[0])
   for (const [cpIdx, boundaryGameIdx] of sortedBoundaries) {
     if (gameIdx <= boundaryGameIdx) return cpIdx
   }
+  // Game is beyond all boundaries — return the latest checkpoint
   return sortedBoundaries.length > 0 ? sortedBoundaries[sortedBoundaries.length - 1][0] : 0
 }
 
