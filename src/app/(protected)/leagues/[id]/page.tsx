@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   ArrowLeft, Crown, Copy, Check, Loader2, Users, Settings, Trash2,
   LogOut, DollarSign, ChevronDown, ChevronUp, X, Share2, UserMinus, FileText,
-  MessageSquare, Send, UserPlus,
+  MessageSquare, Send, UserPlus, Pin,
 } from "lucide-react"
 import { toast } from "sonner"
 import Link from "next/link"
@@ -409,10 +409,11 @@ export default function LeagueDetailPage() {
         </div>
       </div>
 
-      {/* Description */}
+      {/* Pinned Description */}
       {league.description && (
-        <div className="bg-muted/30 border border-border rounded-xl p-4 text-sm text-muted-foreground">
-          {league.description}
+        <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex gap-3 items-start">
+          <Pin className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-sm text-foreground whitespace-pre-wrap">{league.description}</p>
         </div>
       )}
 

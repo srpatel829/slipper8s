@@ -17,10 +17,10 @@ export async function GET(
   const league = await prisma.league.findUnique({
     where: { id },
     include: {
-      admin: { select: { id: true, name: true, username: true } },
+      admin: { select: { id: true, name: true, username: true, firstName: true, lastName: true } },
       members: {
         include: {
-          user: { select: { id: true, name: true, username: true } },
+          user: { select: { id: true, name: true, username: true, firstName: true, lastName: true } },
         },
         orderBy: { joinedAt: "asc" },
       },
@@ -57,6 +57,13 @@ export async function GET(
     } as typeof league.members[0])
   }
 
+  // Helper: build display name preferring first+last, falling back to username/name
+  function displayName(user: { firstName?: string | null; lastName?: string | null; username?: string | null; name?: string | null }) {
+    if (user.firstName && user.lastName) return `${user.firstName} ${user.lastName}`
+    if (user.firstName) return user.firstName
+    return user.username ?? user.name ?? "Unknown"
+  }
+
   // Build entry-level rows for the members table
   // Each league entry gets its own row with player info, entry name, score, paid
   const entryRows = league.leagueEntries.map((le) => {
@@ -65,7 +72,7 @@ export async function GET(
       leagueEntryId: le.id,
       leagueMemberId: member?.id ?? "",
       userId: le.entry.userId,
-      playerName: member?.user.username ?? member?.user.name ?? "Unknown",
+      playerName: member ? displayName(member.user) : "Unknown",
       entryName: le.entry.nickname || `Entry Slip #${le.entry.entryNumber}`,
       entryNumber: le.entry.entryNumber,
       score: le.entry.score,
@@ -82,7 +89,7 @@ export async function GET(
       leagueEntryId: null,
       leagueMemberId: m.id,
       userId: m.userId,
-      playerName: m.user.username ?? m.user.name ?? "Unknown",
+      playerName: displayName(m.user),
       entryName: null,
       entryNumber: null,
       score: 0,
