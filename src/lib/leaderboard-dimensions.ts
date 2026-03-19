@@ -254,9 +254,18 @@ export function getDefaultDimensionValue(
 // DISPLAY NAME FORMATTING
 // ═══════════════════════════════════════════════════════════════════════════════
 
+/** Gender enum → display label (matches profile form) */
+const GENDER_LABELS: Record<string, string> = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+  NO_RESPONSE: "Prefer not to say",
+}
+
 /**
  * Format a dimension value for display.
  * Fan Base: resolves team IDs to display names.
+ * Gender: maps enum values to human-readable labels.
  * Everything else: uses the value as-is.
  */
 export function formatDimensionValue(
@@ -267,8 +276,11 @@ export function formatDimensionValue(
   if (value === NO_RESPONSE) return NO_RESPONSE
 
   if (dimension.type === "fanBase") {
-    // Use ESPN-style display names from conference-map, with teams array as fallback
     return getTeamDisplayName(value, teams)
+  }
+
+  if (dimension.type === "gender") {
+    return GENDER_LABELS[value] ?? value
   }
 
   return value

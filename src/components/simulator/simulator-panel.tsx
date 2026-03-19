@@ -891,7 +891,11 @@ export function SimulatorPanel({
                   <SelectContent>
                     {(dimensionOptions[lbFilter as keyof typeof dimensionOptions] ?? []).map(val => (
                       <SelectItem key={val} value={val}>
-                        {lbFilter === "fanBase" ? (teamIdToName.get(val) ?? val) : val}
+                        {lbFilter === "fanBase"
+                          ? (teamIdToName.get(val) ?? val)
+                          : lbFilter === "gender"
+                            ? ({ MALE: "Male", FEMALE: "Female", OTHER: "Other", NO_RESPONSE: "Prefer not to say" }[val] ?? val)
+                            : val}
                       </SelectItem>
                     ))}
                   </SelectContent>
