@@ -159,6 +159,7 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
       logoUrl: true,
       isPlayIn: true,
       sCurveRank: true,
+      conference: true,
     },
   })
 
@@ -190,6 +191,8 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
       wins: t!.wins,
       eliminated: t!.eliminated,
       logoUrl: t!.logoUrl,
+      espnId: t!.espnId ?? null,
+      conference: t!.conference ?? null,
       isPlayIn: false as const,
     }))
 
