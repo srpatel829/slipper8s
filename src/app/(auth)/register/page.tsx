@@ -138,8 +138,8 @@ export default function RegisterPage() {
         return
       }
 
-      // Force session refresh and redirect to welcome page
-      router.replace("/welcome")
+      // Redirect based on season state — send to picks if open, otherwise welcome
+      router.replace("/auth-redirect")
       router.refresh()
     } catch {
       setError("Something went wrong. Please try again.")
