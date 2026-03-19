@@ -6,20 +6,23 @@
  * Fetches data from /api/scores/history and renders a line chart matching
  * the demo's LeaderboardHistoryChart design:
  *
- * 5 default lines (all solid — actual scores):
+ * 5 default lines:
  * 1. Optimal 8 (Rolling) — solid blue
  * 2. Optimal 8 (Final/Hindsight) — solid orange (only after tournament)
  * 3. Leader — solid green
  * 4. Median — solid purple
  * 5. Your entries — solid yellow/warm colors (each entry gets distinct color)
  *
- * Dashed lines are reserved for projected optimal trajectories (future max score).
+ * Solid lines = actual scores at completed checkpoints.
+ * Dashed lines = projected optimal trajectory (max possible future score via PPR).
  *
  * Features:
+ * - All 11 checkpoint positions shown on X-axis (past + future)
  * - Vertical dashed gridlines at checkpoints only, no horizontal gridlines
+ * - "NOW" marker at current checkpoint
+ * - Dashed projection lines from current score to max possible score
  * - Player filter dropdown with search and Benchmarks/Players sections
- * - Legend with color swatches
- * - Multiple user entries each get distinct warm colors
+ * - Legend with line style explanation
  */
 
 import { useEffect, useState, useMemo } from "react"
@@ -35,6 +38,22 @@ import {
 import { Check, ChevronDown, Loader2, Search } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+
+// ─── All 11 checkpoint labels ────────────────────────────────────────────────
+
+const ALL_CHECKPOINT_LABELS = [
+  { index: 0, short: "Pre", full: "Pre-Tournament" },
+  { index: 1, short: "R64", full: "R64 D1" },
+  { index: 2, short: "R64", full: "R64 D2" },
+  { index: 3, short: "R32", full: "R32 D1" },
+  { index: 4, short: "R32", full: "R32 D2" },
+  { index: 5, short: "S16", full: "S16 D1" },
+  { index: 6, short: "S16", full: "S16 D2" },
+  { index: 7, short: "E8", full: "E8 D1" },
+  { index: 8, short: "E8", full: "E8 D2" },
+  { index: 9, short: "F4", full: "Final Four" },
+  { index: 10, short: "CH", full: "Championship" },
+]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +81,7 @@ interface EntryHistory {
   isLeader: boolean
   isMedian: boolean
   snapshots: EntrySnapshot[]
+  projections: (number | null)[]
 }
 
 interface Optimal8Point {
@@ -76,6 +96,7 @@ interface ScoreHistoryData {
   checkpoints: Checkpoint[]
   entries: Record<string, EntryHistory>
   optimal8: Optimal8Point[]
+  latestCheckpointIndex: number
   seasonId: string
 }
 
@@ -86,6 +107,7 @@ interface LineDef {
   isDefault: boolean
   isBenchmark: boolean
   dataKey: string
+  projDataKey: string
 }
 
 // ─── Colors (matching demo) ──────────────────────────────────────────────────
@@ -219,37 +241,47 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
 
 // ─── Custom Tooltip ──────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label, visibleLines, checkpoints }: {
+function ChartTooltip({ active, payload, label, visibleLines, latestCpIndex }: {
   active?: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: any[]
   label?: number
   visibleLines: LineDef[]
-  checkpoints: Checkpoint[]
+  latestCpIndex: number
 }) {
   if (!active || !payload || payload.length === 0) return null
 
   const cpIdx = label ?? 0
-  const cp = checkpoints[cpIdx]
+  const cpLabel = ALL_CHECKPOINT_LABELS[cpIdx]
+  const isPast = cpIdx <= latestCpIndex
 
   return (
     <div className="bg-popover border border-border/60 rounded-lg shadow-lg text-xs p-3 min-w-[200px]">
-      <div className="font-semibold mb-1.5 text-foreground">
-        {cp?.roundLabel ?? `Checkpoint ${cpIdx}`}
+      <div className="font-semibold mb-1.5 text-foreground flex items-center gap-2">
+        <span>{cpLabel?.full ?? `Checkpoint ${cpIdx}`}</span>
+        {!isPast && <span className="text-[10px] text-muted-foreground italic font-normal">(projected)</span>}
       </div>
       {visibleLines.map(line => {
-        const entry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.dataKey && p.value != null)
+        const actualEntry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.dataKey && p.value != null)
+        const projEntry = payload.find((p: { dataKey: string; value: unknown }) => p.dataKey === line.projDataKey && p.value != null)
+        const entry = actualEntry ?? projEntry
         if (!entry) return null
+        const isProjected = !actualEntry && !!projEntry
         return (
           <div key={line.id} className="flex items-center justify-between gap-4 py-0.5">
             <div className="flex items-center gap-1.5">
               <span
                 className="w-3 h-0.5 inline-block rounded-full"
-                style={{ backgroundColor: line.color }}
+                style={{
+                  backgroundColor: line.color,
+                  opacity: isProjected ? 0.5 : 1,
+                }}
               />
-              <span className="text-muted-foreground">{line.label}</span>
+              <span className={`${isProjected ? "text-muted-foreground/60 italic" : "text-muted-foreground"}`}>
+                {line.label}
+              </span>
             </div>
-            <span className="font-mono font-semibold text-foreground">
+            <span className={`font-mono font-semibold ${isProjected ? "text-muted-foreground" : "text-foreground"}`}>
               {Math.round(entry.value)}
             </span>
           </div>
@@ -288,7 +320,7 @@ export function ScoreHistoryChart() {
 
     const lines: LineDef[] = []
 
-    // Benchmarks — solid lines (these ARE actual scores, not projections)
+    // Benchmarks
     lines.push({
       id: "optimal_rolling",
       label: "Optimal 8 (Rolling)",
@@ -296,9 +328,9 @@ export function ScoreHistoryChart() {
       isDefault: true,
       isBenchmark: true,
       dataKey: "optimal8",
+      projDataKey: "optimal8_proj",
     })
 
-    // Check if any hindsight data exists
     const hasHindsight = data.optimal8.some(o => o.hindsightOptimal8Score != null)
     if (hasHindsight) {
       lines.push({
@@ -308,16 +340,16 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: true,
         dataKey: "hindsight",
+        projDataKey: "hindsight_proj",
       })
     }
 
-    // Categorize entries: find leader, median, user entries
+    // Categorize entries
     const entries = Object.values(data.entries)
     const userEntries = entries.filter(e => e.isCurrentUser)
     const leaderEntry = entries.find(e => e.isLeader && !e.isCurrentUser)
     const medianEntry = entries.find(e => e.isMedian && !e.isCurrentUser && !e.isLeader)
 
-    // Leader
     if (leaderEntry) {
       lines.push({
         id: `leader_${leaderEntry.entryId}`,
@@ -326,10 +358,10 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: leaderEntry.entryId,
+        projDataKey: `${leaderEntry.entryId}_proj`,
       })
     }
 
-    // Median
     if (medianEntry) {
       lines.push({
         id: `median_${medianEntry.entryId}`,
@@ -338,14 +370,13 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: medianEntry.entryId,
+        projDataKey: `${medianEntry.entryId}_proj`,
       })
     }
 
-    // User entries — each gets a distinct color
     userEntries.forEach((entry, i) => {
       const color = USER_ENTRY_COLORS[i % USER_ENTRY_COLORS.length]
       let label = entry.name
-      // If user is also leader or median, note it
       if (entry.isLeader) label = `You / Leader (${entry.name})`
       else if (entry.isMedian) label = `You / Median (${entry.name})`
       else label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
@@ -357,10 +388,10 @@ export function ScoreHistoryChart() {
         isDefault: true,
         isBenchmark: false,
         dataKey: entry.entryId,
+        projDataKey: `${entry.entryId}_proj`,
       })
     })
 
-    // Other non-special entries
     const specialIds = new Set([
       leaderEntry?.entryId,
       medianEntry?.entryId,
@@ -377,6 +408,7 @@ export function ScoreHistoryChart() {
         isDefault: false,
         isBenchmark: false,
         dataKey: entry.entryId,
+        projDataKey: `${entry.entryId}_proj`,
       })
       colorIdx++
     }
@@ -384,29 +416,64 @@ export function ScoreHistoryChart() {
     return lines
   }, [data])
 
-  // Build chart data from checkpoints
-  const chartData = useMemo(() => {
-    if (!data) return []
+  // Build chart data across ALL 11 checkpoint positions
+  const { chartData, isComplete } = useMemo(() => {
+    if (!data) return { chartData: [], isComplete: true }
 
-    return data.checkpoints.map((cp, i) => {
+    const latestCpIdx = data.latestCheckpointIndex ?? -1
+    const complete = latestCpIdx >= 10
+
+    // Build a map of checkpoint gameIndex → index in the API's checkpoint array
+    const cpDataMap = new Map<number, number>()
+    for (let i = 0; i < data.checkpoints.length; i++) {
+      cpDataMap.set(data.checkpoints[i].gameIndex, i)
+    }
+
+    // Create data points for all 11 checkpoint positions
+    const points: Record<string, number | string | null>[] = ALL_CHECKPOINT_LABELS.map(cpDef => {
       const point: Record<string, number | string | null> = {
-        index: i,
-        label: cp.roundLabel,
+        index: cpDef.index,
+        label: cpDef.full,
       }
 
-      // Add entry scores at this checkpoint
+      const dataIdx = cpDataMap.get(cpDef.index)
+      const isActual = cpDef.index <= latestCpIdx
+      const isProjection = cpDef.index >= latestCpIdx
+
+      // Entry scores: actual (solid) and projected (dashed)
       for (const [entryId, entry] of Object.entries(data.entries)) {
-        const snapshot = entry.snapshots[i]
-        point[entryId] = snapshot?.score ?? null
+        if (isActual && dataIdx !== undefined) {
+          const snapshot = entry.snapshots[dataIdx]
+          point[entryId] = snapshot?.score ?? null
+        } else {
+          point[entryId] = null
+        }
+
+        // Projection data from the API
+        if (isProjection && entry.projections) {
+          point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
+        } else {
+          point[`${entryId}_proj`] = null
+        }
       }
 
-      // Add optimal 8 lines
-      const opt = data.optimal8[i]
-      point.optimal8 = opt?.rollingOptimal8Score ?? null
-      point.hindsight = opt?.hindsightOptimal8Score ?? null
+      // Optimal 8 lines
+      if (dataIdx !== undefined) {
+        const opt = data.optimal8[dataIdx]
+        point.optimal8 = isActual ? (opt?.rollingOptimal8Score ?? null) : null
+        point.hindsight = isActual ? (opt?.hindsightOptimal8Score ?? null) : null
+      } else {
+        point.optimal8 = null
+        point.hindsight = null
+      }
+      // No projection for optimal 8 benchmarks (they're computed from actual game results)
+      point.optimal8_proj = null
+      point.hindsight_proj = null
 
       return point
     })
+
+    return { chartData: points, isComplete: complete }
   }, [data])
 
   // Visible line state
@@ -414,7 +481,6 @@ export function ScoreHistoryChart() {
     new Set(allLines.filter(l => l.isDefault).map(l => l.id))
   )
 
-  // Re-sync when allLines changes
   const effectiveVisibleIds = useMemo(() => {
     const result = new Set<string>()
     for (const line of allLines) {
@@ -464,17 +530,23 @@ export function ScoreHistoryChart() {
   if (data.checkpoints.length === 0) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-        No game results yet \u2014 check back when the tournament starts
+        No game results yet — check back when the tournament starts
       </div>
     )
   }
 
-  // Compute y-axis max from visible lines only
+  const latestCpIdx = data.latestCheckpointIndex ?? 0
+
+  // Compute y-axis max from visible lines (both actual and projected)
   const yMax = Math.max(
     ...chartData.flatMap((d) =>
-      visibleLines.map(line => {
-        const v = d[line.dataKey]
-        return typeof v === "number" ? v : 0
+      visibleLines.flatMap(line => {
+        const v1 = d[line.dataKey]
+        const v2 = d[line.projDataKey]
+        return [
+          typeof v1 === "number" ? v1 : 0,
+          typeof v2 === "number" ? v2 : 0,
+        ]
       })
     ),
     10
@@ -489,25 +561,40 @@ export function ScoreHistoryChart() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
-        {visibleLines.map(line => (
-          <div key={line.id} className="flex items-center gap-1.5">
-            <span className="w-4 h-0.5 rounded-full inline-block" style={{ backgroundColor: line.color }} />
-            <span className="text-muted-foreground">{line.label}</span>
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+          {visibleLines.map(line => (
+            <div key={line.id} className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 rounded-full inline-block" style={{ backgroundColor: line.color }} />
+              <span className="text-muted-foreground">{line.label}</span>
+            </div>
+          ))}
+        </div>
+        {/* Line style legend */}
+        {!isComplete && (
+          <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0.5 rounded-full inline-block bg-foreground/40" />
+              <span>Solid = actual score</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-0 inline-block border-t border-dashed border-foreground/40" />
+              <span>Dashed = optimal trajectory</span>
+            </div>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Chart */}
       <div className="bg-card border border-border rounded-xl p-2 sm:p-4">
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 10, left: 5 }}>
+        <ResponsiveContainer width="100%" height={340}>
+          <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 30, left: 5 }}>
 
-            {/* Vertical dashed gridlines at each checkpoint (no horizontal gridlines) */}
-            {data.checkpoints.map((cp, i) => (
+            {/* Vertical dashed gridlines at each checkpoint position */}
+            {ALL_CHECKPOINT_LABELS.map(cp => (
               <ReferenceLine
-                key={cp.id}
-                x={i}
+                key={`grid-${cp.index}`}
+                x={cp.index}
                 stroke="currentColor"
                 strokeOpacity={0.1}
                 strokeDasharray="3 3"
@@ -515,17 +602,17 @@ export function ScoreHistoryChart() {
             ))}
 
             {/* "NOW" marker at the latest checkpoint */}
-            {data.checkpoints.length > 0 && (
+            {!isComplete && (
               <ReferenceLine
-                x={data.checkpoints.length - 1}
-                stroke="#00A9E0"
+                x={latestCpIdx}
+                stroke={COLOR_OPTIMAL_ROLLING}
                 strokeOpacity={0.4}
                 strokeWidth={1.5}
                 strokeDasharray="4 2"
                 label={{
                   value: "NOW",
                   position: "top",
-                  fill: "#00A9E0",
+                  fill: COLOR_OPTIMAL_ROLLING,
                   fontSize: 9,
                   fontWeight: 600,
                 }}
@@ -535,24 +622,13 @@ export function ScoreHistoryChart() {
             <XAxis
               dataKey="index"
               type="number"
-              domain={[0, Math.max(chartData.length - 1, 1)]}
-              tick={{ fontSize: 10, fill: "currentColor", fillOpacity: 0.5 }}
-              tickFormatter={(v: number) => {
-                const cp = data.checkpoints[v]
-                if (!cp) return ""
-                // Shorten labels for display
-                const label = cp.roundLabel
-                if (label.includes("Pre")) return "Pre"
-                if (label.includes("64")) return label.includes("D1") ? "R64" : "R64"
-                if (label.includes("32")) return label.includes("D1") ? "R32" : "R32"
-                if (label.includes("16")) return label.includes("D1") ? "S16" : "S16"
-                if (label.includes("8")) return label.includes("D1") ? "E8" : "E8"
-                if (label.includes("Four")) return "F4"
-                if (label.includes("Champ")) return "CH"
-                return label.substring(0, 4)
-              }}
+              domain={[0, 10]}
+              ticks={ALL_CHECKPOINT_LABELS.map(c => c.index)}
+              tick={{ fontSize: 9, fill: "currentColor", fillOpacity: 0.5 }}
+              tickFormatter={(v: number) => ALL_CHECKPOINT_LABELS[v]?.short ?? ""}
               tickLine={false}
               axisLine={{ strokeOpacity: 0.2 }}
+              interval={0}
             />
 
             <YAxis
@@ -567,23 +643,40 @@ export function ScoreHistoryChart() {
               content={
                 <ChartTooltip
                   visibleLines={visibleLines}
-                  checkpoints={data.checkpoints}
+                  latestCpIndex={latestCpIdx}
                 />
               }
               cursor={{ stroke: "currentColor", strokeOpacity: 0.1 }}
             />
 
-            {/* All lines are solid — dashed is reserved for future projections */}
+            {/* === ACTUAL SCORES (solid lines) === */}
             {visibleLines.map(line => (
               <Line
-                key={line.id}
+                key={`actual-${line.id}`}
                 type="monotone"
                 dataKey={line.dataKey}
                 stroke={line.color}
                 strokeWidth={line.isDefault ? 2 : 1.5}
                 dot={false}
-                connectNulls
                 activeDot={{ r: 3, strokeWidth: 0, fill: line.color }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            ))}
+
+            {/* === PROJECTED TRAJECTORIES (dashed lines) === */}
+            {!isComplete && visibleLines.map(line => (
+              <Line
+                key={`proj-${line.id}`}
+                type="monotone"
+                dataKey={line.projDataKey}
+                stroke={line.color}
+                strokeWidth={line.isDefault ? 1.5 : 1}
+                strokeDasharray="6 3"
+                strokeOpacity={0.5}
+                dot={false}
+                activeDot={{ r: 2, strokeWidth: 0 }}
+                connectNulls={false}
                 isAnimationActive={false}
               />
             ))}
@@ -593,7 +686,7 @@ export function ScoreHistoryChart() {
 
       {/* Stats footer */}
       <div className="text-xs text-muted-foreground">
-        {data.checkpoints.length} checkpoints | {visibleLines.length} lines visible
+        {data.checkpoints.length} checkpoints completed | {visibleLines.length} lines visible
       </div>
     </div>
   )

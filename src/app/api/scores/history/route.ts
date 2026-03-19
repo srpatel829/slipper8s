@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getEntryScoreHistory, getSeasonCheckpoints } from "@/lib/snapshots"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
+import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
 
 /**
  * GET /api/scores/history — Score history for the chart/timeline feature
@@ -86,9 +87,13 @@ export async function GET(req: NextRequest) {
       round: number | null
       savedAt: string
     }>
+    /** Projected scores at each of the 11 checkpoint positions (0-10).
+     *  null for past checkpoints, number for future checkpoints.
+     *  Index 0 = Pre-Tournament, 10 = Championship. */
+    projections: (number | null)[]
   }> = {}
 
-  // Get entry metadata
+  // Get entry metadata with picks + team data for PPR computation
   const entries = await prisma.entry.findMany({
     where: { id: { in: entryIds } },
     select: {
@@ -96,7 +101,16 @@ export async function GET(req: NextRequest) {
       userId: true,
       entryNumber: true,
       nickname: true,
+      score: true,
       user: { select: { name: true, email: true } },
+      entryPicks: {
+        select: {
+          teamId: true,
+          team: {
+            select: { id: true, seed: true, region: true, wins: true, eliminated: true, isPlayIn: true },
+          },
+        },
+      },
     },
   })
 
@@ -104,9 +118,70 @@ export async function GET(req: NextRequest) {
   const latestCheckpoint = checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : null
   const globalDim = latestCheckpoint?.dimensions.find((d) => d.dimensionType === "global")
 
+  // Round-to-checkpoint mapping for projections
+  // Each round's wins are assigned to the LAST checkpoint for that round
+  // R64→cp2, R32→cp4, S16→cp6, E8→cp8, F4→cp9, Champ→cp10
+  const ROUND_TO_LAST_CP: Record<number, number> = {
+    1: 2, 2: 4, 3: 6, 4: 8, 5: 9, 6: 10,
+  }
+
+  // Find the latest checkpoint index from the data
+  const latestCpIndex = checkpoints.length > 0
+    ? Math.max(...checkpoints.map(cp => cp.gameIndex))
+    : -1
+
   for (const entry of entries) {
     const history = await getEntryScoreHistory(entry.id)
     const displayName = entry.user.name ?? entry.user.email
+
+    // Compute PPR per team for projection trajectory
+    const teamInfoMap = new Map<string, TeamBracketInfo>()
+    const validPicks: string[] = []
+    for (const pick of entry.entryPicks) {
+      if (!pick.team || pick.team.isPlayIn) continue
+      validPicks.push(pick.team.id)
+      teamInfoMap.set(pick.team.id, {
+        seed: pick.team.seed,
+        region: pick.team.region,
+        wins: pick.team.wins,
+        eliminated: pick.team.eliminated,
+      })
+    }
+
+    const pprResult = validPicks.length > 0
+      ? computeBracketAwarePPR(validPicks, teamInfoMap)
+      : { totalPPR: 0, perTeam: new Map<string, number>() }
+
+    // Build per-checkpoint projection: distribute PPR across future checkpoints
+    // For each alive team, PPR/seed = additional wins. Each win is in round (currentWins+1), (currentWins+2), etc.
+    // Sum points by the checkpoint where that round finishes.
+    const futurePointsByCheckpoint = new Map<number, number>()
+    for (const pick of entry.entryPicks) {
+      if (!pick.team || pick.team.isPlayIn || pick.team.eliminated) continue
+      const teamPPR = pprResult.perTeam.get(pick.team.id) || 0
+      if (teamPPR === 0) continue
+      const additionalWins = teamPPR / pick.team.seed
+      for (let w = 1; w <= additionalWins; w++) {
+        const futureRound = pick.team.wins + w
+        const cp = ROUND_TO_LAST_CP[futureRound]
+        if (cp !== undefined) {
+          futurePointsByCheckpoint.set(cp, (futurePointsByCheckpoint.get(cp) || 0) + pick.team.seed)
+        }
+      }
+    }
+
+    // Build cumulative projection array (11 positions for checkpoints 0-10)
+    const projections: (number | null)[] = new Array(11).fill(null)
+    let cumScore = entry.score
+    // Set overlap point at the latest checkpoint
+    if (latestCpIndex >= 0 && latestCpIndex <= 10) {
+      projections[latestCpIndex] = cumScore
+    }
+    // Fill future checkpoints with cumulative projected scores
+    for (let cp = (latestCpIndex >= 0 ? latestCpIndex + 1 : 0); cp <= 10; cp++) {
+      cumScore += futurePointsByCheckpoint.get(cp) || 0
+      projections[cp] = cumScore
+    }
 
     entryHistories[entry.id] = {
       entryId: entry.id,
@@ -124,6 +199,7 @@ export async function GET(req: NextRequest) {
         round: s.game?.round ?? null,
         savedAt: s.savedAt.toISOString(),
       })),
+      projections,
     }
   }
 
@@ -149,6 +225,7 @@ export async function GET(req: NextRequest) {
     })),
     entries: entryHistories,
     optimal8: optimal8Line,
+    latestCheckpointIndex: latestCpIndex,
     seasonId,
   })
 }
