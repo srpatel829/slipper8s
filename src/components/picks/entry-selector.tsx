@@ -83,7 +83,6 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       const data = await res.json()
       toast.success(`Entry slip #${data.entryNumber} created`)
       router.push(`/picks?entry=${data.entryId}`)
-      router.refresh()
     } finally {
       setCreating(false)
     }
@@ -129,7 +128,6 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
       }
       toast.success("Entry slip deleted")
       router.push("/picks")
-      router.refresh()
     } finally {
       setDeleting(null)
     }
@@ -191,7 +189,6 @@ export function EntrySelector({ entries, activeEntryId, seasonId, deadlinePassed
                     )}
                     onClick={() => {
                       router.push(`/picks?entry=${entry.id}`)
-                      router.refresh()
                     }}
                   >
                     <FileText className="h-3 w-3" />
