@@ -203,18 +203,18 @@ export async function sendDeadlineReminderEmail(to: string, firstName: string, d
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "⏰ 24 hours left to submit your Slipper8s picks!",
+      subject: "⏰ Last chance to finalize your Slipper8s picks!",
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
 <div style="max-width:560px;margin:0 auto;padding:24px 20px;">
 <div style="text-align:center;margin-bottom:16px;">
 <div style="display:inline-block;width:40px;height:40px;border-radius:50%;background:#eab308;line-height:40px;text-align:center;font-size:20px;">⏰</div>
-<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">24 Hours Left!</h1>
+<h1 style="color:#111;font-size:20px;margin:12px 0 4px;">Last Chance!</h1>
 <p style="color:#555;font-size:13px;margin:0;">Entry slip deadline: ${deadlineStr}</p>
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
-<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! Just a reminder — picks lock in less than 24 hours.</p>
+<p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! The deadline to lock in your picks is just hours away.</p>
 <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Make sure your 8 teams are exactly how you want them for each of your entry slip(s). Once the deadline passes, no changes allowed.</p>
 <div style="text-align:center;">
 <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Review Your Picks</a>
@@ -236,7 +236,7 @@ export async function sendDeadlineReminderNoPicksEmail(to: string, firstName: st
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "⏰ 24 hours left — you haven't submitted your picks yet!",
+      subject: "⏰ Last chance — you haven't submitted your Slipper8s picks!",
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
@@ -248,7 +248,7 @@ export async function sendDeadlineReminderNoPicksEmail(to: string, firstName: st
 </div>
 <div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:16px;">
 <p style="color:#222;font-size:14px;line-height:1.6;margin:0 0 12px;">Hey ${firstName}! You're signed up for Slipper8s but haven't submitted an entry slip(s).</p>
-<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">You have less than 24 hours.</strong> Pick 8 teams, and remember your score is seed &times; wins &mdash; so choose wisely.</p>
+<p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 8px;"><strong style="color:#222;">You have just hours left.</strong> Pick 8 teams, and remember your score is seed &times; wins &mdash; so choose wisely.</p>
 <p style="color:#555;font-size:14px;line-height:1.6;margin:0 0 16px;">Once the deadline passes, you won't be able to enter.</p>
 <div style="text-align:center;">
 <a href="${APP_URL}/picks" style="display:inline-block;background:#00A9E0;color:#ffffff;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:600;font-size:14px;">Make Your Picks Now</a>
@@ -271,7 +271,7 @@ export async function sendDeadlineReminderIncompleteEmail(to: string, firstName:
     await resend.emails.send({
       from: FROM_EMAIL,
       to,
-      subject: "⏰ 24 hours left — finish signing up to play Slipper8s!",
+      subject: "⏰ Last chance — finish signing up to play Slipper8s!",
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f5f6fa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
