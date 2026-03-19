@@ -114,6 +114,8 @@ function buildPickSummary(pick: {
     wins: team.wins,
     eliminated: team.eliminated,
     logoUrl: team.logoUrl,
+    espnId: team.espnId ?? null,
+    conference: team.conference ?? null,
     isPlayIn: team.isPlayIn,
     playInSlotId: pick.playInSlotId,
   }
