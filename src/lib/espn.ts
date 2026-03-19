@@ -162,11 +162,14 @@ export async function syncTournamentData(): Promise<SyncResult> {
           startTime: new Date(event.date),
         },
         update: {
+          round,
+          region: region ?? undefined,
           winnerId: winnerTeam?.id ?? null,
           team1Score: score1,
           team2Score: score2,
           status,
           isComplete: isCompleted,
+          startTime: new Date(event.date),
         },
       })
       result.gamesUpdated++
