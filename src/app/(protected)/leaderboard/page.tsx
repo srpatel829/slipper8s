@@ -7,8 +7,7 @@ import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
 import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
 import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
-import { BarChart3, Info } from "lucide-react"
-import Link from "next/link"
+import { BarChart3 } from "lucide-react"
 import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
 import type { Optimal8Data } from "@/components/leaderboard/leaderboard-sample"
 
@@ -305,13 +304,6 @@ export default async function LeaderboardPage() {
               seasonCompleted={seasonStatus === "COMPLETED"}
             />
           )}
-          <Link
-            href="/demo"
-            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
-          >
-            <Info className="h-3.5 w-3.5" />
-            View demo replay
-          </Link>
         </div>
       </div>
 
