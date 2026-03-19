@@ -201,8 +201,12 @@ export function LeaderboardDimensionTabs({
     if (defaultFromEntries === "No Response" && userProfile) {
       let profileValue: string | null = null
       if (activeDimension === "fanBase") {
-        // userProfile.favoriteTeam is a team name; dimension values are team IDs
-        const teamMatch = teams.find(t => t.name === userProfile.favoriteTeam)
+        // userProfile.favoriteTeam is a D1 team name (e.g. "Florida"); Team.name is ESPN
+        // displayName (e.g. "Florida Gators"). Try exact, then startsWith for mascot suffix.
+        const favName = userProfile.favoriteTeam
+        const teamMatch = favName
+          ? teams.find(t => t.name === favName || t.name.startsWith(favName + " "))
+          : null
         profileValue = teamMatch?.id ?? null
       } else if (activeDimension === "conference") profileValue = userProfile.conference
       else if (activeDimension === "country") profileValue = userProfile.country

@@ -6,6 +6,7 @@ import { TeamsWithDimensions } from "@/components/teams/teams-with-dimensions"
 import type { TeamRow } from "@/components/teams/teams-table"
 import { Users } from "lucide-react"
 import Link from "next/link"
+import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
 
 export const dynamic = "force-dynamic"
 
@@ -131,10 +132,15 @@ export default async function TeamsPage() {
           select: { country: true, state: true, gender: true, favoriteTeamName: true, favoriteTeam: { select: { name: true, conference: true } } },
         })
         if (!u) return null
+        const teamName = u.favoriteTeam?.name ?? u.favoriteTeamName ?? null
+        const lookupConf = (name: string): string | null => {
+          for (const g of D1_TEAMS_BY_CONFERENCE) { if (g.teams.includes(name)) return g.conference }
+          return null
+        }
         return {
           country: u.country, state: u.state, gender: u.gender,
-          favoriteTeam: u.favoriteTeam?.name ?? u.favoriteTeamName ?? null,
-          conference: u.favoriteTeam?.conference ?? null,
+          favoriteTeam: teamName,
+          conference: u.favoriteTeam?.conference ?? (teamName ? lookupConf(teamName) : null),
         }
       })()
     : null

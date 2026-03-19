@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth"
 import { computeLeaderboardFromEntries, type EntryWithRelations } from "@/lib/scoring"
 import { SimulatorPanel } from "@/components/simulator/simulator-panel"
 import { buildGameSequence } from "@/lib/build-game-sequence"
+import { D1_TEAMS_BY_CONFERENCE } from "@/lib/d1-teams"
 
 export const dynamic = "force-dynamic"
 
@@ -106,6 +107,34 @@ export default async function SimulatorPage() {
       })
     : []
 
+  // Get user profile for dimension defaults
+  const userProfile = session?.user?.id
+    ? await (async () => {
+        const u = await prisma.user.findUnique({
+          where: { id: session.user!.id },
+          select: { country: true, state: true, gender: true, favoriteTeamName: true, favoriteTeam: { select: { id: true, name: true, conference: true } } },
+        })
+        if (!u) return null
+        const teamName = u.favoriteTeam?.name ?? u.favoriteTeamName ?? null
+        const lookupConf = (name: string): string | null => {
+          for (const g of D1_TEAMS_BY_CONFERENCE) { if (g.teams.includes(name)) return g.conference }
+          return null
+        }
+        // Resolve favorite team ID: use relation, or try matching D1 name → tournament team
+        let favoriteTeamId = u.favoriteTeam?.id ?? null
+        if (!favoriteTeamId && teamName) {
+          const match = teams.find(t => t.name === teamName || t.name.startsWith(teamName + " "))
+          favoriteTeamId = match?.id ?? null
+        }
+        return {
+          country: u.country, state: u.state, gender: u.gender,
+          favoriteTeam: teamName,
+          favoriteTeamId,
+          conference: u.favoriteTeam?.conference ?? (teamName ? lookupConf(teamName) : null),
+        }
+      })()
+    : null
+
   // Build bracket game sequence from teams + actual results
   const { gameSequence, gameIndex } = buildGameSequence(teamsWithResolvedPlayIns, tournamentGames)
 
@@ -130,6 +159,7 @@ export default async function SimulatorPage() {
           team2LogoUrl: s.team2.logoUrl,
           winnerId: s.winnerId,
         }))}
+        userProfile={userProfile}
       />
     </Suspense>
   )

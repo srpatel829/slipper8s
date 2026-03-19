@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, computeOptimal8, type EntryWithRelations } from "@/lib/scoring"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
 import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
 import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
 import { BarChart3, Info } from "lucide-react"
@@ -148,6 +149,7 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
     },
     select: {
       id: true,
+      espnId: true,
       name: true,
       shortName: true,
       seed: true,
@@ -175,10 +177,11 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
   const result = computeOptimal8(allTeams, teamInfoMap)
   if (result.teamIds.length === 0) return undefined
 
-  const picks = result.teamIds
+  const pickedTeams = result.teamIds
     .map(id => allTeams.find(t => t.id === id))
     .filter(Boolean)
-    .map(t => ({
+
+  const picks = pickedTeams.map(t => ({
       teamId: t!.id,
       name: t!.name,
       shortName: t!.shortName,
@@ -190,7 +193,16 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
       isPlayIn: false as const,
     }))
 
-  return { score: result.score, ppr: result.ppr, tps: result.tps, picks }
+  // Compute expected score for the optimal 8 using Silver Bulletin data
+  const espnIds = pickedTeams.map(t => t!.espnId).filter(Boolean) as string[]
+  const teamStates = new Map<string, { wins: number; eliminated: boolean }>()
+  for (const t of pickedTeams) {
+    if (t!.espnId) teamStates.set(t!.espnId, { wins: t!.wins, eliminated: t!.eliminated })
+  }
+  const preTournament = pickedTeams.every(t => t!.wins === 0) && !pickedTeams.some(t => t!.eliminated)
+  const expectedScore = calculateEntryExpectedScore(espnIds, teamStates, preTournament)
+
+  return { score: result.score, ppr: result.ppr, tps: result.tps, picks, expectedScore }
 }
 
 async function shouldHideLeaderboard(): Promise<{ hidden: boolean; deadline: Date | null; status: string | null }> {

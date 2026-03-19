@@ -49,6 +49,15 @@ interface SimulatorPanelProps {
   userLeagues?: Array<{ id: string; name: string }>
   /** Current user ID for default dimension selection */
   currentUserId?: string
+  /** User profile for dimension defaults when entry data is missing */
+  userProfile?: {
+    country: string | null
+    state: string | null
+    gender: string | null
+    favoriteTeam: string | null
+    favoriteTeamId: string | null
+    conference: string | null
+  } | null
 }
 
 /** Unified game representation for both demo and real-app mode */
@@ -344,6 +353,7 @@ export function SimulatorPanel({
   playInSlots,
   userLeagues,
   currentUserId,
+  userProfile,
 }: SimulatorPanelProps) {
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
   const [lbFilter, setLbFilter] = useState<string>("global")
@@ -535,17 +545,28 @@ export function SimulatorPanel({
     }
   }, [simLeaderboardFull])
 
+  // ── Build team ID → name map for fanBase display ──────────────────────────
+  const teamIdToName = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const t of (allTeams ?? aliveTeams)) {
+      map.set(t.id, t.name)
+    }
+    return map
+  }, [allTeams, aliveTeams])
+
   // ── Default sub-value for a dimension (current user's value) ──────────────
   const getDefaultSubValue = useCallback((dim: string) => {
     const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
-    if (!myEntry) return ""
-    if (dim === "country") return myEntry.country ?? ""
-    if (dim === "state") return myEntry.state ?? ""
-    if (dim === "gender") return myEntry.gender ?? ""
-    if (dim === "fanBase") return myEntry.favoriteTeam ?? ""
-    if (dim === "conference") return myEntry.conference ?? ""
+    // Try entry data first, then fall back to userProfile
+    const entryVal = (key: "country" | "state" | "gender" | "favoriteTeam" | "conference") =>
+      myEntry?.[key] ?? null
+    if (dim === "country") return entryVal("country") ?? userProfile?.country ?? ""
+    if (dim === "state") return entryVal("state") ?? userProfile?.state ?? ""
+    if (dim === "gender") return entryVal("gender") ?? userProfile?.gender ?? ""
+    if (dim === "fanBase") return entryVal("favoriteTeam") ?? userProfile?.favoriteTeamId ?? ""
+    if (dim === "conference") return entryVal("conference") ?? userProfile?.conference ?? ""
     return ""
-  }, [simLeaderboardFull, currentUserId])
+  }, [simLeaderboardFull, currentUserId, userProfile])
 
   // ── Effective sub-value (explicit selection or default) ───────────────────
   const effectiveSubValue = useMemo(() => {
@@ -869,7 +890,9 @@ export function SimulatorPanel({
                   </SelectTrigger>
                   <SelectContent>
                     {(dimensionOptions[lbFilter as keyof typeof dimensionOptions] ?? []).map(val => (
-                      <SelectItem key={val} value={val}>{val}</SelectItem>
+                      <SelectItem key={val} value={val}>
+                        {lbFilter === "fanBase" ? (teamIdToName.get(val) ?? val) : val}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
