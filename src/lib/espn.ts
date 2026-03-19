@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma"
-import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
+import { saveScoreSnapshots, checkAndCreateCheckpoint, checkAndCreatePreTournamentCheckpoint } from "@/lib/snapshots"
 import { invalidateLeaderboardCache } from "@/lib/cache"
 import { computeMaxPossibleScore } from "@/lib/max-possible-score"
 import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
@@ -65,6 +65,7 @@ export async function syncTournamentData(): Promise<SyncResult> {
 
   // Track newly completed games for snapshot/checkpoint pipeline
   const newlyCompletedGameIds: string[] = []
+  const newlyCompletedRounds: number[] = []
 
   let data: ESPNScoreboardResponse
   try {
@@ -198,6 +199,7 @@ export async function syncTournamentData(): Promise<SyncResult> {
       if (isCompleted && winnerTeam && loserTeam && !wasAlreadyComplete) {
         // Track this game as newly completed for snapshot pipeline
         newlyCompletedGameIds.push(upsertedGame.id)
+        newlyCompletedRounds.push(round)
 
         // Only count wins for round > 0 (play-in wins don't count per spec)
         if (round > 0) {
@@ -347,6 +349,25 @@ export async function syncTournamentData(): Promise<SyncResult> {
       }
     } catch (err) {
       result.errors.push(`Cache invalidation failed: ${String(err)}`)
+    }
+
+    // ── Auto-transition LOCKED → ACTIVE on first R1+ game ──────────────
+    if (newlyCompletedRounds.some(r => r >= 1)) {
+      try {
+        const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
+        if (settings?.currentSeasonId) {
+          const updated = await prisma.season.updateMany({
+            where: { id: settings.currentSeasonId, status: "LOCKED" },
+            data: { status: "ACTIVE" },
+          })
+          if (updated.count > 0) {
+            // Create the Pre-Tournament checkpoint (index 0) as the baseline
+            await checkAndCreatePreTournamentCheckpoint(settings.currentSeasonId)
+          }
+        }
+      } catch (err) {
+        result.errors.push(`Season status transition failed: ${String(err)}`)
+      }
     }
   }
 

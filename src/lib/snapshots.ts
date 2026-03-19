@@ -83,33 +83,63 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
 }
 
 /**
- * Round label mapping for checkpoints
- * Maps round numbers to human-readable checkpoint labels
+ * Checkpoint index mapping (0-10):
+ * 0 = Pre-Tournament, 1 = R64 D1, 2 = R64 D2, 3 = R32 D1, 4 = R32 D2,
+ * 5 = S16 D1, 6 = S16 D2, 7 = E8 D1, 8 = E8 D2, 9 = F4, 10 = Championship
+ *
+ * Rounds 1-4 split into Day 1/Day 2 by ESPN startTime.
+ * Rounds 5-6 (F4, Championship) have a single checkpoint each.
+ * Round 0 (First Four/play-in) does NOT create a session checkpoint.
  */
-const ROUND_CHECKPOINT_MAP: Record<number, string> = {
-  0: "First Four",
-  1: "Round of 64",
-  2: "Round of 32",
-  3: "Sweet 16",
-  4: "Elite 8",
-  5: "Final Four",
-  6: "National Championship",
+
+interface CheckpointDef {
+  index: number
+  label: string
+}
+
+/** Maps "round_dayIndex" → checkpoint definition. dayIndex 0 = first half, 1 = second half. */
+const CHECKPOINT_MAP: Record<string, CheckpointDef> = {
+  "1_0": { index: 1, label: "Round of 64 Day 1" },
+  "1_1": { index: 2, label: "Round of 64 Day 2" },
+  "2_0": { index: 3, label: "Round of 32 Day 1" },
+  "2_1": { index: 4, label: "Round of 32 Day 2" },
+  "3_0": { index: 5, label: "Sweet 16 Day 1" },
+  "3_1": { index: 6, label: "Sweet 16 Day 2" },
+  "4_0": { index: 7, label: "Elite 8 Day 1" },
+  "4_1": { index: 8, label: "Elite 8 Day 2" },
+  "5_0": { index: 9, label: "Final Four" },
+  "6_0": { index: 10, label: "National Championship" },
+}
+
+/**
+ * Create the Pre-Tournament checkpoint (index 0).
+ * Baseline before any R64 games — all entries at score 0, all teams alive.
+ * Called once when the season flips from LOCKED to ACTIVE.
+ */
+export async function checkAndCreatePreTournamentCheckpoint(seasonId: string): Promise<void> {
+  const checkpoint = await prisma.checkpoint.upsert({
+    where: { seasonId_gameIndex: { seasonId, gameIndex: 0 } },
+    create: {
+      seasonId,
+      gameIndex: 0,
+      roundLabel: "Pre-Tournament",
+      isSession: true,
+    },
+    update: {},
+  })
+
+  await createDimensionSnapshots(checkpoint.id, seasonId)
 }
 
 /**
  * Check if a completed game triggers a session checkpoint.
- * A session checkpoint is created when ALL games in a round-day are complete.
  *
- * The 10 session checkpoints from the spec:
- * - Round of 64 Day 1/2, Round of 32 Day 1/2, Sweet 16 Day 1/2,
- *   Elite 8 Day 1/2, Final Four, National Championship
- *
- * For simplicity, we detect "all games of this round are complete" as a
- * checkpoint trigger. The day-level split can be refined later when we have
- * game scheduling data.
+ * For rounds 1-4: splits games into Day 1/Day 2 by ESPN startTime. When all
+ * games in a day-half complete, creates that day's checkpoint (index 1-8).
+ * For rounds 5-6: creates checkpoint when all games in round complete (index 9-10).
+ * Round 0 (play-in): no session checkpoint.
  *
  * @param gameId - The TournamentGame.id that just completed
- * @returns Whether a checkpoint was created
  */
 export async function checkAndCreateCheckpoint(gameId: string): Promise<{
   checkpointCreated: boolean
@@ -119,58 +149,70 @@ export async function checkAndCreateCheckpoint(gameId: string): Promise<{
   const seasonId = settings?.currentSeasonId
   if (!seasonId) return { checkpointCreated: false }
 
-  // Get the game that just completed to know its round
   const game = await prisma.tournamentGame.findUnique({
     where: { id: gameId },
-    select: { round: true },
+    select: { id: true, round: true, startTime: true },
   })
   if (!game) return { checkpointCreated: false }
 
   const round = game.round
 
-  // Count total and completed games for this round
-  const [totalGamesInRound, completedGamesInRound] = await Promise.all([
-    prisma.tournamentGame.count({ where: { round } }),
-    prisma.tournamentGame.count({ where: { round, isComplete: true } }),
-  ])
+  // Play-in games (round 0) don't create session checkpoints
+  if (round === 0) return { checkpointCreated: false }
 
-  // If not all games in this round are complete, no checkpoint yet
-  if (completedGamesInRound < totalGamesInRound) {
+  // Get all games in this round ordered by ESPN startTime
+  const roundGames = await prisma.tournamentGame.findMany({
+    where: { round },
+    select: { id: true, isComplete: true, startTime: true },
+    orderBy: { startTime: "asc" },
+  })
+
+  if (round >= 1 && round <= 4) {
+    // Rounds 1-4: split into Day 1 / Day 2 by startTime
+    const half = Math.ceil(roundGames.length / 2)
+    const dayHalves: Array<{ dayIndex: number; games: typeof roundGames }> = [
+      { dayIndex: 0, games: roundGames.slice(0, half) },
+      { dayIndex: 1, games: roundGames.slice(half) },
+    ]
+
+    for (const { dayIndex, games: dayGames } of dayHalves) {
+      // Only check the half this game belongs to
+      if (!dayGames.some(g => g.id === game.id)) continue
+
+      // All games in this day-half must be complete
+      if (!dayGames.every(g => g.isComplete)) continue
+
+      const cpDef = CHECKPOINT_MAP[`${round}_${dayIndex}`]
+      if (!cpDef) continue
+
+      const checkpoint = await prisma.checkpoint.upsert({
+        where: { seasonId_gameIndex: { seasonId, gameIndex: cpDef.index } },
+        create: { seasonId, gameIndex: cpDef.index, roundLabel: cpDef.label, isSession: true },
+        update: { roundLabel: cpDef.label, isSession: true },
+      })
+
+      await createDimensionSnapshots(checkpoint.id, seasonId)
+      return { checkpointCreated: true, checkpointId: checkpoint.id }
+    }
+
     return { checkpointCreated: false }
+
+  } else {
+    // Rounds 5-6 (F4, Championship): single checkpoint per round
+    if (!roundGames.every(g => g.isComplete)) return { checkpointCreated: false }
+
+    const cpDef = CHECKPOINT_MAP[`${round}_0`]
+    if (!cpDef) return { checkpointCreated: false }
+
+    const checkpoint = await prisma.checkpoint.upsert({
+      where: { seasonId_gameIndex: { seasonId, gameIndex: cpDef.index } },
+      create: { seasonId, gameIndex: cpDef.index, roundLabel: cpDef.label, isSession: true },
+      update: { roundLabel: cpDef.label, isSession: true },
+    })
+
+    await createDimensionSnapshots(checkpoint.id, seasonId)
+    return { checkpointCreated: true, checkpointId: checkpoint.id }
   }
-
-  // All games in this round are complete — create a session checkpoint
-  // Use the total number of completed games as the gameIndex
-  const totalCompletedGames = await prisma.tournamentGame.count({
-    where: { isComplete: true },
-  })
-
-  const roundLabel = ROUND_CHECKPOINT_MAP[round] ?? `Round ${round}`
-
-  // Upsert to avoid duplicates (idempotent)
-  const checkpoint = await prisma.checkpoint.upsert({
-    where: {
-      seasonId_gameIndex: {
-        seasonId,
-        gameIndex: totalCompletedGames,
-      },
-    },
-    create: {
-      seasonId,
-      gameIndex: totalCompletedGames,
-      roundLabel,
-      isSession: true,
-    },
-    update: {
-      roundLabel,
-      isSession: true,
-    },
-  })
-
-  // Create dimension snapshots for this checkpoint
-  await createDimensionSnapshots(checkpoint.id, seasonId)
-
-  return { checkpointCreated: true, checkpointId: checkpoint.id }
 }
 
 /**
