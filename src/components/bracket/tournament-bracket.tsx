@@ -38,6 +38,7 @@ interface TournamentBracketProps {
     gameSequence: DemoGameEvent[]
     gameIndex: number
     isPreTournament?: boolean
+    userPickTeamIds?: string[]
 }
 
 const R64_ORDER = [[1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15]] as const
@@ -54,6 +55,7 @@ function SlotCell({
     reversed,
     isChampion,
     isPreTournament = false,
+    isUserPick = false,
 }: {
     team: TeamLike | null
     isWinner: boolean
@@ -61,6 +63,7 @@ function SlotCell({
     reversed?: boolean
     isChampion?: boolean
     isPreTournament?: boolean
+    isUserPick?: boolean
 }) {
     if (!team) {
         return (
@@ -86,7 +89,9 @@ function SlotCell({
                     ? "border-primary/50 bg-primary/10 text-foreground"
                     : isCompleted
                         ? "border-border/15 bg-muted/5 text-muted-foreground/30 line-through"
-                        : "border-border/25 bg-card/20 text-foreground/65",
+                        : isUserPick
+                            ? "border-primary/40 bg-primary/5 text-foreground/75 ring-1 ring-primary/20"
+                            : "border-border/25 bg-card/20 text-foreground/65",
         )}>
             {team.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -139,6 +144,7 @@ function MatchupPair({
     isCompleted,
     reversed,
     isPreTournament,
+    userPickIds,
 }: {
     topTeam: TeamLike | null
     botTeam: TeamLike | null
@@ -146,6 +152,7 @@ function MatchupPair({
     isCompleted: boolean
     reversed?: boolean
     isPreTournament?: boolean
+    userPickIds?: Set<string>
 }) {
     return (
         <div className="flex flex-col gap-px">
@@ -155,6 +162,7 @@ function MatchupPair({
                 isCompleted={isCompleted}
                 reversed={reversed}
                 isPreTournament={isPreTournament}
+                isUserPick={!!topTeam && !!userPickIds?.has(topTeam.id)}
             />
             <SlotCell
                 team={botTeam}
@@ -162,6 +170,7 @@ function MatchupPair({
                 isCompleted={isCompleted}
                 reversed={reversed}
                 isPreTournament={isPreTournament}
+                isUserPick={!!botTeam && !!userPickIds?.has(botTeam.id)}
             />
         </div>
     )
@@ -271,11 +280,13 @@ function RegionBracket({
     rounds,
     reversed,
     isPreTournament,
+    userPickIds,
 }: {
     region: string
     rounds: RoundData[]
     reversed?: boolean
     isPreTournament?: boolean
+    userPickIds?: Set<string>
 }) {
     const COL_W = 112
 
@@ -316,6 +327,7 @@ function RegionBracket({
                                                 isCompleted={m.isCompleted}
                                                 reversed={reversed}
                                                 isPreTournament={isPreTournament}
+                                                userPickIds={userPickIds}
                                             />
                                         </div>
                                         {rIdx < rounds.length - 1 && (
@@ -348,12 +360,14 @@ function CenterColumn({
     teamMap,
     e8Winners,
     isPreTournament,
+    userPickIds,
 }: {
     gameSequence: DemoGameEvent[]
     gameIndex: number
     teamMap: Map<string, TeamLike>
     e8Winners: Map<Region, string | null>
     isPreTournament?: boolean
+    userPickIds?: Set<string>
 }) {
     const f4Games = gameSequence.filter(g => g.round === 5)
     const champGame = gameSequence.find(g => g.round === 6)
@@ -390,7 +404,7 @@ function CenterColumn({
         isCompleted: boolean
         isChampion?: boolean
     }) {
-        return <SlotCell team={team} isWinner={isWinner} isCompleted={isCompleted} isChampion={isChampion} isPreTournament={isPreTournament} />
+        return <SlotCell team={team} isWinner={isWinner} isCompleted={isCompleted} isChampion={isChampion} isPreTournament={isPreTournament} isUserPick={!!team && !!userPickIds?.has(team.id)} />
     }
 
     return (
@@ -409,6 +423,7 @@ function CenterColumn({
                     winnerId={f4Data[0].winnerId}
                     isCompleted={f4Data[0].isCompleted}
                     isPreTournament={isPreTournament}
+                    userPickIds={userPickIds}
                 />
             </div>
 
@@ -429,6 +444,7 @@ function CenterColumn({
                     winnerId={champWinnerId}
                     isCompleted={champCompleted}
                     isPreTournament={isPreTournament}
+                    userPickIds={userPickIds}
                 />
                 {/* Champion badge */}
                 {champWinnerId && champCompleted && (() => {
@@ -460,6 +476,7 @@ function CenterColumn({
                     winnerId={f4Data[1].winnerId}
                     isCompleted={f4Data[1].isCompleted}
                     isPreTournament={isPreTournament}
+                    userPickIds={userPickIds}
                 />
             </div>
         </div>
@@ -468,8 +485,9 @@ function CenterColumn({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournament = false }: TournamentBracketProps) {
+export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournament = false, userPickTeamIds = [] }: TournamentBracketProps) {
     const teamMap = useMemo(() => new Map(teams.map(t => [t.id, t])), [teams])
+    const pickSet = useMemo(() => new Set(userPickTeamIds), [userPickTeamIds])
 
     const { eastRounds, westRounds, southRounds, midwestRounds, e8Winners } = useMemo(() => {
         const eastData = buildRegionRounds("East", teamMap, gameSequence, gameIndex)
@@ -530,7 +548,7 @@ export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournam
                     {/* Top row */}
                     <div className="flex gap-2 justify-center items-start">
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="East" rounds={eastRounds} reversed={false} isPreTournament={isPreTournament} />
+                            <RegionBracket region="East" rounds={eastRounds} reversed={false} isPreTournament={isPreTournament} userPickIds={pickSet} />
                         </div>
 
                         <div className="shrink-0 flex items-start justify-center pt-5">
@@ -540,11 +558,12 @@ export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournam
                                 teamMap={teamMap}
                                 e8Winners={e8Winners}
                                 isPreTournament={isPreTournament}
+                                userPickIds={pickSet}
                             />
                         </div>
 
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="West" rounds={westRounds} reversed={true} isPreTournament={isPreTournament} />
+                            <RegionBracket region="West" rounds={westRounds} reversed={true} isPreTournament={isPreTournament} userPickIds={pickSet} />
                         </div>
                     </div>
 
@@ -553,13 +572,13 @@ export function TournamentBracket({ teams, gameSequence, gameIndex, isPreTournam
                     {/* Bottom row */}
                     <div className="flex gap-2 justify-center items-start">
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="South" rounds={southRounds} reversed={false} isPreTournament={isPreTournament} />
+                            <RegionBracket region="South" rounds={southRounds} reversed={false} isPreTournament={isPreTournament} userPickIds={pickSet} />
                         </div>
 
                         <div className="shrink-0 min-w-[150px] px-2" /> {/* spacer matching center */}
 
                         <div className="flex-1 min-w-0">
-                            <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} isPreTournament={isPreTournament} />
+                            <RegionBracket region="Midwest" rounds={midwestRounds} reversed={true} isPreTournament={isPreTournament} userPickIds={pickSet} />
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { auth } from "@/lib/auth"
-import { BracketViewer } from "@/components/bracket/bracket-viewer"
+import { LiveBracketWrapper } from "@/components/bracket/live-bracket-wrapper"
 import { PreTournamentBracketWrapper } from "@/components/bracket/pre-tournament-bracket-wrapper"
 import { GitBranch } from "lucide-react"
 
@@ -58,8 +58,6 @@ export default async function BracketPage() {
     }
   }
 
-  const regions = [...new Set(teams.map(t => t.region))].sort()
-
   // Filter out play-in games (round 0) for bracket display purposes
   const tournamentGames = games.filter(g => g.round > 0)
 
@@ -73,7 +71,7 @@ export default async function BracketPage() {
     ? 0
     : allComplete
       ? 6
-      : Math.min(...games.filter(g => !g.isComplete).map(g => g.round))
+      : Math.min(...games.filter(g => !g.isComplete && g.round > 0).map(g => g.round))
   const currentRound = totalGames === 0
     ? "Pre-Tournament"
     : allComplete
@@ -194,10 +192,44 @@ export default async function BracketPage() {
           }))}
         />
       ) : (
-        <BracketViewer
-          teams={teams}
-          games={games}
-          regions={regions}
+        <LiveBracketWrapper
+          teams={teams.map(t => ({
+            id: t.id,
+            name: t.name,
+            shortName: t.shortName,
+            seed: t.seed,
+            region: t.region,
+            logoUrl: t.logoUrl,
+            eliminated: t.eliminated,
+            wins: t.wins,
+            isPlayIn: t.isPlayIn,
+            espnId: t.espnId,
+            conference: t.conference,
+          }))}
+          games={games.map(g => ({
+            id: g.id,
+            round: g.round,
+            region: g.region,
+            team1: g.team1,
+            team2: g.team2,
+            winner: g.winner,
+            team1Score: g.team1Score,
+            team2Score: g.team2Score,
+            isComplete: g.isComplete,
+          }))}
+          playInSlots={playInSlots.map(s => ({
+            id: s.id,
+            seed: s.seed,
+            region: s.region,
+            team1ShortName: s.team1.shortName,
+            team2ShortName: s.team2.shortName,
+            team1Name: s.team1.name,
+            team2Name: s.team2.name,
+            winnerId: s.winner?.id ?? null,
+            winnerName: s.winner?.name ?? null,
+            winnerShortName: s.winner?.shortName ?? null,
+            winnerLogoUrl: s.winner?.logoUrl ?? null,
+          }))}
           userPickTeamIds={userPickTeamIds}
         />
       )}

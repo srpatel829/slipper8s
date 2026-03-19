@@ -83,6 +83,11 @@ export async function syncTournamentData(): Promise<SyncResult> {
       const [c1, c2] = comp.competitors
       if (!c1 || !c2) continue
 
+      // Skip ESPN placeholder events with TBD teams (negative IDs like -1, -2)
+      const espnId1 = parseInt(c1.team?.id ?? "0", 10)
+      const espnId2 = parseInt(c2.team?.id ?? "0", 10)
+      if (espnId1 <= 0 || espnId2 <= 0) continue
+
       const round = detectRound(comp)
       const region = extractRegion(comp)
 
