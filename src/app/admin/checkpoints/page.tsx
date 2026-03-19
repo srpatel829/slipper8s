@@ -152,10 +152,37 @@ export default function CheckpointsPage() {
             View and manage tournament checkpoints. Checkpoints capture leaderboard state at key moments.
           </p>
         </div>
-        <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          Manual Checkpoint
-        </Button>
+        <div className="flex items-center gap-2">
+          {checkpoints.some(cp => cp.gameIndex > 10 || (cp.gameIndex >= 1 && cp.gameIndex <= 10 && !["R64 D1","R64 D2","R32 D1","R32 D2","S16 D1","S16 D2","E8 D1","E8 D2","Final Four","Championship","Pre-Tournament"].includes(cp.roundLabel))) && (
+            <Button
+              variant="outline"
+              className="gap-2 text-amber-500 border-amber-500/30 hover:text-amber-400"
+              onClick={async () => {
+                const stale = checkpoints.filter(cp => cp.gameIndex > 10)
+                if (stale.length === 0) {
+                  toast("No stale checkpoints found")
+                  return
+                }
+                const confirmed = window.confirm(
+                  `Delete ${stale.length} stale checkpoint(s) with gameIndex > 10?\n\nThese are leftover from the play-in era and have incorrect indices.`
+                )
+                if (!confirmed) return
+                for (const cp of stale) {
+                  await fetch(`/api/admin/checkpoints?id=${cp.id}`, { method: "DELETE" })
+                }
+                toast.success(`Deleted ${stale.length} stale checkpoint(s)`)
+                fetchCheckpoints()
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Stale
+            </Button>
+          )}
+          <Button onClick={() => setShowCreate(!showCreate)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Manual Checkpoint
+          </Button>
+        </div>
       </div>
 
       {/* Create form */}

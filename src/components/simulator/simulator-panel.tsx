@@ -13,6 +13,7 @@
  */
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { useTimeline } from "@/components/layout/timeline-provider"
 import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -365,9 +366,36 @@ export function SimulatorPanel({
   const router = useRouter()
   const pathname = usePathname()
   const initializedRef = useRef(false)
+  const timeline = useTimeline()
+
+  // ── Timeline-aware game sequence override ─────────────────────────────────
+  // When timeline is scrubbed back, only show games completed up to that point
+  const { effectiveGameSequence, effectiveGameIndex } = useMemo(() => {
+    if (!timeline || timeline.isLive || !gameSequence) {
+      return { effectiveGameSequence: gameSequence, effectiveGameIndex: gameIndex }
+    }
+
+    const completedAtPosition = new Set(
+      timeline.completedGames
+        .filter(g => g.gameIndex <= timeline.currentGameIndex)
+        .map(g => g.id)
+    )
+
+    const modified = gameSequence.map(event => {
+      if (completedAtPosition.has(event.gameId)) {
+        return { ...event, gameIndex: 0 }
+      }
+      return { ...event, gameIndex: 1 }
+    })
+
+    return {
+      effectiveGameSequence: modified,
+      effectiveGameIndex: completedAtPosition.size > 0 ? 0 : -1,
+    }
+  }, [gameSequence, gameIndex, timeline])
 
   // ── Compute isPreTournament ─────────────────────────────────────────────────
-  const isPreTournament = gameIndex === undefined || gameIndex < 0
+  const isPreTournament = effectiveGameIndex === undefined || effectiveGameIndex < 0
 
   // ── Build logo lookup map and team lookup map ───────────────────────────────
   const { logoMap, teamLookup } = useMemo(() => {
@@ -383,12 +411,12 @@ export function SimulatorPanel({
 
   // ── Build unified game list ────────────────────────────────────────────────
   const allGames = useMemo<MatchupGame[]>(() => {
-    if (gameSequence) {
-      const currentIdx = gameIndex ?? -1
-      return gameSequence.map(g => demoEventToMatchup(g, g.gameIndex <= currentIdx, logoMap))
+    if (effectiveGameSequence) {
+      const currentIdx = effectiveGameIndex ?? -1
+      return effectiveGameSequence.map(g => demoEventToMatchup(g, g.gameIndex <= currentIdx, logoMap))
     }
     return computeUpcomingMatchups(aliveTeams)
-  }, [gameSequence, gameIndex, aliveTeams, logoMap])
+  }, [effectiveGameSequence, effectiveGameIndex, aliveTeams, logoMap])
 
   // ── Downstream cascade map ─────────────────────────────────────────────────
   // Maps each gameId → the gameId of the next game its winner feeds into.
@@ -712,15 +740,15 @@ export function SimulatorPanel({
 
             {/* Visual advancing bracket */}
             <TabsContent value="bracket" className="mt-0">
-              {gameSequence ? (
+              {effectiveGameSequence ? (
                 <AdvancingBracket
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   teams={(allTeams ?? aliveTeams) as any[]}
                   mode="simulator"
                   gamePicks={gamePicks}
                   onPickGame={pickGame}
-                  gameSequence={gameSequence}
-                  gameIndex={gameIndex ?? -1}
+                  gameSequence={effectiveGameSequence}
+                  gameIndex={effectiveGameIndex ?? -1}
                   isPreTournament={isPreTournament}
                   playInSlots={playInSlots}
                 />
