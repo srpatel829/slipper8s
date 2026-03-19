@@ -5,7 +5,7 @@
  * with LeaderboardSample for the live (non-demo) leaderboard page.
  *
  * Supports timeline integration: when the user scrubs back via the timeline,
- * fetches historical leaderboard data. When live, auto-refreshes every 5 min.
+ * fetches historical leaderboard data. When live, auto-refreshes every 30s.
  */
 
 import { useState, useCallback, useEffect, useRef } from "react"
@@ -74,11 +74,11 @@ export function LeaderboardLive({
     }
   }, [])
 
-  // Auto-refresh every 5 min when live, disable when scrubbed back
+  // Auto-refresh every 30s when live, disable when scrubbed back
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current)
     if (isLive) {
-      intervalRef.current = setInterval(refresh, 300_000)
+      intervalRef.current = setInterval(refresh, 30_000)
     }
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
@@ -127,7 +127,7 @@ export function LeaderboardLive({
       <div className="flex items-center justify-between">
         {isLive ? (
           <p className="text-xs text-muted-foreground">
-            Auto-refreshes every 5 min · Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+            Auto-refreshes every 30s · Last updated {lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </p>
         ) : (
           <div className="flex items-center gap-2">

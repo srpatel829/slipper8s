@@ -711,7 +711,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
 
   useEffect(() => {
     if (demoMode) return
-    const id = setInterval(refresh, 300_000)
+    const id = setInterval(refresh, 30_000)
     return () => clearInterval(id)
   }, [refresh, demoMode])
 
@@ -767,7 +767,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       {!demoMode && (
         <div className="flex items-center justify-between">
           <p className="text-xs text-muted-foreground">
-            Auto-refreshes every 5 min · Last updated {lastUpdated.toLocaleTimeString()}
+            Auto-refreshes every 30s · Last updated {lastUpdated.toLocaleTimeString()}
           </p>
           <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={refresh} disabled={loading}>
             <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
