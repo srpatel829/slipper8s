@@ -165,7 +165,7 @@ export function LeaderboardLive({
           <LeaderboardSample
             entries={filteredEntries}
             currentUserId={currentUserId}
-            optimal8={isLive ? optimal8 : undefined}
+            optimal8={optimal8}
             isPreTournament={currentGameIndex < 0}
           />
         )}

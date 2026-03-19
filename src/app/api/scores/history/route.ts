@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { getSeasonCheckpoints } from "@/lib/snapshots"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { computeOptimal8 } from "@/lib/scoring"
 
 /**
  * GET /api/scores/history — Score history for the chart/timeline feature
@@ -139,32 +140,48 @@ export async function GET(req: NextRequest) {
     entryIds.push(...userEntries.map((e) => e.id))
   }
 
-  // Determine leader and median from CURRENT scores
+  // Determine leader, median, and build available players list
   let currentLeaderId: string | null = null
   let currentMedianId: string | null = null
+  let availablePlayers: Array<{ id: string; name: string }> = []
 
-  if (includeLeaderMedian) {
-    const allEntries = await prisma.entry.findMany({
-      where: {
-        seasonId,
-        draftInProgress: false,
-        entryPicks: { some: {} },
-      },
-      select: { id: true, score: true },
-      orderBy: { score: "desc" },
-    })
+  // Always fetch all entries for the available players list
+  const allSeasonEntries = await prisma.entry.findMany({
+    where: {
+      seasonId,
+      draftInProgress: false,
+      entryPicks: { some: {} },
+    },
+    select: {
+      id: true,
+      score: true,
+      entryNumber: true,
+      nickname: true,
+      userId: true,
+      user: { select: { name: true, email: true } },
+    },
+    orderBy: { score: "desc" },
+  })
 
-    if (allEntries.length > 0) {
-      currentLeaderId = allEntries[0].id
-      const medianIdx = Math.floor(allEntries.length / 2)
-      currentMedianId = allEntries[medianIdx].id
+  // Build available players list
+  availablePlayers = allSeasonEntries.map(e => {
+    const displayName = e.user.name ?? e.user.email ?? "Unknown"
+    const name = e.entryNumber > 1
+      ? (e.nickname ? `${e.nickname} (${displayName} ${e.entryNumber})` : `${displayName} ${e.entryNumber}`)
+      : displayName
+    return { id: e.id, name }
+  })
 
-      if (currentLeaderId && !entryIds.includes(currentLeaderId)) {
-        entryIds.push(currentLeaderId)
-      }
-      if (currentMedianId && !entryIds.includes(currentMedianId)) {
-        entryIds.push(currentMedianId)
-      }
+  if (includeLeaderMedian && allSeasonEntries.length > 0) {
+    currentLeaderId = allSeasonEntries[0].id
+    const medianIdx = Math.floor(allSeasonEntries.length / 2)
+    currentMedianId = allSeasonEntries[medianIdx].id
+
+    if (currentLeaderId && !entryIds.includes(currentLeaderId)) {
+      entryIds.push(currentLeaderId)
+    }
+    if (currentMedianId && !entryIds.includes(currentMedianId)) {
+      entryIds.push(currentMedianId)
     }
   }
 
@@ -274,7 +291,8 @@ export async function GET(req: NextRequest) {
       if (!pick.team || pick.team.isPlayIn || pick.team.eliminated) continue
       const teamPPR = pprResult.perTeam.get(pick.team.id) || 0
       if (teamPPR === 0) continue
-      const additionalWins = teamPPR / pick.team.seed
+      // Use Math.round to avoid truncation from bracket-aware PPR adjustments
+      const additionalWins = Math.round(teamPPR / pick.team.seed)
       for (let w = 1; w <= additionalWins; w++) {
         const futureRound = pick.team.wins + w
         const cp = ROUND_TO_LAST_CP[futureRound]
@@ -296,6 +314,11 @@ export async function GET(req: NextRequest) {
       cumScore += futurePointsByCheckpoint.get(cp) || 0
       projections[cp] = cumScore
     }
+    // Safety: ensure final projection matches entry.score + totalPPR
+    // (corrects any rounding drift in per-checkpoint distribution)
+    if (projections[10] != null) {
+      projections[10] = entry.score + pprResult.totalPPR
+    }
 
     entryHistories[entry.id] = {
       entryId: entry.id,
@@ -310,8 +333,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Build optimal 8 line from DB checkpoint dimension snapshots ──────────
-  // Map by checkpoint index for easy lookup
+  // ── Build optimal 8 line ──────────────────────────────────────────────────
+  // First try DB checkpoint dimension snapshots
   const optimal8ByCheckpoint = new Map<number, { rolling: number | null; hindsight: number | null }>()
   for (const cp of dbCheckpoints) {
     const globalD = cp.dimensions.find((d) => d.dimensionType === "global")
@@ -321,6 +344,30 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // If no DB optimal 8 data exists, compute it live from current team states
+  if (!optimal8ByCheckpoint.has(latestCpIndex) || optimal8ByCheckpoint.get(latestCpIndex)?.rolling == null) {
+    // Get all non-play-in teams for optimal 8 computation
+    const allTeams = await prisma.team.findMany({
+      where: { isPlayIn: false },
+      select: { id: true, seed: true, region: true, wins: true, eliminated: true, name: true, shortName: true },
+    })
+
+    const teamInfoForOpt = new Map<string, TeamBracketInfo>()
+    const opt8Teams = allTeams.map(t => {
+      teamInfoForOpt.set(t.id, { seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated })
+      return { id: t.id, seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated, isPlayIn: false, sCurveRank: undefined }
+    })
+
+    const opt8Result = computeOptimal8(opt8Teams, teamInfoForOpt)
+
+    // Pre-tournament (cp 0) = 0
+    optimal8ByCheckpoint.set(0, { rolling: 0, hindsight: null })
+    // Current checkpoint = live score
+    if (latestCpIndex >= 1) {
+      optimal8ByCheckpoint.set(latestCpIndex, { rolling: opt8Result.score, hindsight: null })
+    }
+  }
+
   // Build optimal 8 array indexed by checkpoint (0-10)
   const optimal8: Array<{
     checkpointIndex: number
@@ -328,11 +375,11 @@ export async function GET(req: NextRequest) {
     hindsightOptimal8Score: number | null
   }> = []
   for (let cp = 0; cp <= 10; cp++) {
-    const data = optimal8ByCheckpoint.get(cp)
+    const cpData = optimal8ByCheckpoint.get(cp)
     optimal8.push({
       checkpointIndex: cp,
-      rollingOptimal8Score: data?.rolling ?? null,
-      hindsightOptimal8Score: data?.hindsight ?? null,
+      rollingOptimal8Score: cpData?.rolling ?? null,
+      hindsightOptimal8Score: cpData?.hindsight ?? null,
     })
   }
 
@@ -341,5 +388,6 @@ export async function GET(req: NextRequest) {
     optimal8,
     latestCheckpointIndex: latestCpIndex,
     seasonId,
+    availablePlayers,
   })
 }

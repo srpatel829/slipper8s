@@ -19,7 +19,8 @@
  * Data is per-checkpoint (not per-game).
  */
 
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useState, useMemo, useCallback } from "react"
+import { useTimeline } from "@/components/layout/timeline-provider"
 import {
   LineChart,
   Line,
@@ -67,11 +68,17 @@ interface Optimal8Point {
   hindsightOptimal8Score: number | null
 }
 
+interface AvailablePlayer {
+  id: string
+  name: string
+}
+
 interface ScoreHistoryData {
   entries: Record<string, EntryHistory>
   optimal8: Optimal8Point[]
   latestCheckpointIndex: number
   seasonId: string
+  availablePlayers: AvailablePlayer[]
 }
 
 interface LineDef {
@@ -271,6 +278,7 @@ export function ScoreHistoryChart() {
   const [data, setData] = useState<ScoreHistoryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const timeline = useTimeline()
 
   useEffect(() => {
     async function fetchHistory() {
@@ -366,23 +374,27 @@ export function ScoreHistoryChart() {
       })
     })
 
+    // Build set of IDs already added as special lines
     const specialIds = new Set([
       leaderEntry?.entryId,
       medianEntry?.entryId,
       ...userEntries.map(e => e.entryId),
     ].filter(Boolean) as string[])
 
+    // Add all other available players from the full roster
     let colorIdx = 0
-    for (const entry of entries) {
-      if (specialIds.has(entry.entryId)) continue
+    for (const player of data.availablePlayers ?? []) {
+      if (specialIds.has(player.id)) continue
+      // Check if this player's data is already loaded
+      const hasData = !!data.entries[player.id]
       lines.push({
-        id: entry.entryId,
-        label: entry.name,
+        id: player.id,
+        label: player.name,
         color: OTHER_PLAYER_PALETTE[colorIdx % OTHER_PLAYER_PALETTE.length],
         isDefault: false,
         isBenchmark: false,
-        dataKey: entry.entryId,
-        projDataKey: `${entry.entryId}_proj`,
+        dataKey: player.id,
+        projDataKey: `${player.id}_proj`,
       })
       colorIdx++
     }
@@ -390,12 +402,19 @@ export function ScoreHistoryChart() {
     return lines
   }, [data])
 
+  // Effective checkpoint for chart — follows timeline when scrubbed
+  const effectiveCpIdx = useMemo(() => {
+    if (!data) return -1
+    if (timeline && !timeline.isLive) return timeline.currentCheckpoint
+    return data.latestCheckpointIndex ?? -1
+  }, [data, timeline])
+
   // Build chart data — directly from per-checkpoint arrays
   const { chartData, isComplete } = useMemo(() => {
     if (!data) return { chartData: [], isComplete: true }
 
-    const latestCpIdx = data.latestCheckpointIndex ?? -1
-    const complete = latestCpIdx >= 10
+    const viewCpIdx = effectiveCpIdx
+    const complete = viewCpIdx >= 10
 
     const points: Record<string, number | string | null>[] = ALL_CHECKPOINT_LABELS.map(cpDef => {
       const point: Record<string, number | string | null> = {
@@ -405,16 +424,24 @@ export function ScoreHistoryChart() {
 
       // Entry scores and projections — directly indexed by checkpoint position
       for (const [entryId, entry] of Object.entries(data.entries)) {
-        // Actual score at this checkpoint (null if checkpoint hasn't happened)
-        point[entryId] = entry.scores[cpDef.index] ?? null
+        // Actual score: only show up to the current view checkpoint
+        if (cpDef.index <= viewCpIdx) {
+          point[entryId] = entry.scores[cpDef.index] ?? null
+        } else {
+          point[entryId] = null
+        }
 
-        // Projection at this checkpoint
-        point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
+        // Projection: show from view checkpoint forward
+        if (cpDef.index >= viewCpIdx) {
+          point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
+        } else {
+          point[`${entryId}_proj`] = null
+        }
       }
 
       // Optimal 8 lines — also indexed by checkpoint
       const opt = data.optimal8[cpDef.index]
-      if (opt && cpDef.index <= latestCpIdx) {
+      if (opt && cpDef.index <= viewCpIdx) {
         point.optimal8 = opt.rollingOptimal8Score ?? null
         point.hindsight = opt.hindsightOptimal8Score ?? null
       } else {
@@ -429,7 +456,7 @@ export function ScoreHistoryChart() {
     })
 
     return { chartData: points, isComplete: complete }
-  }, [data])
+  }, [data, effectiveCpIdx])
 
   // Visible line state
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() =>
@@ -453,11 +480,41 @@ export function ScoreHistoryChart() {
     [allLines, effectiveVisibleIds]
   )
 
+  // Fetch a specific player's data on demand when they're toggled on
+  const fetchPlayerData = useCallback(async (entryId: string) => {
+    if (!data || data.entries[entryId]) return // Already loaded
+    try {
+      const res = await fetch(`/api/scores/history?entryIds=${entryId}&includeLeaderMedian=false`)
+      if (!res.ok) return
+      const json: ScoreHistoryData = await res.json()
+      const newEntry = json.entries[entryId]
+      if (newEntry) {
+        setData(prev => prev ? {
+          ...prev,
+          entries: { ...prev.entries, [entryId]: newEntry },
+        } : prev)
+      }
+    } catch {
+      // silent fail
+    }
+  }, [data])
+
   const handleToggle = (id: string) => {
+    // Find the line definition to check if it's a non-loaded player
+    const line = allLines.find(l => l.id === id)
+    const entryId = line?.dataKey
+
     setVisibleIds(prev => {
       const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+        // Fetch data for this player if not already loaded
+        if (entryId && data && !data.entries[entryId]) {
+          fetchPlayerData(entryId)
+        }
+      }
       return next
     })
   }
@@ -480,8 +537,12 @@ export function ScoreHistoryChart() {
     )
   }
 
-  const latestCpIdx = data.latestCheckpointIndex ?? 0
-  const hasAnyData = latestCpIdx >= 0 && Object.keys(data.entries).length > 0
+  const apiLatestCpIdx = data.latestCheckpointIndex ?? 0
+  // Use timeline checkpoint if scrubbed back, otherwise API's latest
+  const latestCpIdx = timeline && !timeline.isLive
+    ? timeline.currentCheckpoint
+    : apiLatestCpIdx
+  const hasAnyData = apiLatestCpIdx >= 0 && Object.keys(data.entries).length > 0
 
   if (!hasAnyData) {
     return (
