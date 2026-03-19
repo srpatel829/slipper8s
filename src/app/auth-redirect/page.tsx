@@ -19,27 +19,23 @@ export default async function AuthRedirectPage() {
   if (!session.user.registrationComplete) redirect("/register")
 
   // Determine where to send them based on season state
-  try {
-    const settings = await prisma.appSettings.findUnique({
-      where: { id: "main" },
-      select: { currentSeasonId: true, picksDeadline: true },
+  const settings = await prisma.appSettings.findUnique({
+    where: { id: "main" },
+    select: { currentSeasonId: true, picksDeadline: true },
+  })
+  if (settings?.currentSeasonId) {
+    const season = await prisma.season.findUnique({
+      where: { id: settings.currentSeasonId },
+      select: { status: true },
     })
-    if (settings?.currentSeasonId) {
-      const season = await prisma.season.findUnique({
-        where: { id: settings.currentSeasonId },
-        select: { status: true },
-      })
-      const status = season?.status ?? ""
-      if (["LOCKED", "ACTIVE", "COMPLETED"].includes(status)) {
-        redirect("/leaderboard")
-      }
-      if (status === "REGISTRATION") {
-        const deadlinePassed = settings.picksDeadline && new Date() > new Date(settings.picksDeadline)
-        redirect(deadlinePassed ? "/leaderboard" : "/picks")
-      }
+    const status = season?.status ?? ""
+    if (["LOCKED", "ACTIVE", "COMPLETED"].includes(status)) {
+      redirect("/leaderboard")
     }
-  } catch {
-    // Fall through to default
+    if (status === "REGISTRATION") {
+      const deadlinePassed = settings.picksDeadline && new Date() > new Date(settings.picksDeadline)
+      redirect(deadlinePassed ? "/leaderboard" : "/picks")
+    }
   }
 
   redirect("/leaderboard")
