@@ -3,26 +3,20 @@
 /**
  * ScoreHistoryChart — Live score history for the authenticated leaderboard.
  *
- * Fetches data from /api/scores/history and renders a line chart matching
- * the demo's LeaderboardHistoryChart design:
+ * Fetches data from /api/scores/history and renders a line chart.
  *
- * 5 default lines:
+ * Lines:
  * 1. Optimal 8 (Rolling) — solid blue
  * 2. Optimal 8 (Final/Hindsight) — solid orange (only after tournament)
  * 3. Leader — solid green
  * 4. Median — solid purple
- * 5. Your entries — solid yellow/warm colors (each entry gets distinct color)
+ * 5. Your entries — solid yellow/warm colors
  *
  * Solid lines = actual scores at completed checkpoints.
- * Dashed lines = projected optimal trajectory (max possible future score via PPR).
+ * Dashed lines = projected optimal trajectory (PPR-based).
  *
- * Features:
- * - All 11 checkpoint positions shown on X-axis (past + future)
- * - Vertical dashed gridlines at checkpoints only, no horizontal gridlines
- * - "NOW" marker at current checkpoint
- * - Dashed projection lines from current score to max possible score
- * - Player filter dropdown with search and Benchmarks/Players sections
- * - Legend with line style explanation
+ * X-axis = 11 checkpoint positions (Pre-Tournament through Championship).
+ * Data is per-checkpoint (not per-game).
  */
 
 import { useEffect, useState, useMemo } from "react"
@@ -57,43 +51,23 @@ const ALL_CHECKPOINT_LABELS = [
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Checkpoint {
-  id: string
-  gameIndex: number
-  roundLabel: string
-  isSession: boolean
-  createdAt: string
-}
-
-interface EntrySnapshot {
-  score: number
-  rank: number
-  percentile: number
-  gameId: string | null
-  round: number | null
-  savedAt: string
-}
-
 interface EntryHistory {
   entryId: string
   name: string
   isCurrentUser: boolean
   isLeader: boolean
   isMedian: boolean
-  snapshots: EntrySnapshot[]
-  projections: (number | null)[]
+  scores: (number | null)[]       // length 11, indexed by checkpoint (0-10)
+  projections: (number | null)[]  // length 11, indexed by checkpoint (0-10)
 }
 
 interface Optimal8Point {
-  checkpointId: string
-  gameIndex: number
-  roundLabel: string
+  checkpointIndex: number
   rollingOptimal8Score: number | null
   hindsightOptimal8Score: number | null
 }
 
 interface ScoreHistoryData {
-  checkpoints: Checkpoint[]
   entries: Record<string, EntryHistory>
   optimal8: Optimal8Point[]
   latestCheckpointIndex: number
@@ -416,57 +390,38 @@ export function ScoreHistoryChart() {
     return lines
   }, [data])
 
-  // Build chart data across ALL 11 checkpoint positions
+  // Build chart data — directly from per-checkpoint arrays
   const { chartData, isComplete } = useMemo(() => {
     if (!data) return { chartData: [], isComplete: true }
 
     const latestCpIdx = data.latestCheckpointIndex ?? -1
     const complete = latestCpIdx >= 10
 
-    // Build a map of checkpoint gameIndex → index in the API's checkpoint array
-    const cpDataMap = new Map<number, number>()
-    for (let i = 0; i < data.checkpoints.length; i++) {
-      cpDataMap.set(data.checkpoints[i].gameIndex, i)
-    }
-
-    // Create data points for all 11 checkpoint positions
     const points: Record<string, number | string | null>[] = ALL_CHECKPOINT_LABELS.map(cpDef => {
       const point: Record<string, number | string | null> = {
         index: cpDef.index,
         label: cpDef.full,
       }
 
-      const dataIdx = cpDataMap.get(cpDef.index)
-      const isActual = cpDef.index <= latestCpIdx
-      const isProjection = cpDef.index >= latestCpIdx
-
-      // Entry scores: actual (solid) and projected (dashed)
+      // Entry scores and projections — directly indexed by checkpoint position
       for (const [entryId, entry] of Object.entries(data.entries)) {
-        if (isActual && dataIdx !== undefined) {
-          const snapshot = entry.snapshots[dataIdx]
-          point[entryId] = snapshot?.score ?? null
-        } else {
-          point[entryId] = null
-        }
+        // Actual score at this checkpoint (null if checkpoint hasn't happened)
+        point[entryId] = entry.scores[cpDef.index] ?? null
 
-        // Projection data from the API
-        if (isProjection && entry.projections) {
-          point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
-        } else {
-          point[`${entryId}_proj`] = null
-        }
+        // Projection at this checkpoint
+        point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
       }
 
-      // Optimal 8 lines
-      if (dataIdx !== undefined) {
-        const opt = data.optimal8[dataIdx]
-        point.optimal8 = isActual ? (opt?.rollingOptimal8Score ?? null) : null
-        point.hindsight = isActual ? (opt?.hindsightOptimal8Score ?? null) : null
+      // Optimal 8 lines — also indexed by checkpoint
+      const opt = data.optimal8[cpDef.index]
+      if (opt && cpDef.index <= latestCpIdx) {
+        point.optimal8 = opt.rollingOptimal8Score ?? null
+        point.hindsight = opt.hindsightOptimal8Score ?? null
       } else {
         point.optimal8 = null
         point.hindsight = null
       }
-      // No projection for optimal 8 benchmarks (they're computed from actual game results)
+      // No projection for optimal 8 benchmarks
       point.optimal8_proj = null
       point.hindsight_proj = null
 
@@ -520,22 +475,21 @@ export function ScoreHistoryChart() {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-        {data?.checkpoints?.length === 0
-          ? "No game results yet \u2014 check back when the tournament starts"
-          : "Could not load score history"}
+        Could not load score history
       </div>
     )
   }
 
-  if (data.checkpoints.length === 0) {
+  const latestCpIdx = data.latestCheckpointIndex ?? 0
+  const hasAnyData = latestCpIdx >= 0 && Object.keys(data.entries).length > 0
+
+  if (!hasAnyData) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
         No game results yet — check back when the tournament starts
       </div>
     )
   }
-
-  const latestCpIdx = data.latestCheckpointIndex ?? 0
 
   // Compute y-axis max from visible lines (both actual and projected)
   const yMax = Math.max(
@@ -602,7 +556,7 @@ export function ScoreHistoryChart() {
             ))}
 
             {/* "NOW" marker at the latest checkpoint */}
-            {!isComplete && (
+            {!isComplete && latestCpIdx >= 0 && (
               <ReferenceLine
                 x={latestCpIdx}
                 stroke={COLOR_OPTIMAL_ROLLING}
@@ -686,7 +640,7 @@ export function ScoreHistoryChart() {
 
       {/* Stats footer */}
       <div className="text-xs text-muted-foreground">
-        {data.checkpoints.length} checkpoints completed | {visibleLines.length} lines visible
+        {latestCpIdx >= 0 ? `Through ${ALL_CHECKPOINT_LABELS[latestCpIdx]?.full ?? `checkpoint ${latestCpIdx}`}` : "Pre-tournament"} | {visibleLines.length} lines visible
       </div>
     </div>
   )
