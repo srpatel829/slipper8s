@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select"
 import { Check, X, Loader2, Heart, Trophy } from "lucide-react"
 import { TeamCombobox } from "@/components/ui/team-combobox"
-import { COUNTRIES } from "@/lib/countries"
+import { CountryCombobox } from "@/components/ui/country-combobox"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -243,16 +243,7 @@ export default function RegisterPage() {
             {/* Country */}
             <div className="space-y-1.5">
               <Label className="text-sm">Country</Label>
-              <Select value={country} onValueChange={setCountry}>
-                <SelectTrigger className="h-10 bg-muted/50 border-border">
-                  <SelectValue placeholder="Select country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CountryCombobox value={country} onChange={setCountry} />
               <p className="text-xs text-muted-foreground">See how you rank among players in your country</p>
             </div>
 
