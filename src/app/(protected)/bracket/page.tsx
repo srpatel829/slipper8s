@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma"
-import { auth } from "@/lib/auth"
 import { LiveBracketWrapper } from "@/components/bracket/live-bracket-wrapper"
 import { PreTournamentBracketWrapper } from "@/components/bracket/pre-tournament-bracket-wrapper"
 import { GitBranch } from "lucide-react"
@@ -16,8 +15,6 @@ const ROUND_NAMES: Record<number, string> = {
 }
 
 export default async function BracketPage() {
-  const session = await auth()
-
   // Get teams, games, and play-in slots from database
   const [teams, games, playInSlots] = await Promise.all([
     prisma.team.findMany({
@@ -39,24 +36,6 @@ export default async function BracketPage() {
       },
     }),
   ])
-
-  // Get user's picks to highlight on the bracket
-  let userPickTeamIds: string[] = []
-  if (session?.user) {
-    const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
-    if (settings?.currentSeasonId) {
-      const entry = await prisma.entry.findFirst({
-        where: { userId: session.user.id, seasonId: settings.currentSeasonId },
-        include: { entryPicks: { select: { teamId: true } } },
-        orderBy: { entryNumber: "asc" },
-      })
-      if (entry) {
-        userPickTeamIds = entry.entryPicks
-          .filter(ep => ep.teamId)
-          .map(ep => ep.teamId!)
-      }
-    }
-  }
 
   // Filter out play-in games (round 0) for bracket display purposes
   const tournamentGames = games.filter(g => g.round > 0)
@@ -118,11 +97,6 @@ export default async function BracketPage() {
                     ({Math.max(lastGame.team1Score, lastGame.team2Score)}–{Math.min(lastGame.team1Score, lastGame.team2Score)})
                   </span>
                 )}
-              </div>
-            )}
-            {userPickTeamIds.length > 0 && (
-              <div className="px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 text-[11px] text-blue-600 dark:text-blue-400">
-                Your picks highlighted
               </div>
             )}
           </div>
@@ -230,7 +204,6 @@ export default async function BracketPage() {
             winnerShortName: s.winner?.shortName ?? null,
             winnerLogoUrl: s.winner?.logoUrl ?? null,
           }))}
-          userPickTeamIds={userPickTeamIds}
         />
       )}
     </div>

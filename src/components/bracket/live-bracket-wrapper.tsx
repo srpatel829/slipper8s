@@ -1,16 +1,17 @@
 "use client"
 
 /**
- * LiveBracketWrapper — Renders TournamentBracket with live game data.
+ * LiveBracketWrapper — Interactive bracket for the bracket page.
  *
- * Converts DB TournamentGame records into DemoGameEvent[] format
- * so TournamentBracket can render them with the same tree bracket layout
- * used by the simulator.
+ * Uses AdvancingBracket in "simulator" mode so users can click to pick
+ * winners and fill out the bracket. Completed games from the DB are
+ * converted to locked game events that can't be changed.
  */
 
-import { useMemo } from "react"
-import { TournamentBracket } from "@/components/bracket/tournament-bracket"
+import { useState, useMemo } from "react"
+import { AdvancingBracket } from "@/components/bracket/advancing-bracket"
 import type { DemoGameEvent } from "@/lib/demo-game-sequence"
+import type { PlayInSlotDisplay } from "@/types"
 
 interface TeamData {
   id: string
@@ -56,7 +57,6 @@ interface Props {
   teams: TeamData[]
   games: GameData[]
   playInSlots: PlayInSlotData[]
-  userPickTeamIds: string[]
 }
 
 const ROUND_LABELS: Record<number, string> = {
@@ -68,11 +68,19 @@ const ROUND_LABELS: Record<number, string> = {
   6: "Championship",
 }
 
-export function LiveBracketWrapper({ teams, games, playInSlots, userPickTeamIds }: Props) {
-  // Convert completed DB games into DemoGameEvent[] for TournamentBracket
-  const { gameSequence, gameIndex, bracketTeams } = useMemo(() => {
+export function LiveBracketWrapper({ teams, games, playInSlots }: Props) {
+  const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
+
+  function pickGame(gameId: string, winnerId: string) {
+    setGamePicks(prev => ({ ...prev, [gameId]: winnerId }))
+  }
+
+  // Build team list and game sequence from live data
+  const { gameSequence, gameIndex, bracketTeams, playInSlotDisplays } = useMemo(() => {
     // Build team list: non-play-in teams + resolved play-in winners or synthetic combined entries
     const teamList: TeamData[] = teams.filter(t => !t.isPlayIn)
+
+    const slotDisplays: PlayInSlotDisplay[] = []
 
     for (const slot of playInSlots) {
       if (slot.winnerId && slot.winnerName && slot.winnerShortName) {
@@ -88,17 +96,16 @@ export function LiveBracketWrapper({ teams, games, playInSlots, userPickTeamIds 
           isPlayIn: false,
         })
       } else {
-        // Unresolved play-in — show combined name
-        teamList.push({
-          id: `playin-${slot.id}`,
-          name: `${slot.team1Name}/${slot.team2Name}`,
-          shortName: `${slot.team1ShortName}/${slot.team2ShortName}`,
+        // Unresolved play-in — show combined name via play-in slot display
+        slotDisplays.push({
+          id: slot.id,
           seed: slot.seed,
           region: slot.region,
-          logoUrl: null,
-          eliminated: false,
-          wins: 0,
-          isPlayIn: false,
+          team1ShortName: slot.team1ShortName,
+          team2ShortName: slot.team2ShortName,
+          team1LogoUrl: null,
+          team2LogoUrl: null,
+          winnerId: null,
         })
       }
     }
@@ -106,7 +113,7 @@ export function LiveBracketWrapper({ teams, games, playInSlots, userPickTeamIds 
     // Convert completed games (round > 0) to DemoGameEvent format
     const completedGames = games
       .filter(g => g.round > 0 && g.isComplete && g.winner && g.team1 && g.team2)
-      .sort((a, b) => a.round - b.round) // sort by round so state computes correctly
+      .sort((a, b) => a.round - b.round)
 
     const sequence: DemoGameEvent[] = completedGames.map((g, i) => {
       const winner = g.winner!
@@ -138,16 +145,20 @@ export function LiveBracketWrapper({ teams, games, playInSlots, userPickTeamIds 
       gameSequence: sequence,
       gameIndex: sequence.length - 1,
       bracketTeams: teamList,
+      playInSlotDisplays: slotDisplays,
     }
   }, [teams, games, playInSlots])
 
   return (
-    <TournamentBracket
-      teams={bracketTeams}
+    <AdvancingBracket
+      teams={bracketTeams as Parameters<typeof AdvancingBracket>[0]["teams"]}
+      mode="simulator"
+      gamePicks={gamePicks}
+      onPickGame={pickGame}
       gameSequence={gameSequence}
       gameIndex={gameIndex}
       isPreTournament={gameSequence.length === 0}
-      userPickTeamIds={userPickTeamIds}
+      playInSlots={playInSlotDisplays}
     />
   )
 }
