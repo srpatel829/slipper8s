@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select"
 import { Check, X, Loader2, Heart, Trophy } from "lucide-react"
 import { TeamCombobox } from "@/components/ui/team-combobox"
+import { COUNTRIES } from "@/lib/countries"
 
 const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado",
@@ -27,12 +28,6 @@ const US_STATES = [
   "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
   "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington",
   "West Virginia", "Wisconsin", "Wyoming", "District of Columbia",
-]
-
-const COUNTRIES = [
-  "United States", "Canada", "United Kingdom", "Australia", "India",
-  "Germany", "France", "Brazil", "Mexico", "Japan", "South Korea",
-  "China", "Nigeria", "South Africa", "Philippines", "Other",
 ]
 
 function generateUsername(firstName: string, lastName: string): string {
