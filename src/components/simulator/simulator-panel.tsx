@@ -348,6 +348,7 @@ export function SimulatorPanel({
   const [gamePicks, setGamePicks] = useState<Record<string, string>>({})
   const [lbFilter, setLbFilter] = useState<string>("global")
   const [lbLeagueId, setLbLeagueId] = useState<string>("")
+  const [lbSubValue, setLbSubValue] = useState<string>("")
   // Rounds that are collapsed (defaults: completed rounds)
   const [collapsedRounds, setCollapsedRounds] = useState<Set<number>>(() => new Set())
   const searchParams = useSearchParams()
@@ -515,6 +516,44 @@ export function SimulatorPanel({
     ).map((s, i) => ({ ...s, rank: i + 1 }))
   }, [initialLeaderboard, hypothetical])
 
+  // ── Available sub-values for each dimension ────────────────────────────────
+  const dimensionOptions = useMemo(() => {
+    const extract = (key: "country" | "state" | "gender" | "favoriteTeam" | "conference") => {
+      const vals = new Set<string>()
+      for (const e of simLeaderboardFull) {
+        const v = e[key]
+        if (v) vals.add(v)
+      }
+      return [...vals].sort()
+    }
+    return {
+      country: extract("country"),
+      state: extract("state"),
+      gender: extract("gender"),
+      fanBase: extract("favoriteTeam"),
+      conference: extract("conference"),
+    }
+  }, [simLeaderboardFull])
+
+  // ── Default sub-value for a dimension (current user's value) ──────────────
+  const getDefaultSubValue = useCallback((dim: string) => {
+    const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
+    if (!myEntry) return ""
+    if (dim === "country") return myEntry.country ?? ""
+    if (dim === "state") return myEntry.state ?? ""
+    if (dim === "gender") return myEntry.gender ?? ""
+    if (dim === "fanBase") return myEntry.favoriteTeam ?? ""
+    if (dim === "conference") return myEntry.conference ?? ""
+    return ""
+  }, [simLeaderboardFull, currentUserId])
+
+  // ── Effective sub-value (explicit selection or default) ───────────────────
+  const effectiveSubValue = useMemo(() => {
+    if (lbFilter === "global" || lbFilter === "league") return ""
+    if (lbSubValue) return lbSubValue
+    return getDefaultSubValue(lbFilter)
+  }, [lbFilter, lbSubValue, getDefaultSubValue])
+
   // ── Filter leaderboard by selected dimension ─────────────────────────────
   const simLeaderboard = useMemo(() => {
     if (lbFilter === "global") return simLeaderboardFull
@@ -524,23 +563,21 @@ export function SimulatorPanel({
         ? simLeaderboardFull.filter(e => e.leagueIds?.includes(lbLeagueId))
         : simLeaderboardFull
     } else if (lbFilter === "country") {
-      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
-      const myCountry = myEntry?.country
-      filtered = myCountry ? simLeaderboardFull.filter(e => e.country === myCountry) : simLeaderboardFull
+      filtered = effectiveSubValue ? simLeaderboardFull.filter(e => e.country === effectiveSubValue) : simLeaderboardFull
     } else if (lbFilter === "state") {
-      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
-      const myState = myEntry?.state
-      filtered = myState ? simLeaderboardFull.filter(e => e.state === myState) : simLeaderboardFull
+      filtered = effectiveSubValue ? simLeaderboardFull.filter(e => e.state === effectiveSubValue) : simLeaderboardFull
+    } else if (lbFilter === "gender") {
+      filtered = effectiveSubValue ? simLeaderboardFull.filter(e => e.gender === effectiveSubValue) : simLeaderboardFull
+    } else if (lbFilter === "fanBase") {
+      filtered = effectiveSubValue ? simLeaderboardFull.filter(e => e.favoriteTeam === effectiveSubValue) : simLeaderboardFull
     } else if (lbFilter === "conference") {
-      const myEntry = simLeaderboardFull.find(e => e.userId === currentUserId)
-      const myConf = myEntry?.conference
-      filtered = myConf ? simLeaderboardFull.filter(e => e.conference === myConf) : simLeaderboardFull
+      filtered = effectiveSubValue ? simLeaderboardFull.filter(e => e.conference === effectiveSubValue) : simLeaderboardFull
     } else {
       filtered = simLeaderboardFull
     }
     // Re-rank within the filter
     return filtered.map((s, i) => ({ ...s, rank: i + 1 }))
-  }, [simLeaderboardFull, lbFilter, lbLeagueId, currentUserId])
+  }, [simLeaderboardFull, lbFilter, lbLeagueId, effectiveSubValue])
 
   const hasChanges = Object.keys(gamePicks).length > 0
   const futureCount = allGames.filter(g => !g.isLocked).length
@@ -798,27 +835,41 @@ export function SimulatorPanel({
                 {simLeaderboard.length} players
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              <Select value={lbFilter} onValueChange={(v) => { setLbFilter(v); setLbLeagueId(""); }}>
-                <SelectTrigger className="h-7 text-[11px] w-auto min-w-[100px]">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select value={lbFilter} onValueChange={(v) => { setLbFilter(v); setLbLeagueId(""); setLbSubValue(""); }}>
+                <SelectTrigger className="h-7 text-[11px] w-auto min-w-[90px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="global">Global</SelectItem>
-                  <SelectItem value="country">My Country</SelectItem>
-                  <SelectItem value="state">My State</SelectItem>
-                  <SelectItem value="conference">My Conference</SelectItem>
-                  {(userLeagues ?? []).length > 0 && <SelectItem value="league">Private League</SelectItem>}
+                  <SelectItem value="country">Country</SelectItem>
+                  <SelectItem value="state">State</SelectItem>
+                  <SelectItem value="gender">Gender</SelectItem>
+                  <SelectItem value="fanBase">Fan Base</SelectItem>
+                  <SelectItem value="conference">Conference</SelectItem>
+                  {(userLeagues ?? []).length > 0 && <SelectItem value="league">League</SelectItem>}
                 </SelectContent>
               </Select>
               {lbFilter === "league" && (userLeagues ?? []).length > 0 && (
                 <Select value={lbLeagueId} onValueChange={setLbLeagueId}>
-                  <SelectTrigger className="h-7 text-[11px] w-auto min-w-[100px]">
+                  <SelectTrigger className="h-7 text-[11px] w-auto min-w-[90px]">
                     <SelectValue placeholder="Select league" />
                   </SelectTrigger>
                   <SelectContent>
                     {(userLeagues ?? []).map(l => (
                       <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {["country", "state", "gender", "fanBase", "conference"].includes(lbFilter) && (
+                <Select value={effectiveSubValue} onValueChange={setLbSubValue}>
+                  <SelectTrigger className="h-7 text-[11px] w-auto min-w-[90px] max-w-[140px]">
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(dimensionOptions[lbFilter as keyof typeof dimensionOptions] ?? []).map(val => (
+                      <SelectItem key={val} value={val}>{val}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

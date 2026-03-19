@@ -414,9 +414,9 @@ function CenterColumn({
                 Final Four
             </div>
 
-            {/* F4 Game 1: East/West */}
+            {/* F4 Game 1: East/South */}
             <div className="w-full space-y-px mb-1">
-                <div className="text-[7px] text-muted-foreground/35 text-center font-mono">East / West</div>
+                <div className="text-[7px] text-muted-foreground/35 text-center font-mono">East / South</div>
                 <MatchupPair
                     topTeam={f4Data[0].topTeam}
                     botTeam={f4Data[0].botTeam}
@@ -467,9 +467,9 @@ function CenterColumn({
                 <div className="w-px h-3 bg-muted-foreground" />
             </div>
 
-            {/* F4 Game 2: South/Midwest */}
+            {/* F4 Game 2: West/Midwest */}
             <div className="w-full space-y-px">
-                <div className="text-[7px] text-muted-foreground/35 text-center font-mono">South / Midwest</div>
+                <div className="text-[7px] text-muted-foreground/35 text-center font-mono">West / Midwest</div>
                 <MatchupPair
                     topTeam={f4Data[1].topTeam}
                     botTeam={f4Data[1].botTeam}

@@ -374,10 +374,10 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
     include: {
       entryPicks: {
         include: {
-          team: { select: { id: true, seed: true, wins: true, eliminated: true, region: true } },
+          team: { select: { id: true, espnId: true, seed: true, wins: true, eliminated: true, region: true } },
           playInSlot: {
             include: {
-              winner: { select: { id: true, seed: true, wins: true, eliminated: true, region: true } },
+              winner: { select: { id: true, espnId: true, seed: true, wins: true, eliminated: true, region: true } },
             },
           },
         },
@@ -386,7 +386,10 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
   })
 
   // Build a team info map for max possible score calculation
+  // Also build DB ID → ESPN ID map for Silver Bulletin expected score lookup
   const teamInfoMap = new Map<string, TeamBracketInfo>()
+  const dbIdToEspnId = new Map<string, string>()
+  const espnIdTeamStates = new Map<string, { wins: number; eliminated: boolean }>()
   for (const entry of entries) {
     for (const pick of entry.entryPicks) {
       const team = pick.team ?? pick.playInSlot?.winner ?? null
@@ -397,6 +400,10 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
         wins: team.wins,
         eliminated: team.eliminated,
       })
+      if (team.espnId) {
+        dbIdToEspnId.set(team.id, team.espnId)
+        espnIdTeamStates.set(team.espnId, { wins: team.wins, eliminated: team.eliminated })
+      }
     }
   }
 
@@ -423,9 +430,10 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
       // Compute collision-aware max possible score
       const maxResult = computeMaxPossibleScore(pickTeamIds, teamInfoMap)
 
-      // Compute expected score from Silver Bulletin probabilities
+      // Compute expected score from Silver Bulletin probabilities (uses ESPN IDs)
+      const pickEspnIds = pickTeamIds.map(id => dbIdToEspnId.get(id)).filter(Boolean) as string[]
       const preTournament = [...teamInfoMap.values()].every(t => t.wins === 0)
-      const expectedScore = calculateEntryExpectedScore(pickTeamIds, teamInfoMap, preTournament)
+      const expectedScore = calculateEntryExpectedScore(pickEspnIds, espnIdTeamStates, preTournament)
 
       return prisma.entry.update({
         where: { id: entry.id },

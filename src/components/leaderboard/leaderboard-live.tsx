@@ -14,12 +14,21 @@ import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { LeaderboardEntry } from "@/types"
 
+export interface UserProfile {
+  country: string | null
+  state: string | null
+  gender: string | null
+  favoriteTeam: string | null
+  conference: string | null
+}
+
 interface LeaderboardLiveProps {
   initialData: LeaderboardEntry[]
   currentUserId?: string
   teams: Array<{ id: string; name: string }>
   userLeagues?: Array<{ id: string; name: string }>
   optimal8?: Optimal8Data
+  userProfile?: UserProfile | null
 }
 
 export function LeaderboardLive({
@@ -28,6 +37,7 @@ export function LeaderboardLive({
   teams,
   userLeagues,
   optimal8,
+  userProfile,
 }: LeaderboardLiveProps) {
   const [entries, setEntries] = useState(initialData)
   const [loading, setLoading] = useState(false)
@@ -79,6 +89,7 @@ export function LeaderboardLive({
         currentUserId={currentUserId ?? ""}
         teams={teams}
         userLeagues={userLeagues}
+        userProfile={userProfile}
         renderLeaderboard={(filteredEntries) => (
           <LeaderboardSample
             entries={filteredEntries}

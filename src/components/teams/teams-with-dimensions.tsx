@@ -10,12 +10,21 @@ import { TeamsTable, type TeamRow } from "@/components/teams/teams-table"
 import { LeaderboardDimensionTabs } from "@/components/leaderboard/leaderboard-dimension-tabs"
 import type { LeaderboardEntry } from "@/types"
 
+interface UserProfile {
+  country: string | null
+  state: string | null
+  gender: string | null
+  favoriteTeam: string | null
+  conference: string | null
+}
+
 interface TeamsWithDimensionsProps {
   baseTeams: TeamRow[]
   leaderboard: LeaderboardEntry[]
   currentUserId: string
   teams: Array<{ id: string; name: string }>
   userLeagues?: Array<{ id: string; name: string }>
+  userProfile?: UserProfile | null
 }
 
 export function TeamsWithDimensions({
@@ -24,6 +33,7 @@ export function TeamsWithDimensions({
   currentUserId,
   teams,
   userLeagues,
+  userProfile,
 }: TeamsWithDimensionsProps) {
   // Pre-tournament if no entries have scores yet
   const isPreTournament = useMemo(
@@ -37,6 +47,7 @@ export function TeamsWithDimensions({
       currentUserId={currentUserId}
       teams={teams}
       userLeagues={userLeagues}
+      userProfile={userProfile}
       renderLeaderboard={(filteredEntries) => {
         // Compute picker counts from filtered entries' picks
         const pickerCounts = new Map<string, number>()

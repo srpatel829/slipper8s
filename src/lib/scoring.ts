@@ -220,9 +220,10 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
     computeEntryScore(e, (entriesByUser.get(e.userId) ?? 1) > 1)
   )
 
-  // Sort: TPS desc, then currentScore desc as tiebreaker, then name asc
+  // Sort: currentScore desc (actual points), then maxPossibleScore desc as display tiebreaker, then name asc
+  // Rank is based on currentScore only — pre-tournament (all scores = 0) everyone is T1
   scores.sort(
-    (a, b) => b.tps - a.tps || b.currentScore - a.currentScore || a.name.localeCompare(b.name)
+    (a, b) => b.currentScore - a.currentScore || (b.maxPossibleScore ?? 0) - (a.maxPossibleScore ?? 0) || a.name.localeCompare(b.name)
   )
 
   const total = scores.length
@@ -231,12 +232,12 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
   const allCurrentScores = scores.map(s => s.currentScore)
   const allMaxPossibleScores = scores.map(s => s.maxPossibleScore ?? 0)
 
-  // Compute tied ranks: entries with the same TPS and currentScore share the same rank
+  // Compute tied ranks: entries with the same currentScore share the same rank
   return scores.map((s, i) => {
     // Find the first entry with the same score to determine tied rank
     let rank = i + 1
     for (let j = 0; j < i; j++) {
-      if (scores[j].tps === s.tps && scores[j].currentScore === s.currentScore) {
+      if (scores[j].currentScore === s.currentScore) {
         rank = j + 1
         break
       }

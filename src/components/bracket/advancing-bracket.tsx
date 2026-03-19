@@ -632,7 +632,7 @@ function SimCenterColumn({
     return (
         <div className="flex flex-col items-center gap-3 px-3 min-w-[150px]">
             <div className="text-[8px] font-bold uppercase tracking-widest text-muted-foreground/35">Final Four</div>
-            <div className="w-full">{renderBlock(f4Games[0], "East / West")}</div>
+            <div className="w-full">{renderBlock(f4Games[0], "East / South")}</div>
             <div className="w-full space-y-1">
                 <div className="text-[8px] font-bold text-primary/45 text-center uppercase tracking-widest">Championship</div>
                 {champGame ? (
@@ -662,7 +662,7 @@ function SimCenterColumn({
                     </div>
                 )}
             </div>
-            <div className="w-full">{renderBlock(f4Games[1], "South / Midwest")}</div>
+            <div className="w-full">{renderBlock(f4Games[1], "West / Midwest")}</div>
         </div>
     )
 }

@@ -40,6 +40,14 @@ import {
 // TYPES
 // ═══════════════════════════════════════════════════════════════════════════════
 
+interface UserProfile {
+  country: string | null
+  state: string | null
+  gender: string | null
+  favoriteTeam: string | null
+  conference: string | null
+}
+
 interface LeaderboardDimensionTabsProps {
   /** Full global leaderboard entries */
   entries: LeaderboardEntry[]
@@ -49,6 +57,8 @@ interface LeaderboardDimensionTabsProps {
   teams: Array<{ id: string; name: string }>
   /** User's leagues for Private Leagues tab */
   userLeagues?: Array<{ id: string; name: string }>
+  /** User's profile for default dimension values (fallback when entry data is missing) */
+  userProfile?: UserProfile | null
   /** Render callback for the leaderboard content */
   renderLeaderboard: (filteredEntries: LeaderboardEntry[]) => ReactNode
   /** Called whenever the filtered set of user IDs changes (for chart sync) */
@@ -147,6 +157,7 @@ export function LeaderboardDimensionTabs({
   currentUserId,
   teams,
   userLeagues = [],
+  userProfile,
   renderLeaderboard,
   onFilterChange,
 }: LeaderboardDimensionTabsProps) {
@@ -184,8 +195,25 @@ export function LeaderboardDimensionTabs({
     if (explicit) return explicit
 
     // Default to the logged-in player's own value
-    return getDefaultDimensionValue(currentUserId, entries, activeConfig, dimensionValues)
-  }, [activeDimension, subSelections, currentUserId, entries, activeConfig, dimensionValues, userLeagues])
+    const defaultFromEntries = getDefaultDimensionValue(currentUserId, entries, activeConfig, dimensionValues)
+
+    // If entry-based default returned "No Response" but we have userProfile data, try that
+    if (defaultFromEntries === "No Response" && userProfile) {
+      let profileValue: string | null = null
+      if (activeDimension === "fanBase") {
+        // userProfile.favoriteTeam is a team name; dimension values are team IDs
+        const teamMatch = teams.find(t => t.name === userProfile.favoriteTeam)
+        profileValue = teamMatch?.id ?? null
+      } else if (activeDimension === "conference") profileValue = userProfile.conference
+      else if (activeDimension === "country") profileValue = userProfile.country
+      else if (activeDimension === "state") profileValue = userProfile.state
+      else if (activeDimension === "gender") profileValue = userProfile.gender
+
+      if (profileValue && dimensionValues.includes(profileValue)) return profileValue
+    }
+
+    return defaultFromEntries
+  }, [activeDimension, subSelections, currentUserId, entries, activeConfig, dimensionValues, userLeagues, userProfile])
 
   // Filter and re-rank entries
   const filteredEntries = useMemo(

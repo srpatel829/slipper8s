@@ -385,8 +385,9 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
   const allMaxRanks = entries.map(e => e.maxRank).filter((v): v is number => v != null)
   const allFloorRanks = entries.map(e => e.floorRank).filter((v): v is number => v != null)
 
-  // Find the "You" entry
-  const youEntry = entries.find(e => e.userId === currentUserId)
+  // Find ALL of the current user's entries (multi-entry support)
+  const youEntries = entries.filter(e => e.userId === currentUserId)
+    .sort((a, b) => a.rank - b.rank) // best rank first
 
   // Full table sorted by rank
   const sortedEntries = [...entries].sort((a, b) => a.rank - b.rank)
@@ -459,10 +460,11 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
             {/* Optimal 8 (Final) */}
             {optimal8Final && <Optimal8Row data={optimal8Final} variant="final" isPreTournament={isPreTournament} />}
 
-            {/* You row */}
-            {youEntry && (
+            {/* You rows (all entries for current user) */}
+            {youEntries.map(entry => (
               <EntryRow
-                entry={youEntry}
+                key={`you-${entry.entryId}`}
+                entry={entry}
                 isYou
                 isFrozenYou
                 allRanks={allRanks}
@@ -471,7 +473,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 totalEntries={totalEntries}
                 isPreTournament={isPreTournament}
               />
-            )}
+            ))}
 
             {/* ═══ Blue divider ═══ */}
             <tr>

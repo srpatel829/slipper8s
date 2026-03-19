@@ -102,6 +102,9 @@ export async function POST(req: NextRequest) {
   })
   const entryNumber = existingEntries + 1
 
+  // Compute expected score before saving
+  const expectedScore = await computeExpectedScoreForPicks(picks)
+
   // Create entry + picks in a transaction
   const entry = await prisma.$transaction(async (tx) => {
     const newEntry = await tx.entry.create({
@@ -112,6 +115,7 @@ export async function POST(req: NextRequest) {
         entryNumber,
         charityPreference: charityPreference ?? null,
         draftInProgress: false,
+        expectedScore: expectedScore ?? 0,
       },
     })
 
@@ -217,11 +221,14 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Entry slips are locked for this season" }, { status: 400 })
   }
 
-  // Delete old picks and create new ones, update charity preference
+  // Compute expected score before saving
+  const expectedScore = await computeExpectedScoreForPicks(picks)
+
+  // Delete old picks and create new ones, update charity preference + expected score
   await prisma.$transaction([
     prisma.entry.update({
       where: { id: entryId },
-      data: { charityPreference: charityPreference ?? null, draftInProgress: false },
+      data: { charityPreference: charityPreference ?? null, draftInProgress: false, expectedScore: expectedScore ?? 0 },
     }),
     prisma.entryPick.deleteMany({ where: { entryId } }),
     prisma.entryPick.createMany({
@@ -460,6 +467,56 @@ async function sendPickConfirmationEmail(userId: string, entryId: string) {
     expectedScore,
     archetypes,
   )
+}
+
+/** Compute expected score for a set of picks (team IDs + play-in slot IDs) */
+async function computeExpectedScoreForPicks(
+  picks: Array<{ teamId?: string; playInSlotId?: string }>
+): Promise<number | null> {
+  const teamIds = picks.filter(p => p.teamId).map(p => p.teamId!)
+  const slotIds = picks.filter(p => p.playInSlotId).map(p => p.playInSlotId!)
+
+  // Fetch teams with ESPN IDs
+  const teams = teamIds.length > 0
+    ? await prisma.team.findMany({
+        where: { id: { in: teamIds } },
+        select: { id: true, espnId: true, wins: true, eliminated: true },
+      })
+    : []
+
+  const sbTeamIds: string[] = []
+  const teamStates = new Map<string, { wins: number; eliminated: boolean }>()
+
+  for (const t of teams) {
+    const espnId = t.espnId ?? t.id
+    sbTeamIds.push(espnId)
+    teamStates.set(espnId, { wins: t.wins ?? 0, eliminated: t.eliminated ?? false })
+  }
+
+  // Resolve play-in slots
+  if (slotIds.length > 0) {
+    const slots = await prisma.playInSlot.findMany({
+      where: { id: { in: slotIds } },
+      include: { team1: true, team2: true, winner: true },
+    })
+    for (const slot of slots) {
+      if (slot.winner) {
+        const espnId = slot.winner.espnId ?? slot.winner.id
+        sbTeamIds.push(espnId)
+        teamStates.set(espnId, { wins: slot.winner.wins ?? 0, eliminated: slot.winner.eliminated ?? false })
+      } else {
+        for (const t of [slot.team1, slot.team2]) {
+          const espnId = t.espnId ?? t.id
+          sbTeamIds.push(espnId)
+          teamStates.set(espnId, { wins: 0, eliminated: false })
+        }
+      }
+    }
+  }
+
+  const allZeroWins = [...teamStates.values()].every(t => t.wins === 0)
+  const preTournament = allZeroWins && ![...teamStates.values()].some(t => t.eliminated)
+  return calculateEntryExpectedScore(sbTeamIds, teamStates, preTournament)
 }
 
 function validatePicks(picks: unknown): string | null {

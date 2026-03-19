@@ -140,6 +140,7 @@ async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
 
   const allTeams = await prisma.team.findMany({
     where: {
+      seed: { lt: 17 }, // Exclude placeholder teams (seed 99, etc.)
       OR: [
         { isPlayIn: false },
         { id: { in: playInWinnerIds } },
@@ -305,6 +306,7 @@ export default async function LeaderboardPage() {
         teams={teams}
         userLeagues={userLeagues}
         optimal8={optimal8}
+        userProfile={userProfile}
       />
 
       {/* Score history chart — collapsible */}

@@ -123,9 +123,26 @@ export default async function TeamsPage() {
     select: { winnerId: true },
   })).map(s => s.winnerId!).filter(Boolean)
 
+  // Get user profile for dimension defaults
+  const userProfile = session?.user?.id
+    ? await (async () => {
+        const u = await prisma.user.findUnique({
+          where: { id: session.user!.id },
+          select: { country: true, state: true, gender: true, favoriteTeamName: true, favoriteTeam: { select: { name: true, conference: true } } },
+        })
+        if (!u) return null
+        return {
+          country: u.country, state: u.state, gender: u.gender,
+          favoriteTeam: u.favoriteTeam?.name ?? u.favoriteTeamName ?? null,
+          conference: u.favoriteTeam?.conference ?? null,
+        }
+      })()
+    : null
+
   const [teams, leaderboard, userLeagues] = await Promise.all([
     prisma.team.findMany({
       where: {
+        seed: { lt: 17 }, // Exclude placeholder teams (seed 99, etc.)
         OR: [
           { isPlayIn: false },
           { id: { in: playInWinnerIds } },
@@ -179,6 +196,7 @@ export default async function TeamsPage() {
         currentUserId={session?.user?.id ?? ""}
         teams={teamOptions}
         userLeagues={userLeagues}
+        userProfile={userProfile}
       />
     </div>
   )
