@@ -157,7 +157,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background bg-court p-4">
+    <div className="min-h-screen flex items-start sm:items-center justify-center bg-background bg-court p-4 py-8 overflow-y-auto">
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div
@@ -365,6 +365,20 @@ export default function RegisterPage() {
             {error && (
               <div className="text-sm text-red-500 bg-red-500/10 rounded-lg px-3 py-2">
                 {error}
+              </div>
+            )}
+
+            {/* Inline validation hint near submit button */}
+            {!submitting && (usernameStatus === "taken" || usernameStatus === "invalid") && (
+              <div className="text-sm text-amber-500 bg-amber-500/10 rounded-lg px-3 py-2">
+                {usernameStatus === "taken"
+                  ? "Username is already taken — please choose a different one above."
+                  : "Username must be 4–20 characters (letters, numbers, underscores only)."}
+              </div>
+            )}
+            {!submitting && (!firstName.trim() || !lastName.trim()) && (
+              <div className="text-sm text-amber-500 bg-amber-500/10 rounded-lg px-3 py-2">
+                First name and last name are required.
               </div>
             )}
 
