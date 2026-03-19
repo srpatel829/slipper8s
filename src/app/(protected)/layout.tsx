@@ -37,15 +37,8 @@ export default async function ProtectedLayout({ children }: { children: React.Re
       if (season?.status === "ACTIVE" || season?.status === "COMPLETED") {
         showTimeline = true
 
-        // Get latest checkpoint (gameIndex is now 0-10 checkpoint index)
-        const latestCp = await prisma.checkpoint.findFirst({
-          where: { seasonId: settings.currentSeasonId, isSession: true },
-          orderBy: { gameIndex: "desc" },
-          select: { gameIndex: true },
-        })
-        if (latestCp) {
-          latestCheckpoint = latestCp.gameIndex
-        }
+        // latestCheckpoint will be derived from checkpointBoundaries below
+        // (more reliable than querying DB checkpoints which may include stale records)
 
         // Get completed games in chronological order (R1+ only, not play-in)
         const games = await prisma.tournamentGame.findMany({
@@ -112,6 +105,16 @@ export default async function ProtectedLayout({ children }: { children: React.Re
           }
         }
       }
+
+        // Derive latestCheckpoint from computed boundaries (avoids stale DB checkpoint issues)
+        // Only count a checkpoint as "complete" if ALL games in that checkpoint's boundary have finished
+        const boundaryKeys = Object.keys(checkpointBoundaries).map(Number)
+        if (boundaryKeys.length > 0) {
+          latestCheckpoint = Math.max(...boundaryKeys)
+        } else if (completedGames.length > 0) {
+          // Games are happening but no checkpoint boundary completed yet — we're in checkpoint 0 territory
+          latestCheckpoint = 0
+        }
     }
   } catch {
     // No-op: timeline won't show if DB/schema isn't ready
@@ -126,10 +129,10 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     >
       <div className="min-h-screen flex flex-col bg-background bg-court">
         <Navbar session={session} />
-        <main className={`flex-1 container mx-auto px-4 py-6 max-w-5xl ${showTimeline ? "pb-28 md:pb-16" : "pb-20 md:pb-6"}`}>
+        <main className={`flex-1 container mx-auto px-4 py-6 max-w-5xl ${showTimeline ? "pb-32 md:pb-36" : "pb-20 md:pb-6"}`}>
           {children}
         </main>
-        <footer className="border-t border-border/40 py-4 text-center text-[11px] text-muted-foreground/60 space-x-4 hidden md:block">
+        <footer className={`border-t border-border/40 py-4 text-center text-[11px] text-muted-foreground/60 space-x-4 hidden ${showTimeline ? "!hidden" : "md:block"}`}>
           <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
           <span className="text-border">·</span>
           <Link href="/commissioner" className="hover:text-foreground transition-colors">Letter from Commissioner</Link>

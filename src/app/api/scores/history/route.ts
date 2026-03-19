@@ -9,21 +9,12 @@ import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
  * GET /api/scores/history — Score history for the chart/timeline feature
  *
  * Returns:
- * - checkpoints: all session checkpoints for the season
- * - entries: score snapshots for requested entries
- * - optimal8: rolling optimal 8 score at each checkpoint (from dimension snapshots)
+ * - checkpoints: all session checkpoints for the season (filtered to valid indices 0-10)
+ * - entries: score snapshots for requested entries, with projection trajectories
+ * - optimal8: rolling optimal 8 score at each checkpoint
  *
- * Query params:
- *   ?entryIds=id1,id2,id3  — specific entries to include
- *   ?includeLeaderMedian=true — include leader and median lines (default true)
- *   ?seasonId=xxx — override season (default: current)
- *
- * CLAUDE.md spec default lines:
- * 1. Optimal 8 (Rolling) — dashed line
- * 2. Leader — current best player
- * 3. Your entry — logged-in player
- * 4. Median — middle player
- * 5. Optimal 8 (Hindsight) — only after tournament completes
+ * Leader and median are determined from CURRENT entry scores (not checkpoint snapshots)
+ * to avoid stale data from old checkpoints.
  */
 export async function GET(req: NextRequest) {
   const rateLimitResponse = rateLimit(getClientIp(req))
@@ -46,8 +37,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ checkpoints: [], entries: {}, error: "No active season" })
   }
 
-  // Get all checkpoints
-  const checkpoints = await getSeasonCheckpoints(seasonId)
+  // Get all checkpoints — FILTER to only valid checkpoint indices (0-10)
+  const allCheckpoints = await getSeasonCheckpoints(seasonId)
+  const VALID_CP_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  const checkpoints = allCheckpoints.filter(cp => VALID_CP_INDICES.has(cp.gameIndex))
 
   // If no specific entries requested, get the user's entries
   if (entryIds.length === 0) {
@@ -58,17 +51,33 @@ export async function GET(req: NextRequest) {
     entryIds.push(...userEntries.map((e) => e.id))
   }
 
-  // Add leader and median entry IDs from the latest checkpoint
-  if (includeLeaderMedian && checkpoints.length > 0) {
-    const latestCheckpoint = checkpoints[checkpoints.length - 1]
-    const globalDim = latestCheckpoint.dimensions.find(
-      (d) => d.dimensionType === "global"
-    )
-    if (globalDim?.leaderEntryId && !entryIds.includes(globalDim.leaderEntryId)) {
-      entryIds.push(globalDim.leaderEntryId)
-    }
-    if (globalDim?.medianEntryId && !entryIds.includes(globalDim.medianEntryId)) {
-      entryIds.push(globalDim.medianEntryId)
+  // Determine leader and median from CURRENT scores (not stale checkpoint data)
+  // This avoids wrong leader/median when checkpoint dimension snapshots are stale
+  let currentLeaderId: string | null = null
+  let currentMedianId: string | null = null
+
+  if (includeLeaderMedian) {
+    const allEntries = await prisma.entry.findMany({
+      where: {
+        seasonId,
+        draftInProgress: false,
+        entryPicks: { some: {} },
+      },
+      select: { id: true, score: true },
+      orderBy: { score: "desc" },
+    })
+
+    if (allEntries.length > 0) {
+      currentLeaderId = allEntries[0].id
+      const medianIdx = Math.floor(allEntries.length / 2)
+      currentMedianId = allEntries[medianIdx].id
+
+      if (currentLeaderId && !entryIds.includes(currentLeaderId)) {
+        entryIds.push(currentLeaderId)
+      }
+      if (currentMedianId && !entryIds.includes(currentMedianId)) {
+        entryIds.push(currentMedianId)
+      }
     }
   }
 
@@ -87,9 +96,6 @@ export async function GET(req: NextRequest) {
       round: number | null
       savedAt: string
     }>
-    /** Projected scores at each of the 11 checkpoint positions (0-10).
-     *  null for past checkpoints, number for future checkpoints.
-     *  Index 0 = Pre-Tournament, 10 = Championship. */
     projections: (number | null)[]
   }> = {}
 
@@ -114,18 +120,12 @@ export async function GET(req: NextRequest) {
     },
   })
 
-  // Determine leader/median from latest checkpoint
-  const latestCheckpoint = checkpoints.length > 0 ? checkpoints[checkpoints.length - 1] : null
-  const globalDim = latestCheckpoint?.dimensions.find((d) => d.dimensionType === "global")
-
   // Round-to-checkpoint mapping for projections
-  // Each round's wins are assigned to the LAST checkpoint for that round
-  // R64→cp2, R32→cp4, S16→cp6, E8→cp8, F4→cp9, Champ→cp10
   const ROUND_TO_LAST_CP: Record<number, number> = {
     1: 2, 2: 4, 3: 6, 4: 8, 5: 9, 6: 10,
   }
 
-  // Find the latest checkpoint index from the data
+  // Find the latest VALID checkpoint index from the data
   const latestCpIndex = checkpoints.length > 0
     ? Math.max(...checkpoints.map(cp => cp.gameIndex))
     : -1
@@ -153,8 +153,6 @@ export async function GET(req: NextRequest) {
       : { totalPPR: 0, perTeam: new Map<string, number>() }
 
     // Build per-checkpoint projection: distribute PPR across future checkpoints
-    // For each alive team, PPR/seed = additional wins. Each win is in round (currentWins+1), (currentWins+2), etc.
-    // Sum points by the checkpoint where that round finishes.
     const futurePointsByCheckpoint = new Map<number, number>()
     for (const pick of entry.entryPicks) {
       if (!pick.team || pick.team.isPlayIn || pick.team.eliminated) continue
@@ -189,8 +187,8 @@ export async function GET(req: NextRequest) {
         ? (entry.nickname ? `${entry.nickname} (${displayName} ${entry.entryNumber})` : `${displayName} ${entry.entryNumber}`)
         : displayName,
       isCurrentUser: entry.userId === session.user.id,
-      isLeader: entry.id === globalDim?.leaderEntryId,
-      isMedian: entry.id === globalDim?.medianEntryId,
+      isLeader: entry.id === currentLeaderId,
+      isMedian: entry.id === currentMedianId,
       snapshots: history.map((s) => ({
         score: s.score,
         rank: s.rank,

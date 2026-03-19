@@ -17,6 +17,7 @@
  */
 
 import { useCallback, useEffect } from "react"
+import Link from "next/link"
 import {
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Radio,
 } from "lucide-react"
@@ -166,10 +167,10 @@ export function TimelineFooter({
             {/* Games + Days counters (right-aligned) */}
             <div className="ml-auto flex items-center gap-3 shrink-0">
               <span className="text-xs text-muted-foreground">
-                Games: <strong className="text-foreground font-mono">{totalCompletedGames}</strong>/{TOTAL_TOURNAMENT_GAMES}
+                Game: <strong className="text-foreground font-mono">{isLive ? totalCompletedGames : Math.max(0, currentGameIndex + 1)}</strong>/{TOTAL_TOURNAMENT_GAMES}
               </span>
               <span className="text-xs text-muted-foreground">
-                Days: <strong className="text-foreground font-mono">{Math.max(0, currentCheckpoint)}</strong>/{CHECKPOINT_LABELS.length - 1}
+                Day: <strong className="text-foreground font-mono">{Math.max(0, currentCheckpoint)}</strong>/{CHECKPOINT_LABELS.length - 1}
               </span>
             </div>
           </div>
@@ -262,6 +263,19 @@ export function TimelineFooter({
                   relative"
               />
             </div>
+          </div>
+
+          {/* Row 3: Footer links (desktop only) */}
+          <div className="hidden md:flex items-center justify-center gap-3 text-[11px] text-muted-foreground/60 pt-0.5">
+            <Link href="/how-to-play" className="hover:text-foreground transition-colors">How to Play / FAQ</Link>
+            <span className="text-border">·</span>
+            <Link href="/commissioner" className="hover:text-foreground transition-colors">Letter from Commissioner</Link>
+            <span className="text-border">·</span>
+            <Link href="/stats" className="hover:text-foreground transition-colors">Stats</Link>
+            <span className="text-border">·</span>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <span className="text-border">·</span>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
           </div>
         </div>
       </div>
