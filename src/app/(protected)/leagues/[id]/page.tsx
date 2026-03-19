@@ -915,7 +915,7 @@ export default function LeagueDetailPage() {
         ) : (
           <div className="divide-y divide-border min-w-[480px]">
             {/* Table header */}
-            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
+            <div className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_5rem]"} gap-2 px-5 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground`}>
               <span>#</span>
               <span>Player</span>
               <span>Entry</span>
@@ -933,12 +933,12 @@ export default function LeagueDetailPage() {
               return (
                 <div
                   key={row.leagueEntryId ?? row.leagueMemberId}
-                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_1fr_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_1fr_7rem_4rem_5rem]"} gap-2 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
+                  className={`grid ${league.isAdmin && league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_4rem_5rem_5.5rem]" : league.isAdmin && !league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_5rem_5.5rem]" : league.trackPayments ? "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_4rem_5rem]" : "grid-cols-[2rem_minmax(8rem,1fr)_7rem_4rem_5rem]"} gap-2 px-5 py-3 items-center ${isMe ? "bg-primary/5" : "hover:bg-muted/30"} transition-colors`}
                 >
                   <span className="text-sm font-mono text-muted-foreground">{rank}</span>
-                  <div className="min-w-0">
+                  <div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-medium truncate ${isMe ? "text-primary" : ""}`}>
+                      <span className={`text-sm font-medium ${isMe ? "text-primary" : ""}`}>
                         {row.playerName}
                       </span>
                       {isMe && (
