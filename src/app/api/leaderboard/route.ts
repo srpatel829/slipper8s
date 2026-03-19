@@ -79,6 +79,8 @@ export async function GET(req: NextRequest) {
       score: true,
       maxPossibleScore: true,
       expectedScore: true,
+      maxRank: true,
+      floorRank: true,
       createdAt: true,
       user: {
         select: {
@@ -90,7 +92,7 @@ export async function GET(req: NextRequest) {
           country: true,
           state: true,
           gender: true,
-          favoriteTeam: { select: { conference: true } },
+          favoriteTeam: { select: { id: true, name: true, conference: true } },
         },
       },
       entryPicks: {

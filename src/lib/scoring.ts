@@ -21,6 +21,8 @@ export type EntryWithRelations = {
   score?: number | null
   maxPossibleScore?: number | null
   expectedScore?: number | null
+  maxRank?: number | null
+  floorRank?: number | null
   user: {
     id: string
     name: string | null
@@ -30,7 +32,7 @@ export type EntryWithRelations = {
     country: string | null
     state: string | null
     gender: string | null
-    favoriteTeam?: { conference: string | null } | null
+    favoriteTeam?: { id: string; name: string; conference: string | null } | null
   }
   entryPicks: EntryPickWithRelations[]
 }
@@ -191,6 +193,7 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     country: entry.user.country ?? null,
     state: entry.user.state ?? null,
     gender: entry.user.gender ?? null,
+    favoriteTeam: entry.user.favoriteTeam?.id ?? null,
     conference: entry.user.favoriteTeam?.conference ?? null,
     leagueIds: (entry.leagueEntries ?? []).map(le => le.leagueId),
     currentScore,
@@ -199,6 +202,8 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
     teamsRemaining,
     maxPossibleScore: entry.maxPossibleScore ?? null,
     expectedScore: entry.expectedScore ?? null,
+    maxRank: entry.maxRank ?? null,
+    floorRank: entry.floorRank ?? null,
     picks,
   }
 }
@@ -221,8 +226,16 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
 
   const total = scores.length
 
+  // Compute tied ranks: entries with the same TPS and currentScore share the same rank
   return scores.map((s, i) => {
-    const rank = i + 1
+    // Find the first entry with the same score to determine tied rank
+    let rank = i + 1
+    for (let j = 0; j < i; j++) {
+      if (scores[j].tps === s.tps && scores[j].currentScore === s.currentScore) {
+        rank = j + 1
+        break
+      }
+    }
     const entry = entries.find((e) => e.id === s.entryId)
     return {
       ...s,
@@ -326,7 +339,7 @@ export function computeOptimal8(
   teamInfoMap: Map<string, TeamBracketInfo>
 ): Optimal8Result {
   const scored = aliveTeams
-    .filter(t => !t.isPlayIn)
+    .filter(t => !t.eliminated)
     .map(t => {
       const info = teamInfoMap.get(t.id)
       const eliminated = info ? info.eliminated : false

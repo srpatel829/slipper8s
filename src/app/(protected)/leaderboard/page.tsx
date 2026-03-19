@@ -39,6 +39,8 @@ async function getLeaderboard() {
       score: true,
       maxPossibleScore: true,
       expectedScore: true,
+      maxRank: true,
+      floorRank: true,
       createdAt: true,
       user: {
         select: {
@@ -50,7 +52,7 @@ async function getLeaderboard() {
           country: true,
           state: true,
           gender: true,
-          favoriteTeam: { select: { conference: true } },
+          favoriteTeam: { select: { id: true, name: true, conference: true } },
         },
       },
       entryPicks: {
@@ -131,8 +133,20 @@ async function getSeasonStatus(): Promise<string | null> {
 }
 
 async function computeOptimal8Data(): Promise<Optimal8Data | undefined> {
+  // Get play-in winner IDs so we include resolved play-in winners
+  const playInSlots = await prisma.playInSlot.findMany({
+    where: { winnerId: { not: null } },
+    select: { winnerId: true },
+  })
+  const playInWinnerIds = playInSlots.map(s => s.winnerId!).filter(Boolean)
+
   const allTeams = await prisma.team.findMany({
-    where: { isPlayIn: false },
+    where: {
+      OR: [
+        { isPlayIn: false },
+        { id: { in: playInWinnerIds } },
+      ],
+    },
     select: {
       id: true,
       name: true,

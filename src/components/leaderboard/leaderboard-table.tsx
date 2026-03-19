@@ -517,8 +517,12 @@ function LeaderboardRow({
               <div className="w-2 h-2 rounded-full bg-red-400/50" title="Unpaid" />
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {allArchetypes.length > 0 && (
+              <span className="text-sm">{allArchetypes.map(a => a.emoji).join("")}</span>
+            )}
             <span className="font-semibold text-sm truncate">{entry.name}</span>
+            {isMe && <Badge variant="outline" className="text-[10px] border-primary/50 text-primary h-4 shrink-0">You</Badge>}
           </div>
           {entry.picks.length > 0 && (
             <div className="flex items-center gap-2">

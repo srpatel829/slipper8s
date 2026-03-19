@@ -43,7 +43,7 @@ async function getLeaderboard() {
           country: true,
           state: true,
           gender: true,
-          favoriteTeam: { select: { conference: true } },
+          favoriteTeam: { select: { id: true, name: true, conference: true } },
         },
       },
       entryPicks: {
@@ -117,12 +117,25 @@ export default async function TeamsPage() {
     )
   }
 
-  const [teams, leaderboard] = await Promise.all([
+  const [teams, leaderboard, userLeagues] = await Promise.all([
     prisma.team.findMany({
       where: { isPlayIn: false },
       orderBy: [{ region: "asc" }, { seed: "asc" }],
     }),
     getLeaderboard(),
+    session?.user?.id
+      ? prisma.league.findMany({
+          where: {
+            OR: [
+              { adminId: session.user.id },
+              { members: { some: { userId: session.user.id } } },
+              { leagueEntries: { some: { entry: { userId: session.user.id } } } },
+            ],
+          },
+          select: { id: true, name: true },
+          orderBy: { name: "asc" },
+        })
+      : Promise.resolve([]),
   ])
 
   const rows: TeamRow[] = teams.map(t => ({
@@ -154,6 +167,7 @@ export default async function TeamsPage() {
         leaderboard={leaderboard}
         currentUserId={session?.user?.id ?? ""}
         teams={teamOptions}
+        userLeagues={userLeagues}
       />
     </div>
   )

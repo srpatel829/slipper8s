@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { saveScoreSnapshots, checkAndCreateCheckpoint } from "@/lib/snapshots"
 import { invalidateLeaderboardCache } from "@/lib/cache"
 import { computeMaxPossibleScore } from "@/lib/max-possible-score"
+import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
 import { sendPlayInResolvedEmail } from "@/lib/email"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import type { ESPNScoreboardResponse, ESPNCompetition, ESPNEvent, SyncResult, LiveGameData } from "@/types"
@@ -422,18 +423,57 @@ export async function recalculateAllEntryScores(): Promise<{ updated: number }> 
       // Compute collision-aware max possible score
       const maxResult = computeMaxPossibleScore(pickTeamIds, teamInfoMap)
 
+      // Compute expected score from Silver Bulletin probabilities
+      const preTournament = [...teamInfoMap.values()].every(t => t.wins === 0)
+      const expectedScore = calculateEntryExpectedScore(pickTeamIds, teamInfoMap, preTournament)
+
       return prisma.entry.update({
         where: { id: entry.id },
         data: {
           score,
           teamsAlive,
           maxPossibleScore: maxResult.maxPossibleScore,
+          expectedScore: expectedScore ?? 0,
         },
       })
     })
 
     await prisma.$transaction(updates)
     updated += chunk.length
+  }
+
+  // ── Second pass: compute max rank and floor rank ──
+  // Re-read all entries with updated scores
+  const updatedEntries = await prisma.entry.findMany({
+    where: {
+      seasonId,
+      draftInProgress: false,
+      entryPicks: { some: {} },
+    },
+    select: { id: true, score: true, maxPossibleScore: true },
+  })
+
+  const totalEntries = updatedEntries.length
+  const allScores = updatedEntries.map(e => e.score)
+  const allMaxScores = updatedEntries.map(e => e.maxPossibleScore)
+
+  // maxRank: how high could this entry finish?
+  //   = 1 + count of entries whose CURRENT score already exceeds this entry's max possible
+  // floorRank: how low could this entry finish?
+  //   = totalEntries - count of entries whose MAX possible is below this entry's current score
+  const rankUpdates = updatedEntries.map(e => {
+    const maxRank = 1 + allScores.filter(s => s > e.maxPossibleScore).length
+    const floorRank = totalEntries - allMaxScores.filter(m => m < e.score).length
+
+    return prisma.entry.update({
+      where: { id: e.id },
+      data: { maxRank, floorRank },
+    })
+  })
+
+  // Batch in chunks of 100
+  for (let i = 0; i < rankUpdates.length; i += 100) {
+    await prisma.$transaction(rankUpdates.slice(i, i + 100))
   }
 
   return { updated }

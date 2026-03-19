@@ -15,6 +15,7 @@ interface TeamsWithDimensionsProps {
   leaderboard: LeaderboardEntry[]
   currentUserId: string
   teams: Array<{ id: string; name: string }>
+  userLeagues?: Array<{ id: string; name: string }>
 }
 
 export function TeamsWithDimensions({
@@ -22,6 +23,7 @@ export function TeamsWithDimensions({
   leaderboard,
   currentUserId,
   teams,
+  userLeagues,
 }: TeamsWithDimensionsProps) {
   // Pre-tournament if no entries have scores yet
   const isPreTournament = useMemo(
@@ -34,6 +36,7 @@ export function TeamsWithDimensions({
       entries={leaderboard}
       currentUserId={currentUserId}
       teams={teams}
+      userLeagues={userLeagues}
       renderLeaderboard={(filteredEntries) => {
         // Compute picker counts from filtered entries' picks
         const pickerCounts = new Map<string, number>()
