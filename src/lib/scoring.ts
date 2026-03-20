@@ -212,7 +212,10 @@ export function computeEntryScore(entry: EntryWithRelations, isMultiEntry: boole
   }
 }
 
-export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): LeaderboardEntry[] {
+export function computeLeaderboardFromEntries(
+  entries: EntryWithRelations[],
+  allTeams?: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean }>,
+): LeaderboardEntry[] {
   // Determine which users have multiple entries
   const entriesByUser = new Map<string, number>()
   for (const e of entries) {
@@ -244,8 +247,24 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
   })
 
   // ── Build teamInfoMap for collision-aware ranking ───────────────────────────
+  // IMPORTANT: teamInfoMap must contain ALL 64 teams (not just picked ones)
+  // so that simulateBracketWins can properly simulate chalk for the full bracket.
+  // Without all teams, B's non-picked teams get dummy entries with null teamIds,
+  // and their simulated wins never get recorded, causing everyone to get maxRank=T1.
   const teamInfoMap = new Map<string, TeamBracketInfo>()
   const entryPickMap = new Map<string, string[]>() // entryId → pickTeamIds
+
+  // First populate with ALL teams if available
+  if (allTeams) {
+    for (const t of allTeams) {
+      teamInfoMap.set(t.id, {
+        seed: t.seed,
+        region: t.region,
+        wins: t.wins,
+        eliminated: t.eliminated,
+      })
+    }
+  }
 
   for (const entry of entries) {
     const pickTeamIds: string[] = []

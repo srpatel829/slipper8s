@@ -65,7 +65,13 @@ async function getLeaderboard() {
     orderBy: { createdAt: "asc" },
   }) as unknown as EntryWithRelations[]
 
-  const leaderboard = computeLeaderboardFromEntries(entries)
+  // Fetch ALL teams for proper bracket simulation in maxRank
+  const allTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, seed: true, region: true, wins: true, eliminated: true },
+  })
+
+  const leaderboard = computeLeaderboardFromEntries(entries, allTeams)
 
   // Store in cache for subsequent requests
   await setCachedLeaderboard(seasonId, leaderboard)

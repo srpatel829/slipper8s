@@ -87,7 +87,17 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
   }
 
   // ── Build teamInfoMap and entry pick data for collision-aware ranking ──
+  // IMPORTANT: include ALL teams so simulateBracketWins can simulate chalk for the full bracket
   const teamInfoMap = new Map<string, TeamBracketInfo>()
+
+  const bracketTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, seed: true, region: true, wins: true, eliminated: true },
+  })
+  for (const t of bracketTeams) {
+    teamInfoMap.set(t.id, { seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated })
+  }
+
   const entryPickMap = new Map<string, string[]>()
   const teamsRemainingMap = new Map<string, number>()
 

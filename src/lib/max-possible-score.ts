@@ -136,9 +136,34 @@ export function computeMaxPossibleScore(
     }
   }
 
-  // ── Phase 1: Intra-region collisions (rounds 2-4) ───────────────────────
+  // ── Phase 0: R64 collisions (same slot = same R64 matchup) ─────────────
+  // Two picks in the same region AND same bracket slot play each other in R64.
+  // Only one can win. The higher seed number survives (more points per win).
+  // The loser is capped at their current wins (no future wins possible).
 
   const regions = ["East", "West", "South", "Midwest"]
+
+  for (const region of regions) {
+    const regionPicks = picks.filter((p) => p.region === region)
+    // Group by slot to find R64 opponents
+    const bySlot = new Map<number, PickState[]>()
+    for (const p of regionPicks) {
+      if (!bySlot.has(p.slot)) bySlot.set(p.slot, [])
+      bySlot.get(p.slot)!.push(p)
+    }
+    for (const [, slotPicks] of bySlot) {
+      if (slotPicks.length < 2) continue
+      // Two picks in the same R64 matchup — higher seed number survives
+      // (Both can't have won R64 since they play each other)
+      const sorted = slotPicks.sort((a, b) => b.seed - a.seed)
+      // Keep the highest seed, cap all others
+      for (let i = 1; i < sorted.length; i++) {
+        sorted[i].maxWins = Math.min(sorted[i].maxWins, sorted[i].wins)
+      }
+    }
+  }
+
+  // ── Phase 1: Intra-region collisions (rounds 2-4) ───────────────────────
   const regionChampionMap = new Map<string, PickState>()
 
   for (const region of regions) {

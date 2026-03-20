@@ -103,7 +103,13 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: "asc" },
   }) as unknown as EntryWithRelations[]
 
-  let leaderboard = computeLeaderboardFromEntries(entries)
+  // Fetch ALL teams (not just picked ones) for proper bracket simulation in maxRank
+  const allTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, seed: true, region: true, wins: true, eliminated: true },
+  })
+
+  let leaderboard = computeLeaderboardFromEntries(entries, allTeams)
 
   // ── 2b. Compute rank change from last game ─────────────────────────────────
   // Find the 2 most recently completed games. Compare each entry's rank at the

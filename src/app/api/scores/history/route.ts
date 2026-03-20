@@ -373,9 +373,12 @@ export async function GET(req: NextRequest) {
     const teamInfoMap = new Map<string, TeamBracketInfo>()
     const validPicks: string[] = []
     for (const pick of entry.entryPicks) {
-      // Resolve play-in: use winner of play-in slot if pick is a play-in team
+      // Resolve play-in: use winner of play-in slot if pick was via playInSlotId (team is null)
+      // or if pick.team is a play-in team that has a resolved winner
       let team = pick.team
-      if (team?.isPlayIn && pick.playInSlot?.winner) {
+      if (!team && pick.playInSlot?.winner) {
+        team = pick.playInSlot.winner
+      } else if (team?.isPlayIn && pick.playInSlot?.winner) {
         team = pick.playInSlot.winner
       }
       if (!team || team.isPlayIn) continue  // skip unresolved play-in slots

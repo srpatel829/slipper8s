@@ -168,7 +168,17 @@ export async function GET(req: NextRequest) {
   }
 
   // Build a global teamInfoMap for collision-aware ranks
+  // IMPORTANT: include ALL teams so simulateBracketWins can simulate chalk for the full bracket
   const globalTeamInfoMap = new Map<string, TeamBracketInfo>()
+  const allNonPlayInTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, seed: true, region: true },
+  })
+  for (const t of allNonPlayInTeams) {
+    const wins = teamWins.get(t.id) ?? 0
+    const eliminated = eliminatedTeams.has(t.id)
+    globalTeamInfoMap.set(t.id, { seed: t.seed, region: t.region, wins, eliminated })
+  }
 
   // Build leaderboard entries
   const leaderboard = entries.map(entry => {
