@@ -193,16 +193,97 @@ export async function GET(req: NextRequest) {
     return { id: e.id, name }
   })
 
-  if (includeLeaderMedian && allSeasonEntries.length > 0) {
-    currentLeaderId = allSeasonEntries[0].id
-    const medianIdx = Math.floor(allSeasonEntries.length / 2)
-    currentMedianId = allSeasonEntries[medianIdx].id
+  // ── Compute per-game leader/median from snapshots (BEFORE entry fetch) ────
+  // This determines the actual leader/median from ScoreSnapshots so we can
+  // add those entries to entryIds and fetch their full projection data.
+  let leaderLine: Array<{ gameIndex: number; score: number; entryId: string }> = []
+  let medianLine: Array<{ gameIndex: number; score: number }> = []
+  let snapshotLeaderId: string | null = null
+  let snapshotMedianId: string | null = null
+
+  if (includeLeaderMedian && completedGames.length > 0) {
+    const snapshotFilter: Record<string, unknown> = { gameId: { in: completedGames.map(g => g.id) } }
+    if (filterEntryIds.length > 0) {
+      snapshotFilter.entryId = { in: filterEntryIds }
+    }
+
+    const allSnapshots = await prisma.scoreSnapshot.findMany({
+      where: snapshotFilter,
+      select: { gameId: true, score: true, entryId: true },
+    })
+
+    const snapshotsByGame = new Map<string, Array<{ score: number; entryId: string }>>()
+    for (const s of allSnapshots) {
+      if (!s.gameId) continue
+      if (!snapshotsByGame.has(s.gameId)) snapshotsByGame.set(s.gameId, [])
+      snapshotsByGame.get(s.gameId)!.push({ score: s.score, entryId: s.entryId })
+    }
+
+    for (const [idx, game] of completedGames.entries()) {
+      const gameSnaps = snapshotsByGame.get(game.id) ?? []
+      if (gameSnaps.length === 0) continue
+
+      // Leader = max score
+      let maxScore = -Infinity
+      let maxEntryId = ""
+      for (const s of gameSnaps) {
+        if (s.score > maxScore) {
+          maxScore = s.score
+          maxEntryId = s.entryId
+        }
+      }
+      leaderLine.push({ gameIndex: idx, score: maxScore, entryId: maxEntryId })
+
+      // Median
+      const sorted = gameSnaps.map(s => s.score).sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      const medianScore = sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid]
+      medianLine.push({ gameIndex: idx, score: medianScore })
+    }
+
+    // Identify the snapshot-derived leader and median entry
+    if (leaderLine.length > 0) {
+      snapshotLeaderId = leaderLine[leaderLine.length - 1].entryId
+    }
+    if (medianLine.length > 0) {
+      // Find the entry whose latest snapshot score is closest to median
+      const latestMedianScore = medianLine[medianLine.length - 1].score
+      const lastGameId = completedGames[completedGames.length - 1].id
+      const lastGameSnaps = snapshotsByGame.get(lastGameId) ?? []
+      let bestDist = Infinity
+      for (const s of lastGameSnaps) {
+        const dist = Math.abs(s.score - latestMedianScore)
+        if (dist < bestDist) {
+          bestDist = dist
+          snapshotMedianId = s.entryId
+        }
+      }
+    }
+  }
+
+  // Add snapshot-derived leader/median to entryIds so we fetch their projection data
+  if (includeLeaderMedian) {
+    // Also keep live-derived leader/median as fallback
+    if (allSeasonEntries.length > 0) {
+      currentLeaderId = snapshotLeaderId ?? allSeasonEntries[0].id
+      const medianIdx = Math.floor(allSeasonEntries.length / 2)
+      currentMedianId = snapshotMedianId ?? allSeasonEntries[medianIdx].id
+    }
 
     if (currentLeaderId && !entryIds.includes(currentLeaderId)) {
       entryIds.push(currentLeaderId)
     }
     if (currentMedianId && !entryIds.includes(currentMedianId)) {
       entryIds.push(currentMedianId)
+    }
+    // Also add the snapshot-derived IDs if different
+    if (snapshotLeaderId && !entryIds.includes(snapshotLeaderId)) {
+      entryIds.push(snapshotLeaderId)
+    }
+    if (snapshotMedianId && !entryIds.includes(snapshotMedianId)) {
+      entryIds.push(snapshotMedianId)
     }
   }
 
@@ -353,13 +434,13 @@ export async function GET(req: NextRequest) {
   // Always fetch teams for projection computation
   const allTeams = await prisma.team.findMany({
     where: { isPlayIn: false },
-    select: { id: true, seed: true, region: true, wins: true, eliminated: true, name: true, shortName: true },
+    select: { id: true, seed: true, region: true, wins: true, eliminated: true, name: true, shortName: true, sCurveRank: true },
   })
 
   const teamInfoForOpt = new Map<string, TeamBracketInfo>()
   const opt8Teams = allTeams.map(t => {
     teamInfoForOpt.set(t.id, { seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated })
-    return { id: t.id, seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated, isPlayIn: false, sCurveRank: undefined }
+    return { id: t.id, seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated, isPlayIn: false, sCurveRank: t.sCurveRank ?? undefined }
   })
 
   const opt8Result = computeOptimal8(opt8Teams, teamInfoForOpt)
@@ -448,53 +529,7 @@ export async function GET(req: NextRequest) {
       }))
   }
 
-  // Compute per-game leader and median from ALL entries' snapshots
-  let leaderLine: Array<{ gameIndex: number; score: number; entryId: string }> = []
-  let medianLine: Array<{ gameIndex: number; score: number }> = []
-
-  if (completedGames.length > 0) {
-    const snapshotFilter: any = { gameId: { in: completedGames.map(g => g.id) } }
-    // When filterEntryIds is provided, only compute leader/median from those entries
-    if (filterEntryIds.length > 0) {
-      snapshotFilter.entryId = { in: filterEntryIds }
-    }
-
-    const allSnapshots = await prisma.scoreSnapshot.findMany({
-      where: snapshotFilter,
-      select: { gameId: true, score: true, entryId: true },
-    })
-
-    const snapshotsByGame = new Map<string, Array<{ score: number; entryId: string }>>()
-    for (const s of allSnapshots) {
-      if (!s.gameId) continue
-      if (!snapshotsByGame.has(s.gameId)) snapshotsByGame.set(s.gameId, [])
-      snapshotsByGame.get(s.gameId)!.push({ score: s.score, entryId: s.entryId })
-    }
-
-    for (const [idx, game] of completedGames.entries()) {
-      const gameSnaps = snapshotsByGame.get(game.id) ?? []
-      if (gameSnaps.length === 0) continue
-
-      // Leader = max score
-      let maxScore = -Infinity
-      let maxEntryId = ""
-      for (const s of gameSnaps) {
-        if (s.score > maxScore) {
-          maxScore = s.score
-          maxEntryId = s.entryId
-        }
-      }
-      leaderLine.push({ gameIndex: idx, score: maxScore, entryId: maxEntryId })
-
-      // Median
-      const sorted = gameSnaps.map(s => s.score).sort((a, b) => a - b)
-      const mid = Math.floor(sorted.length / 2)
-      const medianScore = sorted.length % 2 === 0
-        ? (sorted[mid - 1] + sorted[mid]) / 2
-        : sorted[mid]
-      medianLine.push({ gameIndex: idx, score: medianScore })
-    }
-  }
+  // leaderLine and medianLine already computed above (before entry fetch)
 
   // Optimal 8 line — per-game rolling computation
   // Reconstruct team states game by game and compute optimal 8 at each step
@@ -521,14 +556,14 @@ export async function GET(req: NextRequest) {
 
       // Build teamInfoMap and aliveTeams at this point
       const stepTeamInfo = new Map<string, TeamBracketInfo>()
-      const stepAliveTeams: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean; isPlayIn: boolean; sCurveRank: undefined }> = []
+      const stepAliveTeams: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean; isPlayIn: boolean; sCurveRank?: number | null }> = []
 
       for (const t of allTeams) {
         const wins = rollingWins.get(t.id) ?? 0
         const eliminated = rollingEliminated.has(t.id)
         stepTeamInfo.set(t.id, { seed: t.seed, region: t.region, wins, eliminated })
         if (!eliminated) {
-          stepAliveTeams.push({ id: t.id, seed: t.seed, region: t.region, wins, eliminated, isPlayIn: false, sCurveRank: undefined })
+          stepAliveTeams.push({ id: t.id, seed: t.seed, region: t.region, wins, eliminated, isPlayIn: false, sCurveRank: t.sCurveRank ?? undefined })
         }
       }
 
@@ -550,6 +585,8 @@ export async function GET(req: NextRequest) {
     entryGameScores,
     leaderLine,
     medianLine,
+    snapshotLeaderId,
+    snapshotMedianId,
     optimal8Line,
     totalGames: 63 as const,
     latestGameIndex: completedGames.length > 0 ? completedGames.length - 1 : -1,

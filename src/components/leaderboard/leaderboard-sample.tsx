@@ -11,8 +11,8 @@
  * Columns: Rank (Act/Max/Floor) | Percentile | Player | Score (Act/Max/Exp) | Teams | Left
  */
 
-import { useState } from "react"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { useState, useMemo } from "react"
+import { ChevronDown, ChevronUp, ArrowUp, ArrowDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
@@ -233,7 +233,8 @@ function Optimal8Row({
 
   return (
     <tr className={rowBg}>
-      {/* Rank: Actual, Max, Floor — all dashes */}
+      {/* Rank: Actual, Max, Floor, Expected — all dashes */}
+      <td className="px-2 py-2.5 text-center"><span className="text-muted-foreground/40 text-xs">{"\u2014"}</span></td>
       <td className="px-2 py-2.5 text-center"><span className="text-muted-foreground/40 text-xs">{"\u2014"}</span></td>
       <td className="px-2 py-2.5 text-center"><span className="text-muted-foreground/40 text-xs">{"\u2014"}</span></td>
       <td className="px-2 py-2.5 text-center"><span className="text-muted-foreground/40 text-xs">{"\u2014"}</span></td>
@@ -277,6 +278,7 @@ function EntryRow({
   allRanks,
   allMaxRanks,
   allFloorRanks,
+  allExpectedRanks,
   totalEntries,
   isPreTournament,
 }: {
@@ -287,6 +289,7 @@ function EntryRow({
   allRanks: number[]
   allMaxRanks: number[]
   allFloorRanks: number[]
+  allExpectedRanks: number[]
   totalEntries: number
   isPreTournament?: boolean
 }) {
@@ -296,6 +299,7 @@ function EntryRow({
   const rankDisplay = formatRankValue(entry.rank, allRanks)
   const maxRankDisplay = formatRankValue(entry.maxRank, allMaxRanks)
   const floorRankDisplay = formatRankValue(entry.floorRank, allFloorRanks)
+  const expectedRankDisplay = formatRankValue(entry.expectedRank, allExpectedRanks)
   const pctDisplay = displayPercentile(entry, totalEntries)
 
   const rowBg = isFrozenYou
@@ -317,6 +321,10 @@ function EntryRow({
       {/* Rank: Floor */}
       <td className="px-2 py-2.5 text-center">
         <span className="text-sm font-semibold text-red-600 dark:text-red-400">{floorRankDisplay}</span>
+      </td>
+      {/* Rank: Expected */}
+      <td className="px-2 py-2.5 text-center">
+        <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{expectedRankDisplay}</span>
       </td>
       {/* Percentile */}
       <td className="px-2 py-2.5 text-center">
@@ -374,23 +382,77 @@ function EntryRow({
 
 // ── Main component ──────────────────────────────────────────────────────────
 
+// ── Sortable column header ──────────────────────────────────────────────────
+
+function SortTh({ col, label, fullLabel, sortKey, sortDir, onToggle }: {
+  col: SortKey; label: string; fullLabel?: string
+  sortKey: SortKey; sortDir: SortDir; onToggle: (k: SortKey) => void
+}) {
+  const active = sortKey === col
+  return (
+    <th className="px-2 pb-2 text-center">
+      <button
+        onClick={() => onToggle(col)}
+        className={`inline-flex items-center gap-0.5 text-[9px] font-medium uppercase tracking-wider transition-colors ${active ? "text-primary" : "text-muted-foreground/70 hover:text-muted-foreground"}`}
+      >
+        {fullLabel ? (
+          <>
+            <span className="hidden md:inline">{fullLabel}</span>
+            <span className="md:hidden">{label}</span>
+          </>
+        ) : label}
+        {active && (sortDir === "asc" ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />)}
+      </button>
+    </th>
+  )
+}
+
 const COLLAPSED_COUNT = 10
+
+type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore" | "expectedRank" | "floorRank" | "maxRank"
+type SortDir = "asc" | "desc"
+
+// Default sort directions when first clicking a column
+const DEFAULT_SORT_DIR: Record<SortKey, SortDir> = {
+  rank: "asc", maxRank: "asc", floorRank: "asc", expectedRank: "asc", percentile: "desc",
+  currentScore: "desc", maxPossibleScore: "desc", expectedScore: "desc", teamsRemaining: "desc",
+}
 
 export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Final, isPreTournament }: LeaderboardSampleProps) {
   const totalEntries = entries.length
   const [showAll, setShowAll] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>("rank")
+  const [sortDir, setSortDir] = useState<SortDir>("asc")
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === "asc" ? "desc" : "asc")
+    } else {
+      setSortKey(key)
+      setSortDir(DEFAULT_SORT_DIR[key])
+    }
+  }
 
   // Collect all rank values for tie detection
   const allRanks = entries.map(e => e.rank)
   const allMaxRanks = entries.map(e => e.maxRank).filter((v): v is number => v != null)
   const allFloorRanks = entries.map(e => e.floorRank).filter((v): v is number => v != null)
+  const allExpectedRanks = entries.map(e => e.expectedRank).filter((v): v is number => v != null)
 
   // Find ALL of the current user's entries (multi-entry support)
   const youEntries = entries.filter(e => e.userId === currentUserId)
     .sort((a, b) => a.rank - b.rank) // best rank first
 
-  // Full table sorted by rank
-  const sortedEntries = [...entries].sort((a, b) => a.rank - b.rank)
+  // Full table sorted by active sort key
+  const sortedEntries = useMemo(() => {
+    const sorted = [...entries]
+    sorted.sort((a, b) => {
+      const aVal = a[sortKey] ?? 0
+      const bVal = b[sortKey] ?? 0
+      return sortDir === "asc" ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number)
+    })
+    return sorted
+  }, [entries, sortKey, sortDir])
 
   // Determine which entries to display in the data table
   const hasMore = sortedEntries.length > COLLAPSED_COUNT
@@ -407,11 +469,11 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
 
       {/* ── Data Table ── */}
       <div className="rounded-lg border border-border overflow-x-auto">
-        <table className="w-full border-collapse text-sm" style={{ minWidth: 920 }}>
+        <table className="w-full border-collapse text-sm" style={{ minWidth: 980 }}>
           <thead>
             {/* Super header */}
             <tr className="bg-muted/50">
-              <th colSpan={3} className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b-0">
+              <th colSpan={4} className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b-0">
                 Rank
               </th>
               <th className="px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground border-b-0">
@@ -431,24 +493,22 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 Left
               </th>
             </tr>
-            {/* Sub header */}
+            {/* Sub header — 4 sortable columns, rest plain text */}
             <tr className="bg-muted/50 border-b-2 border-border">
-              <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                <span className="hidden md:inline">Actual</span>
-                <span className="md:hidden">Act</span>
-              </th>
+              <SortTh col="rank" label="Act" fullLabel="Actual" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
               <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">Max</th>
               <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">Floor</th>
-              <th className="px-2 pb-2" />
-              <th className="px-2 pb-2" />
-              <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                <span className="hidden md:inline">Actual</span>
-                <span className="md:hidden">Act</span>
-              </th>
-              <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">Max</th>
               <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">Exp</th>
+              <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                <span className="hidden md:inline">Percentile</span>
+                <span className="md:hidden">%</span>
+              </th>
               <th className="px-2 pb-2" />
+              <SortTh col="currentScore" label="Act" fullLabel="Actual" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+              <SortTh col="maxPossibleScore" label="Max" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+              <SortTh col="expectedScore" label="Exp" sortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
               <th className="px-2 pb-2" />
+              <th className="px-2 pb-2 text-center text-[9px] font-medium uppercase tracking-wider text-muted-foreground/70">Left</th>
             </tr>
           </thead>
           <tbody>
@@ -470,6 +530,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 allRanks={allRanks}
                 allMaxRanks={allMaxRanks}
                 allFloorRanks={allFloorRanks}
+                allExpectedRanks={allExpectedRanks}
                 totalEntries={totalEntries}
                 isPreTournament={isPreTournament}
               />
@@ -477,7 +538,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
 
             {/* ═══ Blue divider ═══ */}
             <tr>
-              <td colSpan={10} className="p-0">
+              <td colSpan={11} className="p-0">
                 <div className="h-[3px] bg-primary" />
               </td>
             </tr>
@@ -492,6 +553,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
                 allRanks={allRanks}
                 allMaxRanks={allMaxRanks}
                 allFloorRanks={allFloorRanks}
+                allExpectedRanks={allExpectedRanks}
                 totalEntries={totalEntries}
                 isPreTournament={isPreTournament}
               />
@@ -499,7 +561,7 @@ export function LeaderboardSample({ entries, currentUserId, optimal8, optimal8Fi
 
             {sortedEntries.length === 0 && (
               <tr>
-                <td colSpan={10} className="py-12 text-center text-sm text-muted-foreground">
+                <td colSpan={11} className="py-12 text-center text-sm text-muted-foreground">
                   No entry slips yet
                 </td>
               </tr>

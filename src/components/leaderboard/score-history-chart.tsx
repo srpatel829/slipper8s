@@ -106,6 +106,8 @@ interface ScoreHistoryData {
   entryGameScores: Record<string, Array<{ gameIndex: number; score: number }>>
   leaderLine: Array<{ gameIndex: number; score: number; entryId: string }>
   medianLine: Array<{ gameIndex: number; score: number }>
+  snapshotLeaderId: string | null
+  snapshotMedianId: string | null
   optimal8Line: Array<{ gameIndex: number; score: number }>
   totalGames: number
   latestGameIndex: number
@@ -392,7 +394,7 @@ export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) 
     return map
   }, [data])
 
-  // Build line definitions
+  // Build line definitions — depends on effectiveGameIdx for dynamic leader/median labels
   const allLines = useMemo(() => {
     if (!data) return [] as LineDef[]
 
@@ -422,30 +424,22 @@ export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) 
       })
     }
 
-    // Identify current leader and median names
-    const latestLeaderEntry = data.leaderLine.length > 0
-      ? data.leaderLine[data.leaderLine.length - 1] : null
-    const leaderName = latestLeaderEntry
-      ? (data.entries[latestLeaderEntry.entryId]?.name
-        ?? data.availablePlayers.find(p => p.id === latestLeaderEntry.entryId)?.name
+    // Identify leader at the VIEWED game (not just latest)
+    const viewLeaderEntry = data.leaderLine.find(l => l.gameIndex === effectiveGameIdx)
+      ?? (data.leaderLine.length > 0 ? data.leaderLine[data.leaderLine.length - 1] : null)
+    const leaderName = viewLeaderEntry
+      ? (data.entries[viewLeaderEntry.entryId]?.name
+        ?? data.availablePlayers.find(p => p.id === viewLeaderEntry.entryId)?.name
         ?? "")
       : ""
 
-    // Find median entry: entry whose score is closest to the median score at latest game
-    const allEntriesList = Object.values(data.entries)
-    let medianName = ""
-    if (data.medianLine.length > 0 && allEntriesList.length > 0) {
-      const latestMedianScore = data.medianLine[data.medianLine.length - 1]?.score ?? 0
-      let bestDist = Infinity
-      for (const entry of allEntriesList) {
-        const lastScore = entry.scores[data.latestCheckpointIndex] ?? 0
-        const dist = Math.abs(lastScore - latestMedianScore)
-        if (dist < bestDist) {
-          bestDist = dist
-          medianName = entry.name
-        }
-      }
-    }
+    // Identify median entry at the viewed game
+    const medianEntryId = data.snapshotMedianId
+    const medianName = medianEntryId
+      ? (data.entries[medianEntryId]?.name
+        ?? data.availablePlayers.find(p => p.id === medianEntryId)?.name
+        ?? "")
+      : ""
 
     // Leader line — dynamic per-game
     lines.push({
@@ -504,7 +498,7 @@ export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) 
     }
 
     return lines
-  }, [data])
+  }, [data, effectiveGameIdx])
 
   // Build chart data — game-level for actual, checkpoint-level for projections
   const { chartData, isComplete } = useMemo(() => {
@@ -520,30 +514,15 @@ export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) 
       entryScoreSeries.set(entryId, buildFullScoreSeries(gameScores, 63, latestGame))
     }
 
-    // Identify the current leader and median entries so we can use THEIR score history
-    // (not the composite per-game max/median from different entries at each game)
-    const latestLeader = data.leaderLine.length > 0
-      ? data.leaderLine[data.leaderLine.length - 1] : null
-    const leaderEntryId = latestLeader?.entryId ?? null
-
-    let medianEntryId: string | null = null
-    if (data.medianLine.length > 0) {
-      const latestMedianScore = data.medianLine[data.medianLine.length - 1]?.score ?? 0
-      let bestDist = Infinity
-      for (const [eid, entry] of Object.entries(data.entries)) {
-        const lastScore = entry.scores[data.latestCheckpointIndex] ?? 0
-        const dist = Math.abs(lastScore - latestMedianScore)
-        if (dist < bestDist) {
-          bestDist = dist
-          medianEntryId = eid
-        }
-      }
-    }
-
-    // Build leader/median score series from their individual game history
-    const leaderSeries = leaderEntryId ? entryScoreSeries.get(leaderEntryId) ?? null : null
-    const medianSeries = medianEntryId ? entryScoreSeries.get(medianEntryId) ?? null : null
+    // Use per-game AGGREGATE data for leader/median (not individual entry history)
+    // This ensures the leader line shows the MAX score at each game across ALL entries
+    const leaderScoreMap = new Map(data.leaderLine.map(l => [l.gameIndex, l.score]))
+    const medianScoreMap = new Map(data.medianLine.map(l => [l.gameIndex, l.score]))
     const opt8ByGame = new Map(data.optimal8Line.map(o => [o.gameIndex, o.score]))
+
+    // For projections, use the snapshot-derived leader/median entry IDs
+    const leaderEntryId = data.snapshotLeaderId ?? null
+    const medianEntryId = data.snapshotMedianId ?? null
 
     // Data points: one per completed game (up to view position) + pre-tournament
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -571,9 +550,9 @@ export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) 
         point[entryId] = series.get(gi) ?? null
       }
 
-      // Leader and median — use the SPECIFIC entry's score history (not composite)
-      point.leader = leaderSeries?.get(gi) ?? 0
-      point.median = medianSeries?.get(gi) ?? 0
+      // Leader and median — use per-game aggregate data (max and median across ALL entries)
+      point.leader = leaderScoreMap.get(gi) ?? (gi > 0 ? points[points.length - 1]?.leader : 0) ?? 0
+      point.median = medianScoreMap.get(gi) ?? (gi > 0 ? points[points.length - 1]?.median : 0) ?? 0
 
       // Optimal 8
       point.optimal8 = opt8ByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.optimal8 : 0) ?? null
