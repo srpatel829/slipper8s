@@ -34,7 +34,7 @@ interface LeaderboardLiveProps {
   optimal8?: Optimal8Data
   userProfile?: UserProfile | null
   /** Callback when dimension filter changes (for chart sync) */
-  onFilterChange?: (filteredUserIds: Set<string>) => void
+  onFilterChange?: (filteredEntryIds: Set<string>) => void
 }
 
 export function LeaderboardLive({

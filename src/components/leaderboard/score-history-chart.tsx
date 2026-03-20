@@ -336,19 +336,30 @@ function buildFullScoreSeries(
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 interface ScoreHistoryChartProps {
-  filteredUserIds?: Set<string>
+  filteredEntryIds?: Set<string>
 }
 
-export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
+export function ScoreHistoryChart({ filteredEntryIds }: ScoreHistoryChartProps) {
   const [data, setData] = useState<ScoreHistoryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const timeline = useTimeline()
 
+  // Build a stable key from filteredEntryIds for the effect dependency
+  const filterKey = useMemo(() => {
+    if (!filteredEntryIds || filteredEntryIds.size === 0) return ""
+    return [...filteredEntryIds].sort().join(",")
+  }, [filteredEntryIds])
+
   useEffect(() => {
     async function fetchHistory() {
       try {
-        const res = await fetch("/api/scores/history")
+        setLoading(true)
+        let url = "/api/scores/history"
+        if (filterKey) {
+          url += `?filterEntryIds=${encodeURIComponent(filterKey)}`
+        }
+        const res = await fetch(url)
         if (!res.ok) throw new Error("Failed to fetch score history")
         const json = await res.json()
         setData(json)
@@ -359,7 +370,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       }
     }
     fetchHistory()
-  }, [])
+  }, [filterKey])
 
   // Effective game index from timeline — follows timeline when scrubbed
   const effectiveGameIdx = useMemo(() => {

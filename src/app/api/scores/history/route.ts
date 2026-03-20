@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
   const params = req.nextUrl.searchParams
   const entryIds = params.get("entryIds")?.split(",").filter(Boolean) ?? []
   const includeLeaderMedian = params.get("includeLeaderMedian") !== "false"
+  // Optional: filter leader/median to only these entry IDs (for dimension/league filtering)
+  const filterEntryIds = params.get("filterEntryIds")?.split(",").filter(Boolean) ?? []
 
   // Resolve season
   let seasonId = params.get("seasonId")
@@ -451,8 +453,14 @@ export async function GET(req: NextRequest) {
   let medianLine: Array<{ gameIndex: number; score: number }> = []
 
   if (completedGames.length > 0) {
+    const snapshotFilter: any = { gameId: { in: completedGames.map(g => g.id) } }
+    // When filterEntryIds is provided, only compute leader/median from those entries
+    if (filterEntryIds.length > 0) {
+      snapshotFilter.entryId = { in: filterEntryIds }
+    }
+
     const allSnapshots = await prisma.scoreSnapshot.findMany({
-      where: { gameId: { in: completedGames.map(g => g.id) } },
+      where: snapshotFilter,
       select: { gameId: true, score: true, entryId: true },
     })
 

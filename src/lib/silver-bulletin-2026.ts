@@ -203,10 +203,16 @@ export const SB_VERSIONS: SBVersion[] = [SB_VERSION_0, SB_VERSION_1]
 
 // ─── Helper to get SB data for a given checkpoint ─────────────────────────────
 
+/**
+ * Get the correct SB data for a given checkpoint.
+ * A version with checkpoint=N was published AFTER checkpoint N completed,
+ * so it's active starting from checkpoint N+1 (i.e., v.checkpoint < cp).
+ * Exception: version 0 (pre-tournament) is always the baseline.
+ */
 export function getSBDataForCheckpoint(cp: number): SilverBulletinTeam[] {
   let version = SB_VERSIONS[0]
   for (const v of SB_VERSIONS) {
-    if (v.checkpoint <= cp) version = v
+    if (v.checkpoint < cp) version = v
     else break
   }
   return version.teams

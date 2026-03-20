@@ -78,10 +78,10 @@ export async function GET(req: NextRequest) {
 
   if (!gameId) return NextResponse.json({ error: "gameId required" }, { status: 400 })
 
-  // Get score snapshots at this game for all entries
+  // Get score snapshots at this game for all entries (including stored expectedScore/expectedRank)
   const snapshots = await prisma.scoreSnapshot.findMany({
     where: { gameId },
-    select: { entryId: true, score: true, rank: true, percentile: true, maxRank: true, floorRank: true },
+    select: { entryId: true, score: true, rank: true, percentile: true, maxRank: true, floorRank: true, expectedScore: true, expectedRank: true },
   })
 
   const snapshotMap = new Map(snapshots.map(s => [s.entryId, s]))
@@ -224,13 +224,10 @@ export async function GET(req: NextRequest) {
     const tps = maxPossibleScore
     const displayName = entry.user.name ?? entry.user.email
 
-    // Compute historical expected score using the correct SB version
-    const historicalExpectedScore = calculateEntryExpectedScore(
-      pickTeamIds,
-      historicalTeamStates,
-      false,
-      historicalSBData,
-    )
+    // Use stored expectedScore from snapshot if available, else compute on-the-fly
+    const historicalExpectedScore = snap?.expectedScore != null
+      ? snap.expectedScore
+      : calculateEntryExpectedScore(pickTeamIds, historicalTeamStates, false, historicalSBData)
 
     return {
       entryId: entry.id,
@@ -301,16 +298,28 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Compute expected rank (ranking by expectedScore)
-  const sortedByExpected = [...leaderboard].sort((a, b) =>
-    (b.expectedScore ?? 0) - (a.expectedScore ?? 0)
-  )
-  let expectedRank = 1
-  for (let i = 0; i < sortedByExpected.length; i++) {
-    if (i > 0 && (sortedByExpected[i].expectedScore ?? 0) < (sortedByExpected[i - 1].expectedScore ?? 0)) {
-      expectedRank = i + 1
+  // Use stored expectedRank from snapshots when available, else compute on-the-fly
+  const hasStoredExpectedRanks = leaderboard.some(e => {
+    const snap = snapshotMap.get(e.entryId)
+    return snap?.expectedRank != null
+  })
+
+  if (hasStoredExpectedRanks) {
+    for (const e of leaderboard) {
+      const snap = snapshotMap.get(e.entryId)
+      ;(e as any).expectedRank = snap?.expectedRank ?? null
     }
-    (sortedByExpected[i] as any).expectedRank = expectedRank
+  } else {
+    const sortedByExpected = [...leaderboard].sort((a, b) =>
+      (b.expectedScore ?? 0) - (a.expectedScore ?? 0)
+    )
+    let expectedRank = 1
+    for (let i = 0; i < sortedByExpected.length; i++) {
+      if (i > 0 && (sortedByExpected[i].expectedScore ?? 0) < (sortedByExpected[i - 1].expectedScore ?? 0)) {
+        expectedRank = i + 1
+      }
+      (sortedByExpected[i] as any).expectedRank = expectedRank
+    }
   }
 
   // Clean up internal fields before returning

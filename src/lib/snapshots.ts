@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { computePercentile, resolvePickTeam } from "@/lib/scoring"
 import { computeCollisionAwareRanks, computeMaxPossibleScore } from "@/lib/max-possible-score"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
+import { calculateEntryExpectedScore, getSBDataForCheckpoint } from "@/lib/silver-bulletin-2026"
 
 /**
  * Score Snapshot System
@@ -29,6 +30,24 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
   const settings = await prisma.appSettings.findUnique({ where: { id: "main" } })
   const seasonId = settings?.currentSeasonId
   if (!seasonId) return { saved: 0 }
+
+  // Determine checkpoint for this game (for SB version selection)
+  const game = await prisma.tournamentGame.findUnique({
+    where: { id: gameId },
+    select: { round: true, startTime: true },
+  })
+  const checkpoint = game ? await getCheckpointForGame(gameId, game.round, game.startTime) : 0
+  const sbData = getSBDataForCheckpoint(checkpoint)
+
+  // Get current team states for expected score computation
+  const allTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, wins: true, eliminated: true },
+  })
+  const teamStates = new Map<string, { wins: number; eliminated: boolean }>()
+  for (const t of allTeams) {
+    teamStates.set(t.id, { wins: t.wins, eliminated: t.eliminated })
+  }
 
   // Get all entries with their current scores AND picks for collision-aware ranking
   const entries = await prisma.entry.findMany({
@@ -105,7 +124,28 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
 
   const rankResults = computeCollisionAwareRanks(collisionEntries, teamInfoMap)
 
-  // Build snapshots with maxRank and floorRank
+  // Compute expected scores for all entries
+  const expectedScores = new Map<string, number | null>()
+  for (const { entry } of ranked) {
+    const pickTeamIds = entryPickMap.get(entry.id) ?? []
+    const es = calculateEntryExpectedScore(pickTeamIds, teamStates, false, sbData)
+    expectedScores.set(entry.id, es)
+  }
+
+  // Compute expected ranks (ranking by expectedScore descending)
+  const sortedByExpected = [...ranked].sort((a, b) =>
+    (expectedScores.get(b.entry.id) ?? 0) - (expectedScores.get(a.entry.id) ?? 0)
+  )
+  const expectedRanks = new Map<string, number>()
+  let expRank = 1
+  for (let i = 0; i < sortedByExpected.length; i++) {
+    if (i > 0 && (expectedScores.get(sortedByExpected[i].entry.id) ?? 0) < (expectedScores.get(sortedByExpected[i - 1].entry.id) ?? 0)) {
+      expRank = i + 1
+    }
+    expectedRanks.set(sortedByExpected[i].entry.id, expRank)
+  }
+
+  // Build snapshots with all computed values
   const snapshots: Array<{
     entryId: string
     gameId: string
@@ -114,6 +154,8 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
     percentile: number
     maxRank: number | null
     floorRank: number | null
+    expectedScore: number | null
+    expectedRank: number | null
   }> = []
 
   for (const { entry, rank } of ranked) {
@@ -126,6 +168,8 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
       percentile: computePercentile(rank, total),
       maxRank: ranks?.maxRank ?? null,
       floorRank: ranks?.floorRank ?? null,
+      expectedScore: expectedScores.get(entry.id) ?? null,
+      expectedRank: expectedRanks.get(entry.id) ?? null,
     })
   }
 
@@ -461,6 +505,49 @@ export async function createDimensionSnapshots(checkpointId: string, seasonId: s
       },
     })
   }
+}
+
+/**
+ * Determine which checkpoint a game belongs to (for SB version selection).
+ * Rounds 1-4 split into Day 1/Day 2 by ESPN startTime date (ET timezone).
+ * Rounds 5-6 have single checkpoints.
+ */
+async function getCheckpointForGame(
+  gameId: string,
+  round: number,
+  startTime: Date | null,
+): Promise<number> {
+  if (round === 0 || !startTime) return 0
+
+  const ROUND_TO_CP: Record<number, [number, number] | [number]> = {
+    1: [1, 2], 2: [3, 4], 3: [5, 6], 4: [7, 8], 5: [9], 6: [10],
+  }
+
+  const cpIndices = ROUND_TO_CP[round]
+  if (!cpIndices) return 0
+
+  // Single checkpoint rounds
+  if (cpIndices.length === 1) return cpIndices[0]
+
+  // Two-day rounds: determine if this game is Day 1 or Day 2
+  const roundGames = await prisma.tournamentGame.findMany({
+    where: { round },
+    select: { id: true, startTime: true },
+    orderBy: { startTime: "asc" },
+  })
+
+  const dateOfStart = (g: { startTime: Date | null }) => {
+    if (!g.startTime) return "unknown"
+    return g.startTime.toLocaleDateString("en-US", { timeZone: "America/New_York" })
+  }
+
+  const uniqueDates = [...new Set(roundGames.map(dateOfStart))]
+  uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+
+  if (uniqueDates.length < 2) return cpIndices[0]
+
+  const thisDate = dateOfStart({ startTime })
+  return thisDate === uniqueDates[0] ? cpIndices[0] : cpIndices[1]
 }
 
 /**

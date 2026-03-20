@@ -331,15 +331,17 @@ model Checkpoint {
 }
 
 model ScoreSnapshot {
-  id         String   @id @default(cuid())
-  entryId    String
-  gameId     String?
-  score      Int
-  rank       Int
-  percentile Float
-  maxRank    Int?
-  floorRank  Int?
-  savedAt    DateTime @default(now())
+  id            String   @id @default(cuid())
+  entryId       String
+  gameId        String?
+  score         Int
+  rank          Int
+  percentile    Float
+  maxRank       Int?
+  floorRank     Int?
+  expectedScore Float?
+  expectedRank  Int?
+  savedAt       DateTime @default(now())
 
   entry Entry           @relation(fields: [entryId], references: [id], onDelete: Cascade)
   game  TournamentGame? @relation(fields: [gameId], references: [id])

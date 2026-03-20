@@ -61,8 +61,8 @@ interface LeaderboardDimensionTabsProps {
   userProfile?: UserProfile | null
   /** Render callback for the leaderboard content */
   renderLeaderboard: (filteredEntries: LeaderboardEntry[]) => ReactNode
-  /** Called whenever the filtered set of user IDs changes (for chart sync) */
-  onFilterChange?: (filteredUserIds: Set<string>) => void
+  /** Called whenever the filtered set of entry IDs changes (for chart sync) */
+  onFilterChange?: (filteredEntryIds: Set<string>) => void
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -226,14 +226,15 @@ export function LeaderboardDimensionTabs({
   )
 
   // Notify parent of filter changes (for chart sync)
-  const filteredUserIds = useMemo(
-    () => new Set(filteredEntries.map(e => e.userId)),
+  // Pass entry IDs so the chart can filter leader/median by the same entries
+  const filteredEntryIds = useMemo(
+    () => new Set(filteredEntries.map(e => e.entryId)),
     [filteredEntries]
   )
 
   useEffect(() => {
-    onFilterChange?.(filteredUserIds)
-  }, [filteredUserIds, onFilterChange])
+    onFilterChange?.(filteredEntryIds)
+  }, [filteredEntryIds, onFilterChange])
 
   const responseCount = useMemo(
     () => countResponses(entries, activeConfig),

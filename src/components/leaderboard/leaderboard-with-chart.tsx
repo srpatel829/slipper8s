@@ -30,10 +30,10 @@ export function LeaderboardWithChart({
   optimal8,
   userProfile,
 }: LeaderboardWithChartProps) {
-  const [filteredUserIds, setFilteredUserIds] = useState<Set<string> | undefined>(undefined)
+  const [filteredEntryIds, setFilteredEntryIds] = useState<Set<string> | undefined>(undefined)
 
   const handleFilterChange = useCallback((ids: Set<string>) => {
-    setFilteredUserIds(ids)
+    setFilteredEntryIds(ids)
   }, [])
 
   return (
@@ -49,7 +49,7 @@ export function LeaderboardWithChart({
       />
 
       {/* Score history chart — collapsible */}
-      <ScoreHistorySection filteredUserIds={filteredUserIds} />
+      <ScoreHistorySection filteredEntryIds={filteredEntryIds} />
     </>
   )
 }
