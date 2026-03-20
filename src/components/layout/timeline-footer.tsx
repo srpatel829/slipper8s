@@ -84,10 +84,8 @@ export function TimelineFooter({
   totalCompletedGames,
   className,
 }: TimelineFooterProps) {
-  // Progress bar based on game position (not checkpoint) for smooth per-game feedback
-  const progress = latestGameIndex >= 0
-    ? ((currentGameIndex + 1) / TOTAL_TOURNAMENT_GAMES) * 100
-    : 0
+  // Progress bar aligned with the checkpoint scrubber thumb position
+  const progress = (currentCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
 
   const currentLabel = CHECKPOINT_LABELS[currentCheckpoint]?.short ?? "Pre"
 

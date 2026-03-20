@@ -1,11 +1,11 @@
 import { auth } from "@/lib/auth"
-import { LeaderboardLive } from "@/components/leaderboard/leaderboard-live"
+import { LeaderboardWithChart } from "@/components/leaderboard/leaderboard-with-chart"
 import { prisma } from "@/lib/prisma"
 import { computeLeaderboardFromEntries, computeOptimal8, type EntryWithRelations } from "@/lib/scoring"
 import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 import { getCachedLeaderboard, setCachedLeaderboard } from "@/lib/cache"
 import { calculateEntryExpectedScore } from "@/lib/silver-bulletin-2026"
-import { ScoreHistorySection } from "@/components/leaderboard/score-history-section"
+// ScoreHistorySection is now rendered inside LeaderboardWithChart
 import { LeaderboardShareButton } from "@/components/leaderboard/share-button"
 import Link from "next/link"
 import { BarChart3 } from "lucide-react"
@@ -308,7 +308,7 @@ export default async function LeaderboardPage() {
         </div>
       </div>
 
-      <LeaderboardLive
+      <LeaderboardWithChart
         initialData={leaderboard}
         currentUserId={session?.user?.id}
         teams={teams}
@@ -316,9 +316,6 @@ export default async function LeaderboardPage() {
         optimal8={optimal8}
         userProfile={userProfile}
       />
-
-      {/* Score history chart — collapsible */}
-      <ScoreHistorySection />
     </div>
   )
 }

@@ -43,13 +43,17 @@ export default async function ProtectedLayout({ children }: { children: React.Re
         // Get completed games in chronological order (R1+ only, not play-in)
         const games = await prisma.tournamentGame.findMany({
           where: { isComplete: true, round: { gte: 1 } },
-          select: { id: true, round: true, startTime: true },
+          select: { id: true, round: true, startTime: true, winnerId: true, team1Id: true, team2Id: true },
           orderBy: { startTime: "asc" },
         })
         completedGames = games.map((g, i) => ({
           id: g.id,
           gameIndex: i,
           round: g.round,
+          winnerId: g.winnerId,
+          loserId: g.winnerId && g.team1Id && g.team2Id
+            ? (g.winnerId === g.team1Id ? g.team2Id : g.team1Id)
+            : null,
         }))
 
         // Build checkpoint boundaries: checkpoint index → last game index

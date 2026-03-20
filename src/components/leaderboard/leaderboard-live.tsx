@@ -33,6 +33,8 @@ interface LeaderboardLiveProps {
   userLeagues?: Array<{ id: string; name: string }>
   optimal8?: Optimal8Data
   userProfile?: UserProfile | null
+  /** Callback when dimension filter changes (for chart sync) */
+  onFilterChange?: (filteredUserIds: Set<string>) => void
 }
 
 export function LeaderboardLive({
@@ -42,6 +44,7 @@ export function LeaderboardLive({
   userLeagues,
   optimal8,
   userProfile,
+  onFilterChange,
 }: LeaderboardLiveProps) {
   const [liveEntries, setLiveEntries] = useState(initialData)
   const [historicalEntries, setHistoricalEntries] = useState<LeaderboardEntry[] | null>(null)
@@ -161,6 +164,7 @@ export function LeaderboardLive({
         teams={teams}
         userLeagues={userLeagues}
         userProfile={userProfile}
+        onFilterChange={onFilterChange}
         renderLeaderboard={(filteredEntries) => (
           <LeaderboardSample
             entries={filteredEntries}

@@ -516,13 +516,72 @@ export function SimulatorPanel({
     router.replace(`${pathname}${qs ? `?${qs}` : ""}`, { scroll: false })
   }, [searchParams, router, pathname])
 
+  // ── Historical team state when timeline is scrubbed back ──────────────────
+  // Compute team wins/eliminated at the current timeline position using the
+  // original gameSequence (which has winnerId/loserId for completed games).
+  const historicalTeamState = useMemo<Record<string, { wins: number; eliminated: boolean }> | null>(() => {
+    if (!timeline || timeline.isLive || !gameSequence) return null
+
+    // Build set of completed games at the current timeline position
+    const completedAtPosition = new Set(
+      timeline.completedGames
+        .filter(g => g.gameIndex <= timeline.currentGameIndex)
+        .map(g => g.id)
+    )
+
+    // Walk the original game sequence and count wins/eliminations
+    const teamState: Record<string, { wins: number; eliminated: boolean }> = {}
+    for (const event of gameSequence) {
+      if (completedAtPosition.has(event.gameId)) {
+        // Winner gets a win
+        if (!teamState[event.winnerId]) teamState[event.winnerId] = { wins: 0, eliminated: false }
+        teamState[event.winnerId].wins++
+        // Loser is eliminated
+        if (!teamState[event.loserId]) teamState[event.loserId] = { wins: 0, eliminated: false }
+        teamState[event.loserId].eliminated = true
+      }
+    }
+    return teamState
+  }, [timeline, gameSequence])
+
+  // ── Effective base leaderboard (historical when scrubbed, live when at live) ──
+  const effectiveLeaderboard = useMemo(() => {
+    if (!historicalTeamState) return initialLeaderboard
+
+    // Override each entry's pick wins/eliminated based on historical team state
+    return initialLeaderboard.map(entry => {
+      let currentScore = 0
+      let ppr = 0
+      let teamsRemaining = 0
+      const picks = entry.picks.map(pick => {
+        const hist = historicalTeamState[pick.teamId]
+        const wins = hist?.wins ?? 0
+        const eliminated = hist?.eliminated ?? false
+        currentScore += pick.seed * wins
+        if (!eliminated) {
+          teamsRemaining++
+          ppr += pick.seed * Math.max(0, 6 - wins)
+        }
+        return { ...pick, wins, eliminated }
+      })
+      return {
+        ...entry,
+        currentScore,
+        ppr,
+        tps: currentScore + ppr,
+        teamsRemaining,
+        picks,
+      }
+    })
+  }, [initialLeaderboard, historicalTeamState])
+
   // ── Build hypothetical state from user's game picks ───────────────────────
   const hypothetical = useMemo<HypotheticalState>(() => {
     if (Object.keys(gamePicks).length === 0) return {}
 
-    // Base wins from leaderboard picks
+    // Base wins from the effective leaderboard (historical or live)
     const baseWins: Record<string, number> = {}
-    for (const entry of initialLeaderboard) {
+    for (const entry of effectiveLeaderboard) {
       for (const pick of entry.picks) {
         baseWins[pick.teamId] = pick.wins
       }
@@ -544,15 +603,15 @@ export function SimulatorPanel({
     }
 
     return hyp
-  }, [gamePicks, allGames, initialLeaderboard])
+  }, [gamePicks, allGames, effectiveLeaderboard])
 
   // ── Simulated leaderboard (re-sorted by score then TPS) ───────────────────
   const simLeaderboardFull = useMemo(() => {
-    const lb = computeSimulatedLeaderboard(initialLeaderboard, hypothetical)
+    const lb = computeSimulatedLeaderboard(effectiveLeaderboard, hypothetical)
     return [...lb].sort(
       (a, b) => b.currentScore - a.currentScore || b.tps - a.tps || a.name.localeCompare(b.name)
     ).map((s, i) => ({ ...s, rank: i + 1 }))
-  }, [initialLeaderboard, hypothetical])
+  }, [effectiveLeaderboard, hypothetical])
 
   // ── Available sub-values for each dimension ────────────────────────────────
   const dimensionOptions = useMemo(() => {
@@ -945,7 +1004,7 @@ export function SimulatorPanel({
               </TableHeader>
               <TableBody>
                 {simLeaderboard.map((entry) => {
-                  const original = initialLeaderboard.find(e => e.userId === entry.userId)
+                  const original = effectiveLeaderboard.find(e => e.userId === entry.userId)
                   const rankDelta = original ? original.rank - entry.rank : 0 // positive = moved up
                   const scoreChanged = original && original.currentScore !== entry.currentScore
                   const tpsChanged = original && original.tps !== entry.tps

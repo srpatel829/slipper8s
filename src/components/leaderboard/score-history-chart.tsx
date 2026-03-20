@@ -274,7 +274,12 @@ function ChartTooltip({ active, payload, label, visibleLines, latestCpIndex }: {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export function ScoreHistoryChart() {
+interface ScoreHistoryChartProps {
+  /** Filtered user IDs from dimension tabs — when set, leader/median computed within this set */
+  filteredUserIds?: Set<string>
+}
+
+export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
   const [data, setData] = useState<ScoreHistoryData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -296,7 +301,14 @@ export function ScoreHistoryChart() {
     fetchHistory()
   }, [])
 
-  // Build line definitions
+  // Effective checkpoint for chart — follows timeline when scrubbed
+  const effectiveCpIdx = useMemo(() => {
+    if (!data) return -1
+    if (timeline && !timeline.isLive) return timeline.currentCheckpoint
+    return data.latestCheckpointIndex ?? -1
+  }, [data, timeline])
+
+  // Build line definitions — dynamically determines leader/median at the current timeline position
   const allLines = useMemo(() => {
     if (!data) return [] as LineDef[]
 
@@ -326,11 +338,35 @@ export function ScoreHistoryChart() {
       })
     }
 
-    // Categorize entries
+    // Dynamically determine leader and median at the current checkpoint
     const entries = Object.values(data.entries)
     const userEntries = entries.filter(e => e.isCurrentUser)
-    const leaderEntry = entries.find(e => e.isLeader && !e.isCurrentUser)
-    const medianEntry = entries.find(e => e.isMedian && !e.isCurrentUser && !e.isLeader)
+    // When filteredUserIds is provided, restrict non-user pool to that set
+    const nonUserEntries = entries.filter(e => {
+      if (e.isCurrentUser) return false
+      if (filteredUserIds && filteredUserIds.size > 0) {
+        return filteredUserIds.has(e.entryId)
+      }
+      return true
+    })
+
+    // Compute score at effectiveCpIdx for all loaded entries to find leader/median
+    const cpIdx = Math.max(0, effectiveCpIdx)
+    const entriesWithScoreAtCp = entries
+      .map(e => ({ entry: e, scoreAtCp: e.scores[cpIdx] ?? 0 }))
+      .sort((a, b) => b.scoreAtCp - a.scoreAtCp)
+
+    const nonUserWithScores = nonUserEntries
+      .map(e => ({ entry: e, scoreAtCp: e.scores[cpIdx] ?? 0 }))
+      .sort((a, b) => b.scoreAtCp - a.scoreAtCp)
+
+    // Leader = highest scoring non-user entry at this checkpoint
+    const leaderEntry = nonUserWithScores[0]?.entry ?? null
+    // Median = middle-ranked non-user entry at this checkpoint
+    const medianIdx = Math.floor(nonUserWithScores.length / 2)
+    const medianEntry = nonUserWithScores.length > 1
+      ? nonUserWithScores[medianIdx]?.entry ?? null
+      : null
 
     if (leaderEntry) {
       lines.push({
@@ -344,7 +380,7 @@ export function ScoreHistoryChart() {
       })
     }
 
-    if (medianEntry) {
+    if (medianEntry && medianEntry.entryId !== leaderEntry?.entryId) {
       lines.push({
         id: `median_${medianEntry.entryId}`,
         label: `Median (${medianEntry.name})`,
@@ -356,12 +392,24 @@ export function ScoreHistoryChart() {
       })
     }
 
+    // Check if user is also the leader or median at this checkpoint
+    const userIsLeader = userEntries.some(e =>
+      leaderEntry && entriesWithScoreAtCp[0]?.entry.entryId === e.entryId
+    )
+    const userIsMedian = userEntries.some(e =>
+      medianEntry && e.entryId === medianEntry.entryId
+    )
+
     userEntries.forEach((entry, i) => {
       const color = USER_ENTRY_COLORS[i % USER_ENTRY_COLORS.length]
       let label = entry.name
-      if (entry.isLeader) label = `You / Leader (${entry.name})`
-      else if (entry.isMedian) label = `You / Median (${entry.name})`
-      else label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
+      if (userIsLeader && entriesWithScoreAtCp[0]?.entry.entryId === entry.entryId) {
+        label = `You / Leader (${entry.name})`
+      } else if (userIsMedian && medianEntry?.entryId === entry.entryId) {
+        label = `You / Median (${entry.name})`
+      } else {
+        label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
+      }
 
       lines.push({
         id: `you_${entry.entryId}`,
@@ -385,8 +433,6 @@ export function ScoreHistoryChart() {
     let colorIdx = 0
     for (const player of data.availablePlayers ?? []) {
       if (specialIds.has(player.id)) continue
-      // Check if this player's data is already loaded
-      const hasData = !!data.entries[player.id]
       lines.push({
         id: player.id,
         label: player.name,
@@ -400,14 +446,7 @@ export function ScoreHistoryChart() {
     }
 
     return lines
-  }, [data])
-
-  // Effective checkpoint for chart — follows timeline when scrubbed
-  const effectiveCpIdx = useMemo(() => {
-    if (!data) return -1
-    if (timeline && !timeline.isLive) return timeline.currentCheckpoint
-    return data.latestCheckpointIndex ?? -1
-  }, [data, timeline])
+  }, [data, effectiveCpIdx, filteredUserIds])
 
   // Build chart data — directly from per-checkpoint arrays
   const { chartData, isComplete } = useMemo(() => {
@@ -544,7 +583,7 @@ export function ScoreHistoryChart() {
     : apiLatestCpIdx
   const hasAnyData = apiLatestCpIdx >= 0 && Object.keys(data.entries).length > 0
 
-  if (!hasAnyData) {
+  if (!hasAnyData || effectiveCpIdx <= 0) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
         No game results yet — check back when the tournament starts

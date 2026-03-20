@@ -6,7 +6,12 @@ import { Button } from "@/components/ui/button"
 import { BarChart3, ChevronDown, ChevronUp } from "lucide-react"
 import { ScoreHistoryChart } from "./score-history-chart"
 
-export function ScoreHistorySection() {
+interface ScoreHistorySectionProps {
+  /** Filtered user IDs from dimension tabs (for chart leader/median sync) */
+  filteredUserIds?: Set<string>
+}
+
+export function ScoreHistorySection({ filteredUserIds }: ScoreHistorySectionProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -39,7 +44,7 @@ export function ScoreHistorySection() {
       </CardHeader>
       {expanded && (
         <CardContent>
-          <ScoreHistoryChart />
+          <ScoreHistoryChart filteredUserIds={filteredUserIds} />
         </CardContent>
       )}
     </Card>

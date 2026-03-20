@@ -51,6 +51,8 @@ export interface CompletedGameInfo {
   id: string
   gameIndex: number // 0-based sequential order
   round: number
+  winnerId?: string | null
+  loserId?: string | null
 }
 
 interface TimelineState {
