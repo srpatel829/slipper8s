@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 
   const completedGames = await prisma.tournamentGame.findMany({
     where: { isComplete: true, round: { gte: 1 } },
-    select: { id: true, round: true, startTime: true },
+    select: { id: true, round: true, startTime: true, winnerId: true, team1Id: true, team2Id: true },
     orderBy: { startTime: "asc" },
   })
 
@@ -134,14 +134,9 @@ export async function GET(req: NextRequest) {
     : completedGames.length > 0 ? 0 : -1
 
   // ── Build team → last game checkpoint map (for D1/D2 track assignment) ──
-  // Query completed games with winner IDs to determine each team's track
-  const gamesWithWinners = await prisma.tournamentGame.findMany({
-    where: { isComplete: true, round: { gte: 1 } },
-    select: { id: true, winnerId: true },
-    orderBy: { startTime: "asc" },
-  })
+  // Uses completedGames which already has winnerId
   const teamLastGameCheckpoint = new Map<string, number>()
-  for (const g of gamesWithWinners) {
+  for (const g of completedGames) {
     if (!g.winnerId) continue
     const cp = gameToCheckpoint.get(g.id)
     if (cp !== undefined) {
@@ -324,6 +319,9 @@ export async function GET(req: NextRequest) {
       latestCpIndex,
       teamLastGameCheckpoint
     )
+    // Force final projection to exactly match computeMaxPossibleScore
+    // (avoids any rounding or distribution drift)
+    projections[10] = maxResult.maxPossibleScore
 
     entryHistories[entry.id] = {
       entryId: entry.id,
@@ -381,6 +379,8 @@ export async function GET(req: NextRequest) {
     latestCpIndex,
     teamLastGameCheckpoint
   )
+  // Force final projection to exactly match computeMaxPossibleScore
+  opt8Projections[10] = opt8MaxResult.maxPossibleScore
 
   // Build optimal 8 array indexed by checkpoint (0-10)
   const optimal8: Array<{
@@ -488,20 +488,46 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // Optimal 8 line — checkpoint-level data mapped to game positions
+  // Optimal 8 line — per-game rolling computation
+  // Reconstruct team states game by game and compute optimal 8 at each step
   const optimal8Line: Array<{ gameIndex: number; score: number }> = []
-  for (const [cpIdx, lastGameId] of checkpointLastGameId.entries()) {
-    const gameIdx = gameIdToIndex.get(lastGameId)
-    const cpData = optimal8ByCheckpoint.get(cpIdx)
-    if (gameIdx !== undefined && cpData?.rolling != null) {
-      optimal8Line.push({ gameIndex: gameIdx, score: cpData.rolling })
+  {
+    // Build team seed lookup from allTeams (already fetched above)
+    const teamSeedMap = new Map(allTeams.map(t => [t.id, t.seed]))
+    const teamRegionMap = new Map(allTeams.map(t => [t.id, t.region]))
+
+    // Track cumulative team states as games are played
+    const rollingWins = new Map<string, number>()
+    const rollingEliminated = new Set<string>()
+
+    for (let gi = 0; gi < completedGames.length; gi++) {
+      const game = completedGames[gi]
+      if (!game.winnerId) continue
+
+      // Update wins for the winner
+      rollingWins.set(game.winnerId, (rollingWins.get(game.winnerId) ?? 0) + 1)
+
+      // Determine loser and mark eliminated
+      const loserId = game.team1Id === game.winnerId ? game.team2Id : game.team1Id
+      if (loserId) rollingEliminated.add(loserId)
+
+      // Build teamInfoMap and aliveTeams at this point
+      const stepTeamInfo = new Map<string, TeamBracketInfo>()
+      const stepAliveTeams: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean; isPlayIn: boolean; sCurveRank: undefined }> = []
+
+      for (const t of allTeams) {
+        const wins = rollingWins.get(t.id) ?? 0
+        const eliminated = rollingEliminated.has(t.id)
+        stepTeamInfo.set(t.id, { seed: t.seed, region: t.region, wins, eliminated })
+        if (!eliminated) {
+          stepAliveTeams.push({ id: t.id, seed: t.seed, region: t.region, wins, eliminated, isPlayIn: false, sCurveRank: undefined })
+        }
+      }
+
+      const stepOpt8 = computeOptimal8(stepAliveTeams, stepTeamInfo)
+      optimal8Line.push({ gameIndex: gi, score: stepOpt8.score })
     }
   }
-  // Add current live Optimal 8 at the latest game if not already present
-  if (completedGames.length > 0 && !optimal8Line.find(o => o.gameIndex === completedGames.length - 1)) {
-    optimal8Line.push({ gameIndex: completedGames.length - 1, score: opt8Result.score })
-  }
-  optimal8Line.sort((a, b) => a.gameIndex - b.gameIndex)
 
   return NextResponse.json({
     // Existing fields

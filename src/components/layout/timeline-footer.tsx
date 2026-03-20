@@ -87,12 +87,11 @@ export function TimelineFooter({
   totalCompletedGames,
   className,
 }: TimelineFooterProps) {
-  // Progress bar — scales linearly by game index position
+  // Progress bar — dark blue fill shows how much of the tournament is COMPLETED
+  // (always goes from 0 to latestGameIndex, regardless of where the dot/view is)
   const progress = (() => {
-    if (latestGameIndex <= 0) return 0
-    const gameIdx = isLive ? latestGameIndex : currentGameIndex
-    if (gameIdx < 0) return 0
-    return ((gameIdx + 1) / (latestGameIndex + 1)) * 100
+    if (latestGameIndex < 0) return 0
+    return ((latestGameIndex + 1) / TOTAL_TOURNAMENT_GAMES) * 100
   })()
 
   const currentLabel = CHECKPOINT_LABELS[currentCheckpoint]?.short ?? "Pre"
@@ -132,7 +131,7 @@ export function TimelineFooter({
   }, [canStepBack, canStepForward, onGameStep, jumpToPrevCheckpoint, jumpToNextCheckpoint])
 
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const val = parseInt(e.target.value)
+    const val = Math.min(parseInt(e.target.value), latestGameIndex)
     onGoToGameIndex(val)
   }
 
@@ -256,7 +255,7 @@ export function TimelineFooter({
               <input
                 type="range"
                 min={-1}
-                max={latestGameIndex}
+                max={TOTAL_TOURNAMENT_GAMES - 1}
                 value={isLive ? latestGameIndex : currentGameIndex}
                 onChange={handleSliderChange}
                 className="w-full h-1 appearance-none bg-foreground/10 rounded-full cursor-pointer

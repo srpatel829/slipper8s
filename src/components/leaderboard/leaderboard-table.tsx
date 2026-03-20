@@ -390,7 +390,7 @@ interface LeaderboardTableProps {
   pickerPctMap?: Map<string, number>
 }
 
-type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore" | "expectedRank"
+type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore" | "expectedRank" | "floorRank" | "maxRank"
 type SortDir = "asc" | "desc"
 
 function filterByDimension(
@@ -550,7 +550,8 @@ function LeaderboardRow({
         className="w-full text-left hidden sm:block"
         onClick={onToggle}
       >
-        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_3rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
+        <div className="grid grid-cols-[2.5rem_2.5rem_3rem_2.5rem_3.5rem_1fr_3.5rem_3.5rem_3.5rem_2.5rem] gap-1.5 items-center px-4 py-3">
+          {/* Actual Rank */}
           <div className="flex flex-col items-center gap-0">
             <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
               {rankDisplay}
@@ -562,9 +563,35 @@ function LeaderboardRow({
               <span className="text-[9px] text-red-500 font-bold leading-none">▼{Math.abs(entry.rankChange)}</span>
             )}
           </div>
+          {/* Max Rank */}
           <div className="text-center">
-            <span className="text-[10px] font-medium text-muted-foreground">Top {entry.percentile}%</span>
+            {entry.maxRank != null ? (
+              <span className="font-mono text-xs font-bold text-green-400">T{entry.maxRank}</span>
+            ) : (
+              <span className="text-xs text-muted-foreground/40">–</span>
+            )}
           </div>
+          {/* Floor Rank */}
+          <div className="text-center">
+            {entry.floorRank != null ? (
+              <span className="font-mono text-xs font-bold text-red-400">T{entry.floorRank}</span>
+            ) : (
+              <span className="text-xs text-muted-foreground/40">–</span>
+            )}
+          </div>
+          {/* Exp Rank */}
+          <div className="text-center">
+            {entry.expectedRank != null ? (
+              <span className="font-mono text-xs text-muted-foreground">#{entry.expectedRank}</span>
+            ) : (
+              <span className="text-xs text-muted-foreground/40">–</span>
+            )}
+          </div>
+          {/* Percentile */}
+          <div className="text-center">
+            <span className="text-[10px] font-medium text-muted-foreground">{entry.percentile}%</span>
+          </div>
+          {/* Player */}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               {allArchetypes.map(a => (
@@ -584,33 +611,25 @@ function LeaderboardRow({
             )}
             {entry.picks.length > 0 && <PicksLogoStrip picks={entry.picks} isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
           </div>
-          <div className="text-right">
-            <span className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0 ? "text-muted-foreground" : entry.teamsRemaining >= 4 ? "text-green-400" : "text-amber-400"}`}>
-              {entry.teamsRemaining}<span className="text-muted-foreground text-xs">/8</span>
-            </span>
-          </div>
+          {/* Actual Score */}
           <div className="text-right"><span className="font-mono font-semibold text-sm">{entry.currentScore}</span></div>
-          <div className="text-right">
-            <span className="font-mono text-sm text-muted-foreground">
-              {entry.expectedScore != null ? entry.expectedScore.toFixed(1) : "–"}
-            </span>
-          </div>
-          <div className="text-center">
-            <span className="font-mono text-sm text-muted-foreground">
-              {entry.expectedRank != null ? `#${entry.expectedRank}` : "–"}
-            </span>
-          </div>
+          {/* Max Score */}
           <div className="text-right">
             <span className="font-mono font-bold text-sm text-primary">
               {entry.maxPossibleScore != null ? entry.maxPossibleScore : entry.tps}
             </span>
           </div>
-          <div className="text-center">
-            {entry.maxRank != null ? (
-              <span className="font-mono text-sm text-green-400">#{entry.maxRank}</span>
-            ) : (
-              <span className="text-sm text-muted-foreground/40">–</span>
-            )}
+          {/* Expected Score */}
+          <div className="text-right">
+            <span className="font-mono text-sm text-muted-foreground">
+              {entry.expectedScore != null ? entry.expectedScore.toFixed(1) : "–"}
+            </span>
+          </div>
+          {/* Left */}
+          <div className="text-right">
+            <span className={`text-sm font-mono font-medium ${entry.teamsRemaining === 0 ? "text-muted-foreground" : entry.teamsRemaining >= 4 ? "text-green-400" : "text-amber-400"}`}>
+              {entry.teamsRemaining}
+            </span>
           </div>
         </div>
       </button>
@@ -723,6 +742,10 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
     const bVal = b[sortKey] ?? 0
     return ((aVal as number) - (bVal as number)) * mult
   })
+
+  // Split into pinned (user's entries) and rest for display
+  const pinnedEntries = sorted.filter(e => e.userId === currentUserId)
+  const unpinnedEntries = sorted.filter(e => e.userId !== currentUserId)
 
   const SortBtn = ({ col, label }: { col: SortKey; label: string }) => (
     <button
@@ -847,24 +870,40 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         ))}
       </div>
 
-      {/* Column headers — Spec: Rank | Percentile | Player | Teams Left | Score | Exp | ExpR | Max Score | Max Rank */}
-      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_3rem_4.5rem_4rem] gap-2 px-4 py-2">
-        <SortBtn col="rank" label="#" />
-        <SortBtn col="percentile" label="%" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
-        <div className="text-right"><SortBtn col="teamsRemaining" label="Left" /></div>
-        <div className="text-right"><SortBtn col="currentScore" label="Score" /></div>
-        <div className="text-right"><SortBtn col="expectedScore" label="Exp" /></div>
-        <div className="text-center"><SortBtn col="expectedRank" label="E#" /></div>
-        <div className="text-right"><SortBtn col="maxPossibleScore" label="Max" /></div>
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Max↑</span>
+      {/* Column headers — grouped: Rank (Actual/Max/Floor/Exp) | % | Player | Score (Actual/Max/Exp) | Left */}
+      <div className="hidden sm:block px-4 py-1">
+        {/* Row 1: group labels */}
+        <div className="grid grid-cols-[2.5rem_2.5rem_3rem_2.5rem_3.5rem_1fr_3.5rem_3.5rem_3.5rem_2.5rem] gap-1.5 mb-0.5">
+          <div className="col-span-4 text-center">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Rank</span>
+          </div>
+          <div />
+          <div />
+          <div className="col-span-3 text-center">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">Score</span>
+          </div>
+          <div />
+        </div>
+        {/* Row 2: column headers */}
+        <div className="grid grid-cols-[2.5rem_2.5rem_3rem_2.5rem_3.5rem_1fr_3.5rem_3.5rem_3.5rem_2.5rem] gap-1.5">
+          <div className="text-center"><SortBtn col="rank" label="#" /></div>
+          <div className="text-center"><span className="text-xs font-semibold uppercase tracking-wider text-green-400/80">Max</span></div>
+          <div className="text-center"><span className="text-xs font-semibold uppercase tracking-wider text-red-400/80">Floor</span></div>
+          <div className="text-center"><SortBtn col="expectedRank" label="Exp" /></div>
+          <div className="text-center"><SortBtn col="percentile" label="%" /></div>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
+          <div className="text-right"><SortBtn col="currentScore" label="Actual" /></div>
+          <div className="text-right"><SortBtn col="maxPossibleScore" label="Max" /></div>
+          <div className="text-right"><SortBtn col="expectedScore" label="Exp" /></div>
+          <div className="text-right"><SortBtn col="teamsRemaining" label="Left" /></div>
+        </div>
       </div>
 
       {/* Optimal 8 cards (above real leaderboard) */}
       {optimal8 && <Optimal8Card data={optimal8} label="Optimal 8 (Rolling)" description="Best 8 teams by current score at this moment" isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
       {optimal8Hindsight && <Optimal8Card data={optimal8Hindsight} label="Optimal 8 (Hindsight)" description="Best possible 8 picks knowing all tournament results" variant="hindsight" isPreTournament={isPreTournament} pickerPctMap={pickerPctMap} />}
 
-      {/* Rows */}
+      {/* Rows — user entries pinned above blue separator, rest below */}
       <div className="space-y-1.5">
         {sorted.length === 0 && (
           <div className="bg-card border border-border rounded-xl py-16 text-center text-muted-foreground text-sm">
@@ -873,117 +912,70 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         )}
 
         {(() => {
-          // Compute the default condensed view: top 10, your entries, bottom 2
-          if (!showAll && sorted.length > 15 && currentUserId) {
-            const top10 = sorted.slice(0, 10)
-            const bottom2 = sorted.slice(-2)
-            const top10EntryIds = new Set(top10.map((e) => e.entryId))
-            const bottom2EntryIds = new Set(bottom2.map((e) => e.entryId))
-            // User entries NOT already in top 10 or bottom 2
-            const myEntries = sorted.filter(
-              (e) => e.userId === currentUserId && !top10EntryIds.has(e.entryId) && !bottom2EntryIds.has(e.entryId)
-            )
-            const bottom2Filtered = bottom2.filter((e) => !top10EntryIds.has(e.entryId))
-            const hasMyEntries = myEntries.length > 0
-            const hasBottom = bottom2Filtered.length > 0
+          // Always render: pinned user entries → blue separator → rest of leaderboard
 
-            const sections: { entries: LeaderboardEntry[]; separator?: string }[] = [
-              { entries: top10 },
-            ]
-            if (hasMyEntries) {
-              const myRank = myEntries[0]?.rank ?? 0
-              sections.push({
-                entries: myEntries,
-                separator: `Your position — #${myRank} of ${sorted.length}`,
-              })
-            }
-            if (hasBottom) {
-              sections.push({
-                entries: bottom2Filtered,
-                separator: hasMyEntries ? undefined : `...`,
-              })
-            }
+          const renderRow = (entry: LeaderboardEntry, keyPrefix = "") => (
+            <LeaderboardRow
+              key={`${keyPrefix}${entry.entryId}`}
+              entry={entry}
+              isMe={entry.userId === currentUserId}
+              isExpanded={expandedId === entry.entryId}
+              rankStyle={rankStyle}
+              onToggle={() =>
+                setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
+              }
+              allEntries={sorted}
+              isPreTournament={isPreTournament}
+              pickerPctMap={pickerPctMap}
+            />
+          )
 
-            return (
-              <>
-                {sections.map((section, sIdx) => (
-                  <div key={sIdx}>
-                    {section.separator && (
-                      <div className="flex items-center gap-3 py-2 px-4">
-                        <div className="flex-1 border-t border-border/50" />
-                        <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                          {section.separator}
-                        </span>
-                        <div className="flex-1 border-t border-border/50" />
-                      </div>
-                    )}
-                    {!section.separator && sIdx > 0 && (
-                      <div className="flex items-center gap-3 py-2 px-4">
-                        <div className="flex-1 border-t border-dashed border-border/40" />
-                        <span className="text-[10px] text-muted-foreground/50">···</span>
-                        <div className="flex-1 border-t border-dashed border-border/40" />
-                      </div>
-                    )}
-                    {section.entries.map((entry) => (
-                      <LeaderboardRow
-                        key={entry.entryId + "-" + sIdx}
-                        entry={entry}
-                        isMe={entry.userId === currentUserId}
-                        isExpanded={expandedId === entry.entryId}
-                        rankStyle={rankStyle}
-                        onToggle={() =>
-                          setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
-                        }
-                        allEntries={sorted}
-                        isPreTournament={isPreTournament}
-                        pickerPctMap={pickerPctMap}
-                      />
-                    ))}
-                  </div>
-                ))}
-                <div className="flex justify-center pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs gap-1.5 text-muted-foreground"
-                    onClick={() => setShowAll(true)}
-                  >
-                    Show all {sorted.length} entries
-                    <ChevronDown className="h-3 w-3" />
-                  </Button>
-                </div>
-              </>
-            )
-          }
+          // Entries to show below the blue line
+          const displayEntries = !showAll && unpinnedEntries.length > 15
+            ? (() => {
+                const top10 = unpinnedEntries.slice(0, 10)
+                const bottom2 = unpinnedEntries.slice(-2)
+                const top10Ids = new Set(top10.map(e => e.entryId))
+                const bottom2Filtered = bottom2.filter(e => !top10Ids.has(e.entryId))
+                return { top10, bottom2: bottom2Filtered, truncated: true }
+              })()
+            : { top10: unpinnedEntries, bottom2: [] as LeaderboardEntry[], truncated: false }
 
-          // Full list view
           return (
             <>
-              {sorted.map((entry) => (
-                <LeaderboardRow
-                  key={entry.entryId}
-                  entry={entry}
-                  isMe={entry.userId === currentUserId}
-                  isExpanded={expandedId === entry.entryId}
-                  rankStyle={rankStyle}
-                  onToggle={() =>
-                    setExpandedId(expandedId === entry.entryId ? null : entry.entryId)
-                  }
-                  allEntries={sorted}
-                  isPreTournament={isPreTournament}
-                  pickerPctMap={pickerPctMap}
-                />
-              ))}
-              {showAll && sorted.length > 15 && (
+              {/* Pinned user entries */}
+              {pinnedEntries.map(entry => renderRow(entry, "pinned-"))}
+
+              {/* Blue separator line */}
+              {pinnedEntries.length > 0 && unpinnedEntries.length > 0 && (
+                <div className="h-[3px] bg-primary/60 rounded-full mx-2 my-1" />
+              )}
+
+              {/* Rest of entries */}
+              {displayEntries.top10.map(entry => renderRow(entry))}
+
+              {displayEntries.truncated && displayEntries.bottom2.length > 0 && (
+                <>
+                  <div className="flex items-center gap-3 py-2 px-4">
+                    <div className="flex-1 border-t border-dashed border-border/40" />
+                    <span className="text-[10px] text-muted-foreground/50">···</span>
+                    <div className="flex-1 border-t border-dashed border-border/40" />
+                  </div>
+                  {displayEntries.bottom2.map(entry => renderRow(entry, "bottom-"))}
+                </>
+              )}
+
+              {/* Show all / condensed toggle */}
+              {unpinnedEntries.length > 15 && (
                 <div className="flex justify-center pt-2">
                   <Button
                     variant="ghost"
                     size="sm"
                     className="text-xs gap-1.5 text-muted-foreground"
-                    onClick={() => setShowAll(false)}
+                    onClick={() => setShowAll(!showAll)}
                   >
-                    Show condensed view
-                    <ChevronUp className="h-3 w-3" />
+                    {showAll ? "Show condensed view" : `Show all ${sorted.length} entries`}
+                    {showAll ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </Button>
                 </div>
               )}

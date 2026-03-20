@@ -271,6 +271,20 @@ export function batchComputeMaxPossibleScores(
 
 // ─── Cross-Entry Bracket Simulation ─────────────────────────────────────────
 
+/** R64 seed matchups — index = bracket slot (same as bracket-ppr.ts) */
+const R64_MATCHUPS: [number, number][] = [
+  [1, 16], [8, 9], [5, 12], [4, 13], [6, 11], [3, 14], [7, 10], [2, 15],
+]
+
+interface BracketTeam {
+  teamId: string | null
+  seed: number
+  wins: number
+  eliminated: boolean
+  isAPick: boolean
+  aMaxWins: number
+}
+
 /**
  * Determine the round at which two teams would meet in the bracket.
  *
@@ -321,113 +335,150 @@ export function meetingRound(
 }
 
 /**
- * Score entry B's picks under entry A's optimal bracket.
+ * Simulate the full tournament bracket under entry A's optimal scenario + chalk.
  *
- * Entry A's optimal bracket (from computeMaxPossibleScore) defines which of A's
- * teams advance and how far. For each of B's picks:
- *   - Eliminated: locked at seed × currentWins
- *   - Same team as one of A's picks: B benefits, team advances to A's maxWins
- *   - Conflicts with A's advancing pick: B's team capped at meetingRound - 1
- *   - No interaction with A's picks: stays at currentWins (best case for A = minimize B)
+ * For past games: uses actual results (team wins from teamInfoMap).
+ * For future games: A's alive picks advance to their maxWins, everything else
+ * follows chalk (lower seed number = favorite wins).
  *
- * @param entryB_pickIds - B's 8 picked team IDs
- * @param entryA_breakdown - A's breakdown from computeMaxPossibleScore
- * @param teamInfoMap - Global team info
- * @returns B's total score under A's optimal bracket
+ * Play-in teams are already resolved before this is called.
+ *
+ * @param aBreakdown - A's breakdown from computeMaxPossibleScore
+ * @param teamInfoMap - Global team info (all picked teams across all entries)
+ * @returns Map<teamId, totalWins> — simulated total wins for every team in teamInfoMap
  */
-export function computeScoreUnderBracket(
-  entryB_pickIds: string[],
-  entryA_breakdown: MaxPossibleScoreResult["breakdown"],
+function simulateBracketWins(
+  aBreakdown: MaxPossibleScoreResult["breakdown"],
   teamInfoMap: Map<string, TeamBracketInfo>
-): number {
-  // Build lookup from A's breakdown: teamId → { seed, region, maxWins }
-  const aTeamMap = new Map<string, { seed: number; region: string; maxWins: number }>()
-  for (const item of entryA_breakdown) {
-    const info = teamInfoMap.get(item.teamId)
-    if (info) {
-      aTeamMap.set(item.teamId, {
+): Map<string, number> {
+  const winsResult = new Map<string, number>()
+
+  // Initialize all known teams with their current (actual) wins
+  for (const [teamId, info] of teamInfoMap) {
+    winsResult.set(teamId, info.wins)
+  }
+
+  // Build A's pick lookup: teamId → maxWins
+  const aMaxWinsById = new Map<string, number>()
+  for (const item of aBreakdown) {
+    aMaxWinsById.set(item.teamId, item.maxWins)
+  }
+
+  // Build seed+region → BracketTeam lookup (for finding teams at bracket slots)
+  const seedRegionLookup = new Map<string, BracketTeam>()
+  for (const [teamId, info] of teamInfoMap) {
+    const key = `${info.region}:${info.seed}`
+    const existing = seedRegionLookup.get(key)
+    // Prefer the non-eliminated team, or the one with more wins
+    if (!existing ||
+        (existing.eliminated && !info.eliminated) ||
+        (!existing.eliminated && !info.eliminated && info.wins > existing.wins)) {
+      seedRegionLookup.set(key, {
+        teamId,
         seed: info.seed,
-        region: info.region,
-        maxWins: item.maxWins,
+        wins: info.wins,
+        eliminated: info.eliminated,
+        isAPick: aMaxWinsById.has(teamId),
+        aMaxWins: aMaxWinsById.get(teamId) ?? 0,
       })
     }
   }
 
-  let totalScore = 0
-
-  for (const bTeamId of entryB_pickIds) {
-    const bInfo = teamInfoMap.get(bTeamId)
-    if (!bInfo) continue
-
-    // Eliminated teams: locked score
-    if (bInfo.eliminated) {
-      totalScore += bInfo.seed * bInfo.wins
-      continue
+  function getTeam(region: string, seed: number): BracketTeam {
+    return seedRegionLookup.get(`${region}:${seed}`) ?? {
+      teamId: null, seed, wins: 0, eliminated: false, isAPick: false, aMaxWins: 0,
     }
-
-    // Play-in teams without standard slot: locked at current
-    const bSlot = seedToSlot(bInfo.seed)
-    if (bSlot === -1) {
-      totalScore += bInfo.seed * bInfo.wins
-      continue
-    }
-
-    // Check if B picked the same team as A
-    const aMatch = aTeamMap.get(bTeamId)
-    if (aMatch) {
-      // Same team — B benefits from A's team advancing
-      totalScore += bInfo.seed * aMatch.maxWins
-      continue
-    }
-
-    // Check for bracket collision with any of A's advancing picks
-    let bMaxWins = bInfo.wins // default: stays at currentWins (best case for A)
-
-    for (const [aTeamId, aData] of aTeamMap) {
-      if (aTeamId === bTeamId) continue // already handled above
-      // Only check A's alive advancing picks
-      const aInfo = teamInfoMap.get(aTeamId)
-      if (!aInfo || aInfo.eliminated) continue
-
-      const round = meetingRound(
-        { seed: bInfo.seed, region: bInfo.region },
-        { seed: aInfo.seed, region: aInfo.region }
-      )
-
-      if (round !== null && aData.maxWins >= round) {
-        // A's pick reaches this meeting round → A's pick wins, B's team is capped
-        // B's team can advance UP TO round - 1 (it loses at this round)
-        // But for maxRank we want to MINIMIZE B's score, so only give B credit
-        // if B's team already has enough wins to reach this point
-        const capWins = round - 1
-        // B's team gets min(capWins, what we'd otherwise give it)
-        // Since default is currentWins, only upgrade if capWins > currentWins
-        // (B's team must have at least currentWins, and could advance up to round-1)
-        // For maxRank: we give B the MINIMUM possible, which is currentWins
-        // UNLESS B's team is the one that A's team would beat — in which case
-        // B's team still gets to round-1 (they advanced to face A's team)
-        // Wait — no. For maxRank, B's teams that conflict get capped at round-1
-        // but only if they WOULD have met. Since we're constructing A's bracket,
-        // A's team is in that bracket path. B's team would need to reach that round
-        // to meet A's team. Since we're minimizing B's score, we assume B's team
-        // DOESN'T advance to that round (stays at currentWins).
-        // The cap only matters if currentWins is already >= round - 1.
-        bMaxWins = Math.min(bMaxWins, capWins)
-        break // first collision is the earliest, no need to check further
-      }
-    }
-
-    totalScore += bInfo.seed * bMaxWins
   }
 
-  return totalScore
+  function resolveMatchup(a: BracketTeam, b: BracketTeam, round: number): BracketTeam {
+    // Actual result: one team already won this round in the real tournament
+    if (a.wins >= round) return a
+    if (b.wins >= round) return b
+
+    // One eliminated before this round → the other advances
+    if (a.eliminated && !b.eliminated) {
+      if (b.teamId) winsResult.set(b.teamId, Math.max(winsResult.get(b.teamId) ?? 0, round))
+      return b
+    }
+    if (b.eliminated && !a.eliminated) {
+      if (a.teamId) winsResult.set(a.teamId, Math.max(winsResult.get(a.teamId) ?? 0, round))
+      return a
+    }
+    if (a.eliminated && b.eliminated) {
+      // Both out — return whoever lasted longer (no new win to record)
+      return a.wins >= b.wins ? a : b
+    }
+
+    // Future game — simulate
+    const aAdv = a.isAPick && a.aMaxWins >= round
+    const bAdv = b.isAPick && b.aMaxWins >= round
+
+    let winner: BracketTeam
+    if (aAdv && !bAdv) winner = a
+    else if (bAdv && !aAdv) winner = b
+    else if (aAdv && bAdv) winner = a.aMaxWins >= b.aMaxWins ? a : b
+    else winner = a.seed <= b.seed ? a : b // chalk: lower seed (favorite) wins
+
+    if (winner.teamId) winsResult.set(winner.teamId, Math.max(winsResult.get(winner.teamId) ?? 0, round))
+    return winner
+  }
+
+  // ── Simulate each region (rounds 1–4) ──────────────────────────────────────
+
+  const regions = ["East", "West", "South", "Midwest"]
+  const regionWinners = new Map<string, BracketTeam>()
+
+  for (const region of regions) {
+    // R64: 8 matchups
+    const r64Winners: BracketTeam[] = []
+    for (let i = 0; i < 8; i++) {
+      const [s1, s2] = R64_MATCHUPS[i]
+      r64Winners.push(resolveMatchup(getTeam(region, s1), getTeam(region, s2), 1))
+    }
+
+    // R32: 4 matchups
+    const r32Winners: BracketTeam[] = []
+    for (let i = 0; i < 4; i++) {
+      r32Winners.push(resolveMatchup(r64Winners[i * 2], r64Winners[i * 2 + 1], 2))
+    }
+
+    // S16: 2 matchups
+    const s16Winners: BracketTeam[] = []
+    for (let i = 0; i < 2; i++) {
+      s16Winners.push(resolveMatchup(r32Winners[i * 2], r32Winners[i * 2 + 1], 3))
+    }
+
+    // E8: 1 matchup → region champion
+    regionWinners.set(region, resolveMatchup(s16Winners[0], s16Winners[1], 4))
+  }
+
+  // ── F4 matchups (round 5) ──────────────────────────────────────────────────
+
+  const f4Winners: BracketTeam[] = []
+  for (const [rA, rB] of F4_REGION_MATCHUPS) {
+    const cA = regionWinners.get(rA)
+    const cB = regionWinners.get(rB)
+    if (!cA && !cB) continue
+    if (!cA) { f4Winners.push(cB!); continue }
+    if (!cB) { f4Winners.push(cA!); continue }
+    f4Winners.push(resolveMatchup(cA, cB, 5))
+  }
+
+  // ── Championship (round 6) ─────────────────────────────────────────────────
+
+  if (f4Winners.length === 2) {
+    resolveMatchup(f4Winners[0], f4Winners[1], 6)
+  }
+
+  return winsResult
 }
 
 /**
  * Compute collision-aware maxRank and floorRank for all entries.
  *
- * maxRank: For each entry A, construct A's optimal bracket, score all other
- *          entries under that bracket, count how many score > A's maxPossibleScore.
+ * maxRank: For each entry A, simulate the full bracket under A's optimal scenario
+ *          (A's picks advance + chalk elsewhere). Score all other entries under
+ *          that bracket, count how many score > A's maxPossibleScore.
  *          Entries with all teams eliminated: maxRank = currentRank.
  *
  * floorRank: Count entries whose maxPossibleScore > A's currentScore.
@@ -451,7 +502,6 @@ export function computeCollisionAwareRanks(
   teamInfoMap: Map<string, TeamBracketInfo>
 ): Map<string, { maxRank: number; floorRank: number }> {
   const result = new Map<string, { maxRank: number; floorRank: number }>()
-  const total = entries.length
 
   // Pre-compute breakdowns for entries with alive teams (need it for maxRank)
   const breakdownCache = new Map<string, MaxPossibleScoreResult>()
@@ -482,18 +532,22 @@ export function computeCollisionAwareRanks(
       continue
     }
 
-    // Full bracket simulation: score all other entries under A's bracket
+    // Simulate full bracket under A's optimal scenario + chalk
     const breakdownA = breakdownCache.get(entryA.entryId)!
-    let maxBetter = 0
+    const bracketWins = simulateBracketWins(breakdownA.breakdown, teamInfoMap)
 
+    // Score all other entries under this bracket
+    let maxBetter = 0
     for (const entryB of entries) {
       if (entryB.entryId === entryA.entryId) continue
 
-      const bScore = computeScoreUnderBracket(
-        entryB.pickTeamIds,
-        breakdownA.breakdown,
-        teamInfoMap
-      )
+      let bScore = 0
+      for (const bTeamId of entryB.pickTeamIds) {
+        const bInfo = teamInfoMap.get(bTeamId)
+        if (!bInfo) continue
+        const wins = bracketWins.get(bTeamId) ?? bInfo.wins
+        bScore += bInfo.seed * wins
+      }
 
       if (bScore > entryA.maxPossibleScore) {
         maxBetter++
@@ -509,20 +563,10 @@ export function computeCollisionAwareRanks(
 
 // ─── Projection Helper ──────────────────────────────────────────────────────
 
-/** Maps tournament round (1-6) to the LAST checkpoint of that round */
-const ROUND_TO_LAST_CP: Record<number, number> = {
-  1: 2,  // R64 → CP 2
-  2: 4,  // R32 → CP 4
-  3: 6,  // S16 → CP 6
-  4: 8,  // E8 → CP 8
-  5: 9,  // F4 → CP 9
-  6: 10, // Championship → CP 10
-}
-
 /**
- * Track pairing for D1/D2 checkpoint resolution.
- * R64→R32 share a track, S16→E8 share a track.
- * Maps round to its D1 and D2 checkpoint indices.
+ * D1/D2 checkpoint mapping for rounds with 2-day scheduling.
+ * Round 1 (R64) through Round 4 (E8) each have D1 and D2 checkpoints.
+ * Rounds 5 (F4) and 6 (Championship) are single-day events.
  */
 const ROUND_D1_D2: Record<number, [number, number]> = {
   1: [1, 2],  // R64: D1=CP1, D2=CP2
@@ -532,19 +576,15 @@ const ROUND_D1_D2: Record<number, [number, number]> = {
 }
 
 /**
- * Track groups: rounds that share a D1/D2 track.
- * If a team plays on D1 of round X, it plays D1 of round Y (within same group).
- */
-const TRACK_GROUPS: number[][] = [
-  [1, 2], // R64 and R32 share track
-  [3, 4], // S16 and E8 share track
-]
-
-/**
- * Compute a projection array (length 11) showing the round-by-round path to max score.
+ * Compute a projection array (length 11) showing the day-by-day path to max score.
  *
- * Uses the per-team breakdown from computeMaxPossibleScore to distribute future wins
- * across checkpoints, respecting day-specific scheduling where known.
+ * Uses the per-team breakdown from computeMaxPossibleScore to trace each team's
+ * bracket path day by day, placing each future win at the correct D1/D2 checkpoint
+ * based on the team's established track.
+ *
+ * Track assignment: if a team's last completed game was on a D1 checkpoint (odd: 1,3,5,7),
+ * they play D1 for all future 2-day rounds. If D2 (even: 2,4,6,8), they play D2.
+ * Teams with 0 wins (haven't played yet) default to D2 (they'll play R64 D2).
  *
  * @param breakdown - Per-team breakdown from computeMaxPossibleScore
  * @param currentScore - Entry's current actual score
@@ -566,44 +606,31 @@ export function computeMaxScoreProjection(
     const additionalWins = team.maxWins - team.currentWins
     if (additionalWins <= 0) continue
 
-    // Determine team's track (D1 or D2) from their last completed game checkpoint
-    let teamTrack: "D1" | "D2" | null = null
+    // Determine team's track (D1 or D2) from their last completed game checkpoint.
+    // Odd checkpoints (1,3,5,7) = D1, even checkpoints (2,4,6,8) = D2.
+    // Teams with no completed games (0 wins) default to D2 (they play R64 D2).
+    let teamTrack: "D1" | "D2" = "D2"
     if (teamCheckpointMap) {
       const lastCp = teamCheckpointMap.get(team.teamId)
-      if (lastCp !== undefined) {
-        // Check if lastCp is a D1 or D2 checkpoint
-        for (const [round, [d1, d2]] of Object.entries(ROUND_D1_D2)) {
-          if (lastCp === d1) { teamTrack = "D1"; break }
-          if (lastCp === d2) { teamTrack = "D2"; break }
-        }
+      if (lastCp !== undefined && lastCp >= 1 && lastCp <= 8) {
+        teamTrack = lastCp % 2 === 1 ? "D1" : "D2"
       }
     }
 
     for (let w = 1; w <= additionalWins; w++) {
-      const futureRound = team.currentWins + w
+      const futureRound = team.currentWins + w // round number (1=R64 ... 6=Champ)
 
       let cp: number
       if (futureRound === 5) {
         cp = 9 // F4 = single day
       } else if (futureRound === 6) {
         cp = 10 // Championship = single day
-      } else if (futureRound >= 1 && futureRound <= 4 && teamTrack && ROUND_D1_D2[futureRound]) {
-        // Check if future round is in the same track group as the team's known track
-        const currentRound = team.currentWins // round the team just completed
-        const inSameGroup = TRACK_GROUPS.some(
-          group => group.includes(currentRound) && group.includes(futureRound)
-        )
-        // Also handle: team is at 0 wins (pre-tournament) going to round 1
-        // In that case, we don't know track yet, use fallback
-        if (inSameGroup && currentRound >= 1) {
-          const [d1, d2] = ROUND_D1_D2[futureRound]
-          cp = teamTrack === "D1" ? d1 : d2
-        } else {
-          // Different track group or unknown → use end of round
-          cp = ROUND_TO_LAST_CP[futureRound] ?? 10
-        }
+      } else if (futureRound >= 1 && futureRound <= 4) {
+        // 2-day round: place on D1 or D2 based on team's track
+        const [d1, d2] = ROUND_D1_D2[futureRound]
+        cp = teamTrack === "D1" ? d1 : d2
       } else {
-        cp = ROUND_TO_LAST_CP[futureRound] ?? 10
+        cp = 10 // fallback
       }
 
       futurePointsByCheckpoint.set(cp, (futurePointsByCheckpoint.get(cp) ?? 0) + team.seed)

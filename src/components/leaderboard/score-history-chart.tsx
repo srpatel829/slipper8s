@@ -411,10 +411,35 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       })
     }
 
+    // Identify current leader and median names
+    const latestLeaderEntry = data.leaderLine.length > 0
+      ? data.leaderLine[data.leaderLine.length - 1] : null
+    const leaderName = latestLeaderEntry
+      ? (data.entries[latestLeaderEntry.entryId]?.name
+        ?? data.availablePlayers.find(p => p.id === latestLeaderEntry.entryId)?.name
+        ?? "")
+      : ""
+
+    // Find median entry: entry whose score is closest to the median score at latest game
+    const allEntriesList = Object.values(data.entries)
+    let medianName = ""
+    if (data.medianLine.length > 0 && allEntriesList.length > 0) {
+      const latestMedianScore = data.medianLine[data.medianLine.length - 1]?.score ?? 0
+      let bestDist = Infinity
+      for (const entry of allEntriesList) {
+        const lastScore = entry.scores[data.latestCheckpointIndex] ?? 0
+        const dist = Math.abs(lastScore - latestMedianScore)
+        if (dist < bestDist) {
+          bestDist = dist
+          medianName = entry.name
+        }
+      }
+    }
+
     // Leader line — dynamic per-game
     lines.push({
       id: "leader",
-      label: "Leader",
+      label: leaderName ? `Leader (${leaderName})` : "Leader",
       color: COLOR_LEADER,
       isDefault: true,
       isBenchmark: true,
@@ -425,7 +450,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     // Median line — dynamic per-game
     lines.push({
       id: "median",
-      label: "Median",
+      label: medianName ? `Median (${medianName})` : "Median",
       color: COLOR_MEDIAN,
       isDefault: true,
       isBenchmark: true,
@@ -484,9 +509,29 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       entryScoreSeries.set(entryId, buildFullScoreSeries(gameScores, 63, latestGame))
     }
 
-    // Leader/median lookup maps
-    const leaderByGame = new Map(data.leaderLine.map(l => [l.gameIndex, l.score]))
-    const medianByGame = new Map(data.medianLine.map(m => [m.gameIndex, m.score]))
+    // Identify the current leader and median entries so we can use THEIR score history
+    // (not the composite per-game max/median from different entries at each game)
+    const latestLeader = data.leaderLine.length > 0
+      ? data.leaderLine[data.leaderLine.length - 1] : null
+    const leaderEntryId = latestLeader?.entryId ?? null
+
+    let medianEntryId: string | null = null
+    if (data.medianLine.length > 0) {
+      const latestMedianScore = data.medianLine[data.medianLine.length - 1]?.score ?? 0
+      let bestDist = Infinity
+      for (const [eid, entry] of Object.entries(data.entries)) {
+        const lastScore = entry.scores[data.latestCheckpointIndex] ?? 0
+        const dist = Math.abs(lastScore - latestMedianScore)
+        if (dist < bestDist) {
+          bestDist = dist
+          medianEntryId = eid
+        }
+      }
+    }
+
+    // Build leader/median score series from their individual game history
+    const leaderSeries = leaderEntryId ? entryScoreSeries.get(leaderEntryId) ?? null : null
+    const medianSeries = medianEntryId ? entryScoreSeries.get(medianEntryId) ?? null : null
     const opt8ByGame = new Map(data.optimal8Line.map(o => [o.gameIndex, o.score]))
 
     // Data points: one per completed game (up to view position) + pre-tournament
@@ -515,9 +560,9 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         point[entryId] = series.get(gi) ?? null
       }
 
-      // Leader and median
-      point.leader = leaderByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.leader : 0) ?? null
-      point.median = medianByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.median : 0) ?? null
+      // Leader and median — use the SPECIFIC entry's score history (not composite)
+      point.leader = leaderSeries?.get(gi) ?? 0
+      point.median = medianSeries?.get(gi) ?? 0
 
       // Optimal 8
       point.optimal8 = opt8ByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.optimal8 : 0) ?? null
@@ -549,6 +594,9 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       }
       // Optimal 8 projection start
       bridgePoint.optimal8_proj = lastPoint.optimal8 ?? null
+      // Leader and median projection start
+      bridgePoint.leader_proj = lastPoint.leader ?? null
+      bridgePoint.median_proj = lastPoint.median ?? null
 
       // Don't duplicate if already at this x position
       if (lastPoint.x === bridgePoint.x) {
@@ -578,6 +626,16 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         const opt = data.optimal8[cp]
         if (opt) {
           projPoint.optimal8_proj = opt.rollingProjection ?? null
+        }
+
+        // Leader projection — use the current leader entry's projections
+        if (leaderEntryId && data.entries[leaderEntryId]) {
+          projPoint.leader_proj = data.entries[leaderEntryId].projections[cp] ?? null
+        }
+
+        // Median projection — use the current median entry's projections
+        if (medianEntryId && data.entries[medianEntryId]) {
+          projPoint.median_proj = data.entries[medianEntryId].projections[cp] ?? null
         }
 
         points.push(projPoint)
