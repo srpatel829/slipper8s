@@ -84,8 +84,16 @@ export function TimelineFooter({
   totalCompletedGames,
   className,
 }: TimelineFooterProps) {
-  // Progress bar aligned with the checkpoint scrubber thumb position
-  const progress = (currentCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
+  // Progress bar — interpolates with game index so single-game steps are visible.
+  // At live, progress sits at the latest checkpoint position.
+  // When scrubbed back, it scales linearly between 0 and that max position.
+  const progress = (() => {
+    if (isLive) return (latestCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
+    if (currentGameIndex < 0) return 0
+    if (latestGameIndex <= 0) return 0
+    const maxProg = (latestCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
+    return ((currentGameIndex + 1) / (latestGameIndex + 1)) * maxProg
+  })()
 
   const currentLabel = CHECKPOINT_LABELS[currentCheckpoint]?.short ?? "Pre"
 

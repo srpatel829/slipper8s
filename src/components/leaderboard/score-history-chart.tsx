@@ -66,6 +66,7 @@ interface Optimal8Point {
   checkpointIndex: number
   rollingOptimal8Score: number | null
   hindsightOptimal8Score: number | null
+  rollingProjection: number | null
 }
 
 interface AvailablePlayer {
@@ -338,39 +339,37 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       })
     }
 
-    // Dynamically determine leader and median at the current checkpoint
+    // Identify leader and median entries
     const entries = Object.values(data.entries)
     const userEntries = entries.filter(e => e.isCurrentUser)
-    // When filteredUserIds is provided, restrict non-user pool to that set
-    const nonUserEntries = entries.filter(e => {
-      if (e.isCurrentUser) return false
-      if (filteredUserIds && filteredUserIds.size > 0) {
-        return filteredUserIds.has(e.entryId)
-      }
-      return true
-    })
 
-    // Compute score at effectiveCpIdx for all loaded entries to find leader/median
-    const cpIdx = Math.max(0, effectiveCpIdx)
-    const entriesWithScoreAtCp = entries
-      .map(e => ({ entry: e, scoreAtCp: e.scores[cpIdx] ?? 0 }))
-      .sort((a, b) => b.scoreAtCp - a.scoreAtCp)
+    // Use API flags for stable leader/median identification.
+    // When filteredUserIds is provided, recompute from the filtered pool.
+    let leaderEntry: EntryHistory | null = null
+    let medianEntry: EntryHistory | null = null
 
-    const nonUserWithScores = nonUserEntries
-      .map(e => ({ entry: e, scoreAtCp: e.scores[cpIdx] ?? 0 }))
-      .sort((a, b) => b.scoreAtCp - a.scoreAtCp)
+    if (filteredUserIds && filteredUserIds.size > 0) {
+      // Filtered — compute from loaded entries in the filter set
+      const cpIdx = Math.max(0, effectiveCpIdx)
+      const pool = entries.filter(e => !e.isCurrentUser && filteredUserIds.has(e.entryId))
+      const sorted = pool
+        .map(e => ({ entry: e, score: e.scores[cpIdx] ?? 0 }))
+        .sort((a, b) => b.score - a.score)
+      leaderEntry = sorted[0]?.entry ?? null
+      medianEntry = sorted.length > 1 ? sorted[Math.floor(sorted.length / 2)]?.entry ?? null : null
+    } else {
+      // Unfiltered — use API's pre-computed leader/median flags
+      leaderEntry = entries.find(e => e.isLeader && !e.isCurrentUser) ?? null
+      medianEntry = entries.find(e => e.isMedian && !e.isCurrentUser && e.entryId !== leaderEntry?.entryId) ?? null
+    }
 
-    // Leader = highest scoring non-user entry at this checkpoint
-    const leaderEntry = nonUserWithScores[0]?.entry ?? null
-    // Median = middle-ranked non-user entry at this checkpoint
-    const medianIdx = Math.floor(nonUserWithScores.length / 2)
-    const medianEntry = nonUserWithScores.length > 1
-      ? nonUserWithScores[medianIdx]?.entry ?? null
-      : null
+    // Check if the user IS the overall leader or median (based on API flags)
+    const userIsLeader = userEntries.some(e => e.isLeader)
+    const userIsMedian = userEntries.some(e => e.isMedian)
 
     if (leaderEntry) {
       lines.push({
-        id: `leader_${leaderEntry.entryId}`,
+        id: "leader",
         label: `Leader (${leaderEntry.name})`,
         color: COLOR_LEADER,
         isDefault: true,
@@ -382,7 +381,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
 
     if (medianEntry && medianEntry.entryId !== leaderEntry?.entryId) {
       lines.push({
-        id: `median_${medianEntry.entryId}`,
+        id: "median",
         label: `Median (${medianEntry.name})`,
         color: COLOR_MEDIAN,
         isDefault: true,
@@ -392,20 +391,12 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       })
     }
 
-    // Check if user is also the leader or median at this checkpoint
-    const userIsLeader = userEntries.some(e =>
-      leaderEntry && entriesWithScoreAtCp[0]?.entry.entryId === e.entryId
-    )
-    const userIsMedian = userEntries.some(e =>
-      medianEntry && e.entryId === medianEntry.entryId
-    )
-
     userEntries.forEach((entry, i) => {
       const color = USER_ENTRY_COLORS[i % USER_ENTRY_COLORS.length]
-      let label = entry.name
-      if (userIsLeader && entriesWithScoreAtCp[0]?.entry.entryId === entry.entryId) {
+      let label: string
+      if (userIsLeader && entry.isLeader) {
         label = `You / Leader (${entry.name})`
-      } else if (userIsMedian && medianEntry?.entryId === entry.entryId) {
+      } else if (userIsMedian && entry.isMedian) {
         label = `You / Median (${entry.name})`
       } else {
         label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
@@ -478,7 +469,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         }
       }
 
-      // Optimal 8 lines — also indexed by checkpoint
+      // Optimal 8 lines — actual scores and projections
       const opt = data.optimal8[cpDef.index]
       if (opt && cpDef.index <= viewCpIdx) {
         point.optimal8 = opt.rollingOptimal8Score ?? null
@@ -487,8 +478,12 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         point.optimal8 = null
         point.hindsight = null
       }
-      // No projection for optimal 8 benchmarks
-      point.optimal8_proj = null
+      // Optimal 8 projection: show from the current view checkpoint forward
+      if (opt && cpDef.index >= viewCpIdx) {
+        point.optimal8_proj = opt.rollingProjection ?? null
+      } else {
+        point.optimal8_proj = null
+      }
       point.hindsight_proj = null
 
       return point

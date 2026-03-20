@@ -738,7 +738,9 @@ export function SimulatorPanel({
         }
       }
 
-      syncPicks(next)
+      // Sync to URL + localStorage after state update
+      // Use setTimeout to avoid calling router.replace inside state updater
+      setTimeout(() => syncPicks(next), 0)
       return next
     })
   }
@@ -1004,14 +1006,14 @@ export function SimulatorPanel({
               </TableHeader>
               <TableBody>
                 {simLeaderboard.map((entry) => {
-                  const original = effectiveLeaderboard.find(e => e.userId === entry.userId)
+                  const original = effectiveLeaderboard.find(e => e.entryId === entry.entryId)
                   const rankDelta = original ? original.rank - entry.rank : 0 // positive = moved up
                   const scoreChanged = original && original.currentScore !== entry.currentScore
                   const tpsChanged = original && original.tps !== entry.tps
 
                   return (
                     <TableRow
-                      key={entry.userId}
+                      key={entry.entryId}
                       className={tpsChanged ? "bg-primary/3" : ""}
                     >
                       <TableCell className="py-2 pl-4">

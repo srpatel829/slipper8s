@@ -206,6 +206,7 @@ export async function GET(req: NextRequest) {
       entryNumber: true,
       nickname: true,
       score: true,
+      maxPossibleScore: true,
       user: { select: { name: true, email: true } },
       entryPicks: {
         select: {
@@ -314,10 +315,10 @@ export async function GET(req: NextRequest) {
       cumScore += futurePointsByCheckpoint.get(cp) || 0
       projections[cp] = cumScore
     }
-    // Safety: ensure final projection matches entry.score + totalPPR
-    // (corrects any rounding drift in per-checkpoint distribution)
+    // Use DB maxPossibleScore for the final projection point to stay
+    // consistent with the leaderboard display. Fall back to computed PPR.
     if (projections[10] != null) {
-      projections[10] = entry.score + pprResult.totalPPR
+      projections[10] = entry.maxPossibleScore ?? (entry.score + pprResult.totalPPR)
     }
 
     entryHistories[entry.id] = {
@@ -345,21 +346,21 @@ export async function GET(req: NextRequest) {
   }
 
   // If no DB optimal 8 data exists, compute it live from current team states
+  // Always fetch teams for projection computation
+  const allTeams = await prisma.team.findMany({
+    where: { isPlayIn: false },
+    select: { id: true, seed: true, region: true, wins: true, eliminated: true, name: true, shortName: true },
+  })
+
+  const teamInfoForOpt = new Map<string, TeamBracketInfo>()
+  const opt8Teams = allTeams.map(t => {
+    teamInfoForOpt.set(t.id, { seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated })
+    return { id: t.id, seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated, isPlayIn: false, sCurveRank: undefined }
+  })
+
+  const opt8Result = computeOptimal8(opt8Teams, teamInfoForOpt)
+
   if (!optimal8ByCheckpoint.has(latestCpIndex) || optimal8ByCheckpoint.get(latestCpIndex)?.rolling == null) {
-    // Get all non-play-in teams for optimal 8 computation
-    const allTeams = await prisma.team.findMany({
-      where: { isPlayIn: false },
-      select: { id: true, seed: true, region: true, wins: true, eliminated: true, name: true, shortName: true },
-    })
-
-    const teamInfoForOpt = new Map<string, TeamBracketInfo>()
-    const opt8Teams = allTeams.map(t => {
-      teamInfoForOpt.set(t.id, { seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated })
-      return { id: t.id, seed: t.seed, region: t.region, wins: t.wins, eliminated: t.eliminated, isPlayIn: false, sCurveRank: undefined }
-    })
-
-    const opt8Result = computeOptimal8(opt8Teams, teamInfoForOpt)
-
     // Pre-tournament (cp 0) = 0
     optimal8ByCheckpoint.set(0, { rolling: 0, hindsight: null })
     // Current checkpoint = live score
@@ -368,11 +369,47 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Compute Optimal 8 projection (PPR-based trajectory) ────────────────
+  // Distribute the optimal 8's per-team PPR across future checkpoints
+  const opt8Projections: (number | null)[] = new Array(11).fill(null)
+  const opt8PprResult = computeBracketAwarePPR(opt8Result.teamIds, teamInfoForOpt)
+  const opt8FutureByCheckpoint = new Map<number, number>()
+
+  for (const teamId of opt8Result.teamIds) {
+    const info = teamInfoForOpt.get(teamId)
+    if (!info || info.eliminated) continue
+    const teamPPR = opt8PprResult.perTeam.get(teamId) || 0
+    if (teamPPR === 0) continue
+    const additionalWins = Math.round(teamPPR / info.seed)
+    for (let w = 1; w <= additionalWins; w++) {
+      const futureRound = info.wins + w
+      const cp = ROUND_TO_LAST_CP[futureRound]
+      if (cp !== undefined) {
+        opt8FutureByCheckpoint.set(cp, (opt8FutureByCheckpoint.get(cp) || 0) + info.seed)
+      }
+    }
+  }
+
+  // Build cumulative Optimal 8 projection array
+  let opt8CumScore = opt8Result.score
+  if (latestCpIndex >= 0 && latestCpIndex <= 10) {
+    opt8Projections[latestCpIndex] = opt8CumScore
+  }
+  for (let cp = (latestCpIndex >= 0 ? latestCpIndex + 1 : 0); cp <= 10; cp++) {
+    opt8CumScore += opt8FutureByCheckpoint.get(cp) || 0
+    opt8Projections[cp] = opt8CumScore
+  }
+  // Ensure final projection matches score + totalPPR
+  if (opt8Projections[10] != null) {
+    opt8Projections[10] = opt8Result.score + opt8PprResult.totalPPR
+  }
+
   // Build optimal 8 array indexed by checkpoint (0-10)
   const optimal8: Array<{
     checkpointIndex: number
     rollingOptimal8Score: number | null
     hindsightOptimal8Score: number | null
+    rollingProjection: number | null
   }> = []
   for (let cp = 0; cp <= 10; cp++) {
     const cpData = optimal8ByCheckpoint.get(cp)
@@ -380,6 +417,7 @@ export async function GET(req: NextRequest) {
       checkpointIndex: cp,
       rollingOptimal8Score: cpData?.rolling ?? null,
       hindsightOptimal8Score: cpData?.hindsight ?? null,
+      rollingProjection: opt8Projections[cp],
     })
   }
 
