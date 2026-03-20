@@ -8,15 +8,15 @@
  * Lines:
  * 1. Optimal 8 (Rolling) — solid blue
  * 2. Optimal 8 (Final/Hindsight) — solid orange (only after tournament)
- * 3. Leader — solid green
- * 4. Median — solid purple
+ * 3. Leader — solid green (dynamic per-game)
+ * 4. Median — solid purple (dynamic per-game)
  * 5. Your entries — solid yellow/warm colors
  *
- * Solid lines = actual scores at completed checkpoints.
- * Dashed lines = projected optimal trajectory (PPR-based).
+ * Solid lines = actual scores at completed games.
+ * Dashed lines = projected optimal trajectory.
  *
- * X-axis = 11 checkpoint positions (Pre-Tournament through Championship).
- * Data is per-checkpoint (not per-game).
+ * X-axis = game-level for completed games, checkpoint-level for projections.
+ * Full tournament: 63 games (indices 0-62).
  */
 
 import { useEffect, useState, useMemo, useCallback } from "react"
@@ -34,23 +34,30 @@ import { Check, ChevronDown, Loader2, Search } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 
-// ─── All 11 checkpoint labels ────────────────────────────────────────────────
+// ─── Checkpoint → game position mapping ──────────────────────────────────────
+// Default positions: last game index (0-based) at the end of each checkpoint.
+// Used for placing projection points and x-axis major ticks for future checkpoints.
 
-const ALL_CHECKPOINT_LABELS = [
-  { index: 0, short: "Pre", full: "Pre-Tournament" },
-  { index: 1, short: "R64", full: "R64 D1" },
-  { index: 2, short: "R64", full: "R64 D2" },
-  { index: 3, short: "R32", full: "R32 D1" },
-  { index: 4, short: "R32", full: "R32 D2" },
-  { index: 5, short: "S16", full: "S16 D1" },
-  { index: 6, short: "S16", full: "S16 D2" },
-  { index: 7, short: "E8", full: "E8 D1" },
-  { index: 8, short: "E8", full: "E8 D2" },
-  { index: 9, short: "F4", full: "Final Four" },
-  { index: 10, short: "CH", full: "Championship" },
+const DEFAULT_CP_GAME_POS: Record<number, number> = {
+  0: -1,  // Pre-tournament (virtual position)
+  1: 15,  // End of R64 D1 (games 0-15)
+  2: 31,  // End of R64 D2 (games 16-31)
+  3: 39,  // End of R32 D1 (games 32-39)
+  4: 47,  // End of R32 D2 (games 40-47)
+  5: 51,  // End of S16 D1 (games 48-51)
+  6: 55,  // End of S16 D2 (games 52-55)
+  7: 57,  // End of E8 D1 (games 56-57)
+  8: 59,  // End of E8 D2 (games 58-59)
+  9: 61,  // End of F4 (games 60-61)
+  10: 62, // Championship (game 62)
+}
+
+const CHECKPOINT_LABELS = [
+  "Pre", "R64 D1", "R64 D2", "R32 D1", "R32 D2",
+  "S16 D1", "S16 D2", "E8 D1", "E8 D2", "F4", "Champ",
 ]
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface EntryHistory {
   entryId: string
@@ -74,12 +81,34 @@ interface AvailablePlayer {
   name: string
 }
 
+interface GameMeta {
+  gameIndex: number
+  gameId: string
+  round: number
+  checkpoint: number
+}
+
+interface CheckpointBoundary {
+  checkpoint: number
+  label: string
+  afterGameIndex: number
+}
+
 interface ScoreHistoryData {
   entries: Record<string, EntryHistory>
   optimal8: Optimal8Point[]
   latestCheckpointIndex: number
   seasonId: string
   availablePlayers: AvailablePlayer[]
+  // Per-game fields
+  games: GameMeta[]
+  checkpointBoundaries: CheckpointBoundary[]
+  entryGameScores: Record<string, Array<{ gameIndex: number; score: number }>>
+  leaderLine: Array<{ gameIndex: number; score: number; entryId: string }>
+  medianLine: Array<{ gameIndex: number; score: number }>
+  optimal8Line: Array<{ gameIndex: number; score: number }>
+  totalGames: number
+  latestGameIndex: number
 }
 
 interface LineDef {
@@ -92,14 +121,13 @@ interface LineDef {
   projDataKey: string
 }
 
-// ─── Colors (matching demo) ──────────────────────────────────────────────────
+// ─── Colors ──────────────────────────────────────────────────────────────────
 
 const COLOR_OPTIMAL_ROLLING = "#00A9E0"  // brand blue
 const COLOR_OPTIMAL_FINAL = "#f97316"    // orange
 const COLOR_LEADER = "#22c55e"           // green
 const COLOR_MEDIAN = "#a78bfa"           // purple
 
-// Warm palette for user entries (multiple entries)
 const USER_ENTRY_COLORS = [
   "#facc15",  // yellow
   "#fb923c",  // orange
@@ -137,7 +165,6 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-0" align="end">
-        {/* Search input */}
         <div className="px-3 pt-2 pb-1.5 border-b border-border/50">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -153,7 +180,6 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
         </div>
 
         <div className="max-h-72 overflow-y-auto">
-          {/* Benchmarks section (hidden when searching) */}
           {!search.trim() && (
             <>
               <div className="px-3 pt-2 pb-1">
@@ -170,10 +196,7 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
                   }`}>
                     {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
                   </div>
-                  <span
-                    className="w-3 h-0.5 rounded-full shrink-0"
-                    style={{ backgroundColor: line.color }}
-                  />
+                  <span className="w-3 h-0.5 rounded-full shrink-0" style={{ backgroundColor: line.color }} />
                   <span className="text-xs">{line.label}</span>
                 </button>
               ))}
@@ -181,7 +204,6 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
             </>
           )}
 
-          {/* Players section */}
           {filteredPlayers.length > 0 && (
             <>
               <div className="px-3 pt-1 pb-1">
@@ -200,10 +222,7 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
                   }`}>
                     {visibleIds.has(line.id) && <Check className="h-3 w-3 text-primary-foreground" strokeWidth={3} />}
                   </div>
-                  <span
-                    className="w-3 h-0.5 rounded-full shrink-0"
-                    style={{ backgroundColor: line.color }}
-                  />
+                  <span className="w-3 h-0.5 rounded-full shrink-0" style={{ backgroundColor: line.color }} />
                   <span className="text-xs truncate">{line.label}</span>
                 </button>
               ))}
@@ -223,24 +242,39 @@ function PlayerFilter({ allLines, visibleIds, onToggle }: {
 
 // ─── Custom Tooltip ──────────────────────────────────────────────────────────
 
-function ChartTooltip({ active, payload, label, visibleLines, latestCpIndex }: {
+function ChartTooltip({ active, payload, label, visibleLines, latestGameIdx, cpBoundaryMap, gameCount }: {
   active?: boolean
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload?: any[]
   label?: number
   visibleLines: LineDef[]
-  latestCpIndex: number
+  latestGameIdx: number
+  cpBoundaryMap: Map<number, string>
+  gameCount: number
 }) {
   if (!active || !payload || payload.length === 0) return null
 
-  const cpIdx = label ?? 0
-  const cpLabel = ALL_CHECKPOINT_LABELS[cpIdx]
-  const isPast = cpIdx <= latestCpIndex
+  const gameIdx = label ?? 0
+  const isPast = gameIdx <= latestGameIdx
+  const cpLabel = cpBoundaryMap.get(gameIdx)
+
+  // Build position label
+  let posLabel: string
+  if (gameIdx < 0) {
+    posLabel = "Pre-Tournament"
+  } else if (cpLabel) {
+    posLabel = `${cpLabel} (Game ${gameIdx + 1} of ${gameCount})`
+  } else if (isPast) {
+    posLabel = `Game ${gameIdx + 1} of ${gameCount}`
+  } else {
+    // Future projection point
+    posLabel = cpLabel ?? `Game ${gameIdx + 1}`
+  }
 
   return (
     <div className="bg-popover border border-border/60 rounded-lg shadow-lg text-xs p-3 min-w-[200px]">
       <div className="font-semibold mb-1.5 text-foreground flex items-center gap-2">
-        <span>{cpLabel?.full ?? `Checkpoint ${cpIdx}`}</span>
+        <span>{posLabel}</span>
         {!isPast && <span className="text-[10px] text-muted-foreground italic font-normal">(projected)</span>}
       </div>
       {visibleLines.map(line => {
@@ -254,10 +288,7 @@ function ChartTooltip({ active, payload, label, visibleLines, latestCpIndex }: {
             <div className="flex items-center gap-1.5">
               <span
                 className="w-3 h-0.5 inline-block rounded-full"
-                style={{
-                  backgroundColor: line.color,
-                  opacity: isProjected ? 0.5 : 1,
-                }}
+                style={{ backgroundColor: line.color, opacity: isProjected ? 0.5 : 1 }}
               />
               <span className={`${isProjected ? "text-muted-foreground/60 italic" : "text-muted-foreground"}`}>
                 {line.label}
@@ -273,10 +304,38 @@ function ChartTooltip({ active, payload, label, visibleLines, latestCpIndex }: {
   )
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Get the game position for a checkpoint, using actual boundaries when available. */
+function getCpGamePos(cp: number, boundaries: CheckpointBoundary[]): number {
+  const b = boundaries.find(b => b.checkpoint === cp)
+  if (b) return b.afterGameIndex
+  return DEFAULT_CP_GAME_POS[cp] ?? cp * 6
+}
+
+/** Build a full score series for an entry at every game index, filling gaps with previous score. */
+function buildFullScoreSeries(
+  gameScores: Array<{ gameIndex: number; score: number }>,
+  totalGames: number,
+  maxGameIdx: number,
+): Map<number, number> {
+  const scoreMap = new Map<number, number>()
+  // Index gameScores by gameIndex
+  const snapshotMap = new Map(gameScores.map(s => [s.gameIndex, s.score]))
+
+  let lastScore = 0
+  for (let i = 0; i <= maxGameIdx; i++) {
+    if (snapshotMap.has(i)) {
+      lastScore = snapshotMap.get(i)!
+    }
+    scoreMap.set(i, lastScore)
+  }
+  return scoreMap
+}
+
 // ─── Main Component ──────────────────────────────────────────────────────────
 
 interface ScoreHistoryChartProps {
-  /** Filtered user IDs from dimension tabs — when set, leader/median computed within this set */
   filteredUserIds?: Set<string>
 }
 
@@ -302,20 +361,33 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     fetchHistory()
   }, [])
 
-  // Effective checkpoint for chart — follows timeline when scrubbed
-  const effectiveCpIdx = useMemo(() => {
+  // Effective game index from timeline — follows timeline when scrubbed
+  const effectiveGameIdx = useMemo(() => {
     if (!data) return -1
-    if (timeline && !timeline.isLive) return timeline.currentCheckpoint
-    return data.latestCheckpointIndex ?? -1
+    if (timeline && !timeline.isLive) {
+      // Timeline provides currentGameIndex directly
+      return timeline.currentGameIndex ?? data.latestGameIndex
+    }
+    return data.latestGameIndex
   }, [data, timeline])
 
-  // Build line definitions — dynamically determines leader/median at the current timeline position
+  // Build checkpoint boundary map: gameIndex → label for tooltip
+  const cpBoundaryMap = useMemo(() => {
+    if (!data) return new Map<number, string>()
+    const map = new Map<number, string>()
+    for (const b of data.checkpointBoundaries) {
+      map.set(b.afterGameIndex, b.label)
+    }
+    return map
+  }, [data])
+
+  // Build line definitions
   const allLines = useMemo(() => {
     if (!data) return [] as LineDef[]
 
     const lines: LineDef[] = []
 
-    // Benchmarks
+    // Optimal 8 benchmark
     lines.push({
       id: "optimal_rolling",
       label: "Optimal 8 (Rolling)",
@@ -339,69 +411,34 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       })
     }
 
-    // Identify leader and median entries
+    // Leader line — dynamic per-game
+    lines.push({
+      id: "leader",
+      label: "Leader",
+      color: COLOR_LEADER,
+      isDefault: true,
+      isBenchmark: true,
+      dataKey: "leader",
+      projDataKey: "leader_proj",
+    })
+
+    // Median line — dynamic per-game
+    lines.push({
+      id: "median",
+      label: "Median",
+      color: COLOR_MEDIAN,
+      isDefault: true,
+      isBenchmark: true,
+      dataKey: "median",
+      projDataKey: "median_proj",
+    })
+
+    // User entries
     const entries = Object.values(data.entries)
     const userEntries = entries.filter(e => e.isCurrentUser)
-
-    // Use API flags for stable leader/median identification.
-    // When filteredUserIds is provided, recompute from the filtered pool.
-    let leaderEntry: EntryHistory | null = null
-    let medianEntry: EntryHistory | null = null
-
-    if (filteredUserIds && filteredUserIds.size > 0) {
-      // Filtered — compute from loaded entries in the filter set
-      const cpIdx = Math.max(0, effectiveCpIdx)
-      const pool = entries.filter(e => !e.isCurrentUser && filteredUserIds.has(e.entryId))
-      const sorted = pool
-        .map(e => ({ entry: e, score: e.scores[cpIdx] ?? 0 }))
-        .sort((a, b) => b.score - a.score)
-      leaderEntry = sorted[0]?.entry ?? null
-      medianEntry = sorted.length > 1 ? sorted[Math.floor(sorted.length / 2)]?.entry ?? null : null
-    } else {
-      // Unfiltered — use API's pre-computed leader/median flags
-      leaderEntry = entries.find(e => e.isLeader && !e.isCurrentUser) ?? null
-      medianEntry = entries.find(e => e.isMedian && !e.isCurrentUser && e.entryId !== leaderEntry?.entryId) ?? null
-    }
-
-    // Check if the user IS the overall leader or median (based on API flags)
-    const userIsLeader = userEntries.some(e => e.isLeader)
-    const userIsMedian = userEntries.some(e => e.isMedian)
-
-    if (leaderEntry) {
-      lines.push({
-        id: "leader",
-        label: `Leader (${leaderEntry.name})`,
-        color: COLOR_LEADER,
-        isDefault: true,
-        isBenchmark: false,
-        dataKey: leaderEntry.entryId,
-        projDataKey: `${leaderEntry.entryId}_proj`,
-      })
-    }
-
-    if (medianEntry && medianEntry.entryId !== leaderEntry?.entryId) {
-      lines.push({
-        id: "median",
-        label: `Median (${medianEntry.name})`,
-        color: COLOR_MEDIAN,
-        isDefault: true,
-        isBenchmark: false,
-        dataKey: medianEntry.entryId,
-        projDataKey: `${medianEntry.entryId}_proj`,
-      })
-    }
-
     userEntries.forEach((entry, i) => {
       const color = USER_ENTRY_COLORS[i % USER_ENTRY_COLORS.length]
-      let label: string
-      if (userIsLeader && entry.isLeader) {
-        label = `You / Leader (${entry.name})`
-      } else if (userIsMedian && entry.isMedian) {
-        label = `You / Median (${entry.name})`
-      } else {
-        label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
-      }
-
+      const label = userEntries.length > 1 ? `You: ${entry.name}` : `You (${entry.name})`
       lines.push({
         id: `you_${entry.entryId}`,
         label,
@@ -413,14 +450,8 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
       })
     })
 
-    // Build set of IDs already added as special lines
-    const specialIds = new Set([
-      leaderEntry?.entryId,
-      medianEntry?.entryId,
-      ...userEntries.map(e => e.entryId),
-    ].filter(Boolean) as string[])
-
-    // Add all other available players from the full roster
+    // Other available players
+    const specialIds = new Set(userEntries.map(e => e.entryId))
     let colorIdx = 0
     for (const player of data.availablePlayers ?? []) {
       if (specialIds.has(player.id)) continue
@@ -437,60 +468,127 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     }
 
     return lines
-  }, [data, effectiveCpIdx, filteredUserIds])
+  }, [data])
 
-  // Build chart data — directly from per-checkpoint arrays
+  // Build chart data — game-level for actual, checkpoint-level for projections
   const { chartData, isComplete } = useMemo(() => {
     if (!data) return { chartData: [], isComplete: true }
 
-    const viewCpIdx = effectiveCpIdx
-    const complete = viewCpIdx >= 10
+    const latestGame = data.latestGameIndex
+    const viewGameIdx = effectiveGameIdx
+    const complete = latestGame >= 62 // All 63 games done
 
-    const points: Record<string, number | string | null>[] = ALL_CHECKPOINT_LABELS.map(cpDef => {
-      const point: Record<string, number | string | null> = {
-        index: cpDef.index,
-        label: cpDef.full,
+    // Build per-entry full score series (filling gaps)
+    const entryScoreSeries = new Map<string, Map<number, number>>()
+    for (const [entryId, gameScores] of Object.entries(data.entryGameScores)) {
+      entryScoreSeries.set(entryId, buildFullScoreSeries(gameScores, 63, latestGame))
+    }
+
+    // Leader/median lookup maps
+    const leaderByGame = new Map(data.leaderLine.map(l => [l.gameIndex, l.score]))
+    const medianByGame = new Map(data.medianLine.map(m => [m.gameIndex, m.score]))
+    const opt8ByGame = new Map(data.optimal8Line.map(o => [o.gameIndex, o.score]))
+
+    // Data points: one per completed game (up to view position) + pre-tournament
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const points: any[] = []
+
+    // Pre-tournament point at x = -1
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prePoint: any = { x: -1 }
+    for (const [entryId] of entryScoreSeries) {
+      prePoint[entryId] = 0
+    }
+    prePoint.leader = 0
+    prePoint.median = 0
+    prePoint.optimal8 = 0
+    prePoint.hindsight = null
+    points.push(prePoint)
+
+    // Completed game points
+    for (let gi = 0; gi <= Math.min(viewGameIdx, latestGame); gi++) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const point: any = { x: gi }
+
+      // Entry scores
+      for (const [entryId, series] of entryScoreSeries) {
+        point[entryId] = series.get(gi) ?? null
       }
 
-      // Entry scores and projections — directly indexed by checkpoint position
-      for (const [entryId, entry] of Object.entries(data.entries)) {
-        // Actual score: only show up to the current view checkpoint
-        if (cpDef.index <= viewCpIdx) {
-          point[entryId] = entry.scores[cpDef.index] ?? null
-        } else {
-          point[entryId] = null
+      // Leader and median
+      point.leader = leaderByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.leader : 0) ?? null
+      point.median = medianByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.median : 0) ?? null
+
+      // Optimal 8
+      point.optimal8 = opt8ByGame.get(gi) ?? (gi > 0 ? points[points.length - 1]?.optimal8 : 0) ?? null
+
+      // Hindsight (checkpoint-level only)
+      const gameCp = data.games.find(g => g.gameIndex === gi)?.checkpoint
+      if (gameCp !== undefined) {
+        const cpData = data.optimal8[gameCp]
+        if (cpData?.hindsightOptimal8Score != null) {
+          // Only set at checkpoint boundary game positions
+          const boundary = data.checkpointBoundaries.find(b => b.checkpoint === gameCp)
+          if (boundary && boundary.afterGameIndex === gi) {
+            point.hindsight = cpData.hindsightOptimal8Score
+          }
+        }
+      }
+
+      points.push(point)
+    }
+
+    // Projection bridge point at the last completed game (connects solid to dashed)
+    if (!complete && viewGameIdx >= 0 && points.length > 1) {
+      const lastPoint = points[points.length - 1]
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const bridgePoint: any = { x: Math.min(viewGameIdx, latestGame) }
+      // Copy actual values as projection start
+      for (const [entryId] of entryScoreSeries) {
+        bridgePoint[`${entryId}_proj`] = lastPoint[entryId] ?? null
+      }
+      // Optimal 8 projection start
+      bridgePoint.optimal8_proj = lastPoint.optimal8 ?? null
+
+      // Don't duplicate if already at this x position
+      if (lastPoint.x === bridgePoint.x) {
+        // Merge projection keys into last point
+        for (const key of Object.keys(bridgePoint)) {
+          if (key.endsWith("_proj")) lastPoint[key] = bridgePoint[key]
+        }
+      } else {
+        points.push(bridgePoint)
+      }
+    }
+
+    // Future checkpoint projection points
+    if (!complete) {
+      const latestCp = data.latestCheckpointIndex
+      for (let cp = latestCp + 1; cp <= 10; cp++) {
+        const gamePos = getCpGamePos(cp, data.checkpointBoundaries)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const projPoint: any = { x: gamePos }
+
+        // Entry projections from checkpoint data
+        for (const [entryId, entry] of Object.entries(data.entries)) {
+          projPoint[`${entryId}_proj`] = entry.projections[cp] ?? null
         }
 
-        // Projection: show from view checkpoint forward
-        if (cpDef.index >= viewCpIdx) {
-          point[`${entryId}_proj`] = entry.projections[cpDef.index] ?? null
-        } else {
-          point[`${entryId}_proj`] = null
+        // Optimal 8 projection
+        const opt = data.optimal8[cp]
+        if (opt) {
+          projPoint.optimal8_proj = opt.rollingProjection ?? null
         }
-      }
 
-      // Optimal 8 lines — actual scores and projections
-      const opt = data.optimal8[cpDef.index]
-      if (opt && cpDef.index <= viewCpIdx) {
-        point.optimal8 = opt.rollingOptimal8Score ?? null
-        point.hindsight = opt.hindsightOptimal8Score ?? null
-      } else {
-        point.optimal8 = null
-        point.hindsight = null
+        points.push(projPoint)
       }
-      // Optimal 8 projection: show from the current view checkpoint forward
-      if (opt && cpDef.index >= viewCpIdx) {
-        point.optimal8_proj = opt.rollingProjection ?? null
-      } else {
-        point.optimal8_proj = null
-      }
-      point.hindsight_proj = null
+    }
 
-      return point
-    })
+    // Sort by x position
+    points.sort((a, b) => a.x - b.x)
 
     return { chartData: points, isComplete: complete }
-  }, [data, effectiveCpIdx])
+  }, [data, effectiveGameIdx])
 
   // Visible line state
   const [visibleIds, setVisibleIds] = useState<Set<string>>(() =>
@@ -514,18 +612,23 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     [allLines, effectiveVisibleIds]
   )
 
-  // Fetch a specific player's data on demand when they're toggled on
+  // Fetch a specific player's data on demand
   const fetchPlayerData = useCallback(async (entryId: string) => {
-    if (!data || data.entries[entryId]) return // Already loaded
+    if (!data || data.entries[entryId]) return
     try {
       const res = await fetch(`/api/scores/history?entryIds=${entryId}&includeLeaderMedian=false`)
       if (!res.ok) return
       const json: ScoreHistoryData = await res.json()
       const newEntry = json.entries[entryId]
+      const newGameScores = json.entryGameScores?.[entryId]
       if (newEntry) {
         setData(prev => prev ? {
           ...prev,
           entries: { ...prev.entries, [entryId]: newEntry },
+          entryGameScores: {
+            ...prev.entryGameScores,
+            ...(newGameScores ? { [entryId]: newGameScores } : {}),
+          },
         } : prev)
       }
     } catch {
@@ -534,7 +637,6 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
   }, [data])
 
   const handleToggle = (id: string) => {
-    // Find the line definition to check if it's a non-loaded player
     const line = allLines.find(l => l.id === id)
     const entryId = line?.dataKey
 
@@ -544,7 +646,6 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         next.delete(id)
       } else {
         next.add(id)
-        // Fetch data for this player if not already loaded
         if (entryId && data && !data.entries[entryId]) {
           fetchPlayerData(entryId)
         }
@@ -571,14 +672,11 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     )
   }
 
-  const apiLatestCpIdx = data.latestCheckpointIndex ?? 0
-  // Use timeline checkpoint if scrubbed back, otherwise API's latest
-  const latestCpIdx = timeline && !timeline.isLive
-    ? timeline.currentCheckpoint
-    : apiLatestCpIdx
-  const hasAnyData = apiLatestCpIdx >= 0 && Object.keys(data.entries).length > 0
+  const latestGameIdx = data.latestGameIndex
+  const viewGameIdx = effectiveGameIdx
+  const hasAnyData = latestGameIdx >= 0 && Object.keys(data.entries).length > 0
 
-  if (!hasAnyData || effectiveCpIdx <= 0) {
+  if (!hasAnyData) {
     return (
       <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
         No game results yet — check back when the tournament starts
@@ -586,7 +684,28 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     )
   }
 
-  // Compute y-axis max from visible lines (both actual and projected)
+  // Build major tick positions for x-axis from checkpoint boundaries
+  const majorTicks: number[] = [-1] // Pre-tournament
+  for (let cp = 1; cp <= 10; cp++) {
+    majorTicks.push(getCpGamePos(cp, data.checkpointBoundaries))
+  }
+
+  // X-axis tick formatter
+  const formatTick = (gameIdx: number): string => {
+    if (gameIdx === -1) return "Pre"
+    // Find if this is a checkpoint boundary
+    const boundary = data.checkpointBoundaries.find(b => b.afterGameIndex === gameIdx)
+    if (boundary) return boundary.label
+    // Use default label
+    for (let cp = 1; cp <= 10; cp++) {
+      if (DEFAULT_CP_GAME_POS[cp] === gameIdx) {
+        return CHECKPOINT_LABELS[cp] ?? ""
+      }
+    }
+    return ""
+  }
+
+  // Compute y-axis max
   const yMax = Math.max(
     ...chartData.flatMap((d) =>
       visibleLines.flatMap(line => {
@@ -600,6 +719,12 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
     ),
     10
   )
+
+  // Current position label
+  const gameCount = data.games.length
+  const positionLabel = viewGameIdx >= 0
+    ? `Game ${viewGameIdx + 1} of ${gameCount} completed`
+    : "Pre-tournament"
 
   return (
     <div className="space-y-3">
@@ -619,7 +744,6 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
             </div>
           ))}
         </div>
-        {/* Line style legend */}
         {!isComplete && (
           <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
             <div className="flex items-center gap-1.5">
@@ -639,21 +763,21 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
         <ResponsiveContainer width="100%" height={340}>
           <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 30, left: 5 }}>
 
-            {/* Vertical dashed gridlines at each checkpoint position */}
-            {ALL_CHECKPOINT_LABELS.map(cp => (
+            {/* Vertical gridlines at checkpoint boundaries */}
+            {data.checkpointBoundaries.map(b => (
               <ReferenceLine
-                key={`grid-${cp.index}`}
-                x={cp.index}
+                key={`grid-cp-${b.checkpoint}`}
+                x={b.afterGameIndex}
                 stroke="currentColor"
-                strokeOpacity={0.1}
+                strokeOpacity={0.15}
                 strokeDasharray="3 3"
               />
             ))}
 
-            {/* "NOW" marker at the latest checkpoint */}
-            {!isComplete && latestCpIdx >= 0 && (
+            {/* "NOW" marker at the current view position */}
+            {!isComplete && viewGameIdx >= 0 && (
               <ReferenceLine
-                x={latestCpIdx}
+                x={viewGameIdx}
                 stroke={COLOR_OPTIMAL_ROLLING}
                 strokeOpacity={0.4}
                 strokeWidth={1.5}
@@ -669,12 +793,12 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
             )}
 
             <XAxis
-              dataKey="index"
+              dataKey="x"
               type="number"
-              domain={[0, 10]}
-              ticks={ALL_CHECKPOINT_LABELS.map(c => c.index)}
+              domain={[-1, 62]}
+              ticks={majorTicks}
               tick={{ fontSize: 9, fill: "currentColor", fillOpacity: 0.5 }}
-              tickFormatter={(v: number) => ALL_CHECKPOINT_LABELS[v]?.short ?? ""}
+              tickFormatter={formatTick}
               tickLine={false}
               axisLine={{ strokeOpacity: 0.2 }}
               interval={0}
@@ -692,7 +816,9 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
               content={
                 <ChartTooltip
                   visibleLines={visibleLines}
-                  latestCpIndex={latestCpIdx}
+                  latestGameIdx={viewGameIdx}
+                  cpBoundaryMap={cpBoundaryMap}
+                  gameCount={gameCount}
                 />
               }
               cursor={{ stroke: "currentColor", strokeOpacity: 0.1 }}
@@ -705,7 +831,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
                 type="monotone"
                 dataKey={line.dataKey}
                 stroke={line.color}
-                strokeWidth={line.isDefault ? 2 : 1.5}
+                strokeWidth={line.isBenchmark ? 2 : 2}
                 dot={false}
                 activeDot={{ r: 3, strokeWidth: 0, fill: line.color }}
                 connectNulls={false}
@@ -720,7 +846,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
                 type="monotone"
                 dataKey={line.projDataKey}
                 stroke={line.color}
-                strokeWidth={line.isDefault ? 1.5 : 1}
+                strokeWidth={1.5}
                 strokeDasharray="6 3"
                 strokeOpacity={0.5}
                 dot={false}
@@ -735,7 +861,7 @@ export function ScoreHistoryChart({ filteredUserIds }: ScoreHistoryChartProps) {
 
       {/* Stats footer */}
       <div className="text-xs text-muted-foreground">
-        {latestCpIdx >= 0 ? `Through ${ALL_CHECKPOINT_LABELS[latestCpIdx]?.full ?? `checkpoint ${latestCpIdx}`}` : "Pre-tournament"} | {visibleLines.length} lines visible
+        {positionLabel} | {visibleLines.length} lines visible
       </div>
     </div>
   )

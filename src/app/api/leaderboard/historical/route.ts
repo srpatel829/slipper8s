@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { computePercentile, computeOptimal8 } from "@/lib/scoring"
 import { type TeamBracketInfo } from "@/lib/bracket-ppr"
-import { computeMaxPossibleScore } from "@/lib/max-possible-score"
+import { computeMaxPossibleScore, computeCollisionAwareRanks } from "@/lib/max-possible-score"
+import { calculateEntryExpectedScore, getSBDataForCheckpoint } from "@/lib/silver-bulletin-2026"
 
 /**
  * GET /api/leaderboard/historical?gameId=xxx
@@ -113,6 +114,62 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // ── Determine checkpoint for this game (for SB version selection) ──
+  // We need to know which checkpoint this game belongs to for correct SB data
+  const allCompletedGames = await prisma.tournamentGame.findMany({
+    where: { isComplete: true, round: { gte: 1 } },
+    select: { id: true, round: true, startTime: true },
+    orderBy: { startTime: "asc" },
+  })
+
+  const ROUND_TO_CP: Record<number, [number, number] | [number]> = {
+    1: [1, 2], 2: [3, 4], 3: [5, 6], 4: [7, 8], 5: [9], 6: [10],
+  }
+
+  const dateOfStart = (g: { startTime: Date | null }) => {
+    if (!g.startTime) return "unknown"
+    return g.startTime.toLocaleDateString("en-US", { timeZone: "America/New_York" })
+  }
+
+  // Build gameId → checkpoint index
+  const gameToCheckpoint = new Map<string, number>()
+  const gamesByRound = new Map<number, typeof allCompletedGames>()
+  for (const g of allCompletedGames) {
+    if (!gamesByRound.has(g.round)) gamesByRound.set(g.round, [])
+    gamesByRound.get(g.round)!.push(g)
+  }
+  for (const [round, cpIndices] of Object.entries(ROUND_TO_CP)) {
+    const rGames = gamesByRound.get(parseInt(round))
+    if (!rGames || rGames.length === 0) continue
+    if (cpIndices.length === 2) {
+      const uniqueDates = [...new Set(rGames.map(dateOfStart))]
+      uniqueDates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())
+      for (const g of rGames) {
+        gameToCheckpoint.set(g.id, dateOfStart(g) === uniqueDates[0] ? cpIndices[0] : cpIndices[1])
+      }
+    } else {
+      for (const g of rGames) gameToCheckpoint.set(g.id, cpIndices[0])
+    }
+  }
+
+  const gameCheckpoint = gameToCheckpoint.get(gameId) ?? 0
+  const historicalSBData = getSBDataForCheckpoint(gameCheckpoint)
+
+  // Build historical team states map for expected score computation
+  const historicalTeamStates = new Map<string, { wins: number; eliminated: boolean }>()
+  for (const [tid, w] of teamWins) {
+    historicalTeamStates.set(tid, { wins: w, eliminated: eliminatedTeams.has(tid) })
+  }
+  // Also add teams that are eliminated but have 0 wins
+  for (const tid of eliminatedTeams) {
+    if (!historicalTeamStates.has(tid)) {
+      historicalTeamStates.set(tid, { wins: 0, eliminated: true })
+    }
+  }
+
+  // Build a global teamInfoMap for collision-aware ranks
+  const globalTeamInfoMap = new Map<string, TeamBracketInfo>()
+
   // Build leaderboard entries
   const leaderboard = entries.map(entry => {
     const snap = snapshotMap.get(entry.id)
@@ -146,12 +203,14 @@ export async function GET(req: NextRequest) {
     const teamInfoMap = new Map<string, TeamBracketInfo>()
     for (const p of picks) {
       if (p) {
-        teamInfoMap.set(p.teamId, {
+        const info = {
           seed: p.seed,
           region: p.region,
           wins: p.wins,
           eliminated: p.eliminated,
-        })
+        }
+        teamInfoMap.set(p.teamId, info)
+        globalTeamInfoMap.set(p.teamId, info)
       }
     }
     // Use computeMaxPossibleScore (unified algorithm) instead of PPR
@@ -164,6 +223,14 @@ export async function GET(req: NextRequest) {
     const ppr = maxPossibleScore - score
     const tps = maxPossibleScore
     const displayName = entry.user.name ?? entry.user.email
+
+    // Compute historical expected score using the correct SB version
+    const historicalExpectedScore = calculateEntryExpectedScore(
+      pickTeamIds,
+      historicalTeamStates,
+      false,
+      historicalSBData,
+    )
 
     return {
       entryId: entry.id,
@@ -187,7 +254,7 @@ export async function GET(req: NextRequest) {
       tps,
       teamsRemaining,
       maxPossibleScore,
-      expectedScore: entry.expectedScore,
+      expectedScore: historicalExpectedScore ?? entry.expectedScore,
       charity: entry.charityPreference,
       country: entry.user.country,
       state: entry.user.state,
@@ -196,6 +263,7 @@ export async function GET(req: NextRequest) {
       conference: entry.user.favoriteTeam?.conference ?? null,
       leagueIds: entry.leagueEntries.map(le => le.leagueId),
       picks,
+      pickTeamIds,
     }
   })
 
@@ -208,6 +276,46 @@ export async function GET(req: NextRequest) {
     }
     leaderboard[i].rank = currentRank
     leaderboard[i].percentile = computePercentile(currentRank, leaderboard.length)
+  }
+
+  // Compute collision-aware maxRank/floorRank on-the-fly when snapshot values are null
+  const needsCollisionRanks = leaderboard.some(e => e.maxRank == null || e.floorRank == null)
+  if (needsCollisionRanks && leaderboard.length > 0) {
+    const collisionEntries = leaderboard.map(e => ({
+      entryId: e.entryId,
+      pickTeamIds: (e as any).pickTeamIds as string[],
+      currentScore: e.currentScore,
+      maxPossibleScore: e.maxPossibleScore ?? 0,
+      teamsRemaining: e.teamsRemaining,
+      currentRank: e.rank,
+    }))
+    const collisionRanks = computeCollisionAwareRanks(collisionEntries, globalTeamInfoMap)
+    for (const e of leaderboard) {
+      if (e.maxRank == null || e.floorRank == null) {
+        const computed = collisionRanks.get(e.entryId)
+        if (computed) {
+          e.maxRank = e.maxRank ?? computed.maxRank
+          e.floorRank = e.floorRank ?? computed.floorRank
+        }
+      }
+    }
+  }
+
+  // Compute expected rank (ranking by expectedScore)
+  const sortedByExpected = [...leaderboard].sort((a, b) =>
+    (b.expectedScore ?? 0) - (a.expectedScore ?? 0)
+  )
+  let expectedRank = 1
+  for (let i = 0; i < sortedByExpected.length; i++) {
+    if (i > 0 && (sortedByExpected[i].expectedScore ?? 0) < (sortedByExpected[i - 1].expectedScore ?? 0)) {
+      expectedRank = i + 1
+    }
+    (sortedByExpected[i] as any).expectedRank = expectedRank
+  }
+
+  // Clean up internal fields before returning
+  for (const e of leaderboard) {
+    delete (e as any).pickTeamIds
   }
 
   // Compute rank change vs the previous game
@@ -248,6 +356,8 @@ export async function GET(req: NextRequest) {
 }
 
 function buildPreTournamentLeaderboard(entries: any[]) {
+  const preTournamentSBData = getSBDataForCheckpoint(0)
+
   // All entries at score 0, tied at rank 1
   const leaderboard = entries.map(entry => {
     const displayName = entry.user.name ?? entry.user.email
@@ -283,6 +393,15 @@ function buildPreTournamentLeaderboard(entries: any[]) {
       : { maxPossibleScore: 0, breakdown: [] }
 
     const maxPossibleScore = maxResult.maxPossibleScore
+
+    // Compute pre-tournament expected score using Version 0 SB data
+    const preTournExpectedScore = calculateEntryExpectedScore(
+      pickTeamIds,
+      new Map(),
+      true,
+      preTournamentSBData,
+    )
+
     return {
       entryId: entry.id,
       userId: entry.userId,
@@ -305,7 +424,8 @@ function buildPreTournamentLeaderboard(entries: any[]) {
       tps: maxPossibleScore,
       teamsRemaining: picks.length,
       maxPossibleScore,
-      expectedScore: entry.expectedScore,
+      expectedScore: preTournExpectedScore ?? entry.expectedScore,
+      expectedRank: null,
       charity: entry.charityPreference,
       country: entry.user.country,
       state: entry.user.state,
@@ -319,6 +439,18 @@ function buildPreTournamentLeaderboard(entries: any[]) {
 
   // Sort by maxPossibleScore descending for display order
   leaderboard.sort((a: any, b: any) => b.maxPossibleScore - a.maxPossibleScore || a.name.localeCompare(b.name))
+
+  // Compute expected rank for pre-tournament
+  const sortedByExpected = [...leaderboard].sort((a, b) =>
+    (b.expectedScore ?? 0) - (a.expectedScore ?? 0)
+  )
+  let expectedRank = 1
+  for (let i = 0; i < sortedByExpected.length; i++) {
+    if (i > 0 && (sortedByExpected[i].expectedScore ?? 0) < (sortedByExpected[i - 1].expectedScore ?? 0)) {
+      expectedRank = i + 1
+    }
+    (sortedByExpected[i] as any).expectedRank = expectedRank
+  }
 
   return NextResponse.json(leaderboard, {
     headers: { "Cache-Control": "no-store" },

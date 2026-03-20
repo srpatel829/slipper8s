@@ -72,6 +72,8 @@ interface TimelineState {
   currentGameId: string | null
   /** Navigate to a specific checkpoint */
   goToCheckpoint: (index: number) => void
+  /** Navigate directly to a specific game index */
+  goToGameIndex: (index: number) => void
   /** Step forward or back by one game */
   stepGame: (direction: 1 | -1) => void
   /** Snap back to live state */
@@ -173,6 +175,25 @@ export function TimelineProvider({
     }
   }, [isLive, currentGameIndex, completedGames])
 
+  const goToGameIndex = useCallback((idx: number) => {
+    if (idx >= latestGameIndex) {
+      setCurrentGameIndex(latestGameIndex)
+      setIsLive(true)
+    } else if (idx < 0) {
+      setCurrentGameIndex(-1)
+      setIsLive(false)
+    } else {
+      // Find nearest completed game at or before this index
+      let nearest = -1
+      for (const g of completedGames) {
+        if (g.gameIndex <= idx) nearest = g.gameIndex
+        else break
+      }
+      setCurrentGameIndex(nearest)
+      setIsLive(false)
+    }
+  }, [latestGameIndex, completedGames])
+
   const goLive = useCallback(() => {
     setCurrentGameIndex(latestGameIndex)
     setIsLive(true)
@@ -193,6 +214,7 @@ export function TimelineProvider({
     totalCompletedGames: completedGames.length,
     currentGameId,
     goToCheckpoint,
+    goToGameIndex,
     stepGame,
     goLive,
     completedGames,
@@ -211,6 +233,7 @@ export function TimelineProvider({
           currentGameIndex={isLive ? latestGameIndex : currentGameIndex}
           latestGameIndex={latestGameIndex}
           onGameStep={stepGame}
+          onGoToGameIndex={goToGameIndex}
           totalCompletedGames={completedGames.length}
         />
       )}

@@ -10,11 +10,19 @@ import { computeMaxPossibleScore, computeMaxScoreProjection } from "@/lib/max-po
 /**
  * GET /api/scores/history — Score history for the chart/timeline feature
  *
- * Returns per-checkpoint scores (not raw per-game snapshots).
+ * Returns both per-checkpoint and per-game score data.
  *
- * For each entry, `scores` is an array of length 11 (checkpoints 0-10).
- * Each value is the entry's score at the END of that checkpoint's last game,
- * or null if that checkpoint hasn't happened yet.
+ * Per-checkpoint (11 data points):
+ *   `entries[id].scores` — array of length 11, indexed by checkpoint (0-10).
+ *   Each value is the entry's score at the END of that checkpoint's last game,
+ *   or null if that checkpoint hasn't happened yet.
+ *
+ * Per-game (up to 63 data points):
+ *   `entryGameScores[id]` — array of { gameIndex, score } from ScoreSnapshots.
+ *   `games` — ordered game metadata with round and checkpoint info.
+ *   `checkpointBoundaries` — last game index in each completed checkpoint.
+ *   `leaderLine` / `medianLine` — per-game leader and median across ALL entries.
+ *   `optimal8Line` — optimal 8 score at checkpoint boundaries.
  *
  * Checkpoint mapping:
  *   0 = Pre-Tournament (score 0)
@@ -23,8 +31,6 @@ import { computeMaxPossibleScore, computeMaxScoreProjection } from "@/lib/max-po
  *   5 = S16 D1, 6 = S16 D2
  *   7 = E8 D1, 8 = E8 D2
  *   9 = F4, 10 = Championship
- *
- * Leader and median are determined from CURRENT entry scores.
  */
 export async function GET(req: NextRequest) {
   const rateLimitResponse = rateLimit(getClientIp(req))
@@ -229,8 +235,12 @@ export async function GET(req: NextRequest) {
       entryPicks: {
         select: {
           teamId: true,
+          playInSlotId: true,
           team: {
             select: { id: true, seed: true, region: true, wins: true, eliminated: true, isPlayIn: true },
+          },
+          playInSlot: {
+            select: { winner: { select: { id: true, seed: true, region: true, wins: true, eliminated: true, isPlayIn: true } } },
           },
         },
       },
@@ -285,14 +295,21 @@ export async function GET(req: NextRequest) {
     const teamInfoMap = new Map<string, TeamBracketInfo>()
     const validPicks: string[] = []
     for (const pick of entry.entryPicks) {
-      if (!pick.team || pick.team.isPlayIn) continue
-      validPicks.push(pick.team.id)
-      teamInfoMap.set(pick.team.id, {
-        seed: pick.team.seed,
-        region: pick.team.region,
-        wins: pick.team.wins,
-        eliminated: pick.team.eliminated,
-      })
+      // Resolve play-in: use winner of play-in slot if pick is a play-in team
+      let team = pick.team
+      if (team?.isPlayIn && pick.playInSlot?.winner) {
+        team = pick.playInSlot.winner
+      }
+      if (!team || team.isPlayIn) continue  // skip unresolved play-in slots
+      validPicks.push(team.id)
+      if (!teamInfoMap.has(team.id)) {
+        teamInfoMap.set(team.id, {
+          seed: team.seed,
+          region: team.region,
+          wins: team.wins,
+          eliminated: team.eliminated,
+        })
+      }
     }
 
     const maxResult = validPicks.length > 0
@@ -382,11 +399,125 @@ export async function GET(req: NextRequest) {
     })
   }
 
+  // ── Per-game data ──────────────────────────────────────────────────────────
+
+  // Game metadata ordered by completion
+  const gameMetadata = completedGames.map((g, idx) => ({
+    gameIndex: idx,
+    gameId: g.id,
+    round: g.round,
+    checkpoint: gameToCheckpoint.get(g.id) ?? 0,
+  }))
+
+  // Checkpoint boundaries — last game index in each completed checkpoint
+  const CHECKPOINT_LABELS_SHORT = [
+    "Pre", "R64 D1", "R64 D2", "R32 D1", "R32 D2",
+    "S16 D1", "S16 D2", "E8 D1", "E8 D2", "F4", "Champ",
+  ]
+  const checkpointBoundaries: Array<{ checkpoint: number; label: string; afterGameIndex: number }> = []
+  for (const [cpIdx, lastGameId] of checkpointLastGameId.entries()) {
+    const gameIdx = completedGames.findIndex(g => g.id === lastGameId)
+    if (gameIdx >= 0) {
+      checkpointBoundaries.push({
+        checkpoint: cpIdx,
+        label: CHECKPOINT_LABELS_SHORT[cpIdx] ?? `CP ${cpIdx}`,
+        afterGameIndex: gameIdx,
+      })
+    }
+  }
+  checkpointBoundaries.sort((a, b) => a.checkpoint - b.checkpoint)
+
+  // gameId → gameIndex lookup
+  const gameIdToIndex = new Map(completedGames.map((g, idx) => [g.id, idx]))
+
+  // Per-entry game-level scores from ScoreSnapshots
+  const entryGameScores: Record<string, Array<{ gameIndex: number; score: number }>> = {}
+  for (const entryId of entryIds) {
+    const snapshots = await prisma.scoreSnapshot.findMany({
+      where: { entryId },
+      orderBy: { savedAt: "asc" },
+      select: { score: true, gameId: true },
+    })
+    entryGameScores[entryId] = snapshots
+      .filter(s => s.gameId && gameIdToIndex.has(s.gameId!))
+      .map(s => ({
+        gameIndex: gameIdToIndex.get(s.gameId!)!,
+        score: s.score,
+      }))
+  }
+
+  // Compute per-game leader and median from ALL entries' snapshots
+  let leaderLine: Array<{ gameIndex: number; score: number; entryId: string }> = []
+  let medianLine: Array<{ gameIndex: number; score: number }> = []
+
+  if (completedGames.length > 0) {
+    const allSnapshots = await prisma.scoreSnapshot.findMany({
+      where: { gameId: { in: completedGames.map(g => g.id) } },
+      select: { gameId: true, score: true, entryId: true },
+    })
+
+    const snapshotsByGame = new Map<string, Array<{ score: number; entryId: string }>>()
+    for (const s of allSnapshots) {
+      if (!s.gameId) continue
+      if (!snapshotsByGame.has(s.gameId)) snapshotsByGame.set(s.gameId, [])
+      snapshotsByGame.get(s.gameId)!.push({ score: s.score, entryId: s.entryId })
+    }
+
+    for (const [idx, game] of completedGames.entries()) {
+      const gameSnaps = snapshotsByGame.get(game.id) ?? []
+      if (gameSnaps.length === 0) continue
+
+      // Leader = max score
+      let maxScore = -Infinity
+      let maxEntryId = ""
+      for (const s of gameSnaps) {
+        if (s.score > maxScore) {
+          maxScore = s.score
+          maxEntryId = s.entryId
+        }
+      }
+      leaderLine.push({ gameIndex: idx, score: maxScore, entryId: maxEntryId })
+
+      // Median
+      const sorted = gameSnaps.map(s => s.score).sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      const medianScore = sorted.length % 2 === 0
+        ? (sorted[mid - 1] + sorted[mid]) / 2
+        : sorted[mid]
+      medianLine.push({ gameIndex: idx, score: medianScore })
+    }
+  }
+
+  // Optimal 8 line — checkpoint-level data mapped to game positions
+  const optimal8Line: Array<{ gameIndex: number; score: number }> = []
+  for (const [cpIdx, lastGameId] of checkpointLastGameId.entries()) {
+    const gameIdx = gameIdToIndex.get(lastGameId)
+    const cpData = optimal8ByCheckpoint.get(cpIdx)
+    if (gameIdx !== undefined && cpData?.rolling != null) {
+      optimal8Line.push({ gameIndex: gameIdx, score: cpData.rolling })
+    }
+  }
+  // Add current live Optimal 8 at the latest game if not already present
+  if (completedGames.length > 0 && !optimal8Line.find(o => o.gameIndex === completedGames.length - 1)) {
+    optimal8Line.push({ gameIndex: completedGames.length - 1, score: opt8Result.score })
+  }
+  optimal8Line.sort((a, b) => a.gameIndex - b.gameIndex)
+
   return NextResponse.json({
+    // Existing fields
     entries: entryHistories,
     optimal8,
     latestCheckpointIndex: latestCpIndex,
     seasonId,
     availablePlayers,
+    // Per-game fields
+    games: gameMetadata,
+    checkpointBoundaries,
+    entryGameScores,
+    leaderLine,
+    medianLine,
+    optimal8Line,
+    totalGames: 63 as const,
+    latestGameIndex: completedGames.length > 0 ? completedGames.length - 1 : -1,
   })
 }

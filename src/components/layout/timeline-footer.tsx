@@ -66,6 +66,8 @@ export interface TimelineFooterProps {
   latestGameIndex: number
   /** Step forward/back one game */
   onGameStep: (direction: 1 | -1) => void
+  /** Navigate directly to a game index */
+  onGoToGameIndex: (index: number) => void
   /** Total completed games for the counter */
   totalCompletedGames: number
   /** Additional class for the footer container */
@@ -81,18 +83,16 @@ export function TimelineFooter({
   currentGameIndex,
   latestGameIndex,
   onGameStep,
+  onGoToGameIndex,
   totalCompletedGames,
   className,
 }: TimelineFooterProps) {
-  // Progress bar — interpolates with game index so single-game steps are visible.
-  // At live, progress sits at the latest checkpoint position.
-  // When scrubbed back, it scales linearly between 0 and that max position.
+  // Progress bar — scales linearly by game index position
   const progress = (() => {
-    if (isLive) return (latestCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
-    if (currentGameIndex < 0) return 0
     if (latestGameIndex <= 0) return 0
-    const maxProg = (latestCheckpoint / (CHECKPOINT_LABELS.length - 1)) * 100
-    return ((currentGameIndex + 1) / (latestGameIndex + 1)) * maxProg
+    const gameIdx = isLive ? latestGameIndex : currentGameIndex
+    if (gameIdx < 0) return 0
+    return ((gameIdx + 1) / (latestGameIndex + 1)) * 100
   })()
 
   const currentLabel = CHECKPOINT_LABELS[currentCheckpoint]?.short ?? "Pre"
@@ -133,9 +133,7 @@ export function TimelineFooter({
 
   function handleSliderChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = parseInt(e.target.value)
-    if (val <= latestCheckpoint) {
-      onCheckpointChange(val)
-    }
+    onGoToGameIndex(val)
   }
 
   return (
@@ -257,9 +255,9 @@ export function TimelineFooter({
               />
               <input
                 type="range"
-                min={0}
-                max={CHECKPOINT_LABELS.length - 1}
-                value={currentCheckpoint}
+                min={-1}
+                max={latestGameIndex}
+                value={isLive ? latestGameIndex : currentGameIndex}
                 onChange={handleSliderChange}
                 className="w-full h-1 appearance-none bg-foreground/10 rounded-full cursor-pointer
                   [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4

@@ -390,7 +390,7 @@ interface LeaderboardTableProps {
   pickerPctMap?: Map<string, number>
 }
 
-type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore"
+type SortKey = "rank" | "currentScore" | "teamsRemaining" | "percentile" | "maxPossibleScore" | "expectedScore" | "expectedRank"
 type SortDir = "asc" | "desc"
 
 function filterByDimension(
@@ -534,6 +534,9 @@ function LeaderboardRow({
             {entry.expectedScore != null && (
               <span className="text-muted-foreground">Exp: <strong className="font-mono">{entry.expectedScore.toFixed(1)}</strong></span>
             )}
+            {entry.expectedRank != null && (
+              <span className="text-muted-foreground">E#: <strong className="font-mono">#{entry.expectedRank}</strong></span>
+            )}
             <span>Max: <strong className="font-mono text-primary">{entry.maxPossibleScore ?? entry.tps}</strong></span>
             {entry.maxRank != null && (
               <span className="text-green-400">Max↑: <strong className="font-mono">#{entry.maxRank}</strong></span>
@@ -547,7 +550,7 @@ function LeaderboardRow({
         className="w-full text-left hidden sm:block"
         onClick={onToggle}
       >
-        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
+        <div className="grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_3rem_4.5rem_4rem] gap-2 items-center px-4 py-3">
           <div className="flex flex-col items-center gap-0">
             <div className={`w-8 h-8 rounded-full border flex items-center justify-center text-xs font-bold shrink-0 ${rankStyle(entry.rank)}`}>
               {rankDisplay}
@@ -590,6 +593,11 @@ function LeaderboardRow({
           <div className="text-right">
             <span className="font-mono text-sm text-muted-foreground">
               {entry.expectedScore != null ? entry.expectedScore.toFixed(1) : "–"}
+            </span>
+          </div>
+          <div className="text-center">
+            <span className="font-mono text-sm text-muted-foreground">
+              {entry.expectedRank != null ? `#${entry.expectedRank}` : "–"}
             </span>
           </div>
           <div className="text-right">
@@ -640,6 +648,9 @@ function LeaderboardRow({
             <span>Max Score: <strong className="text-foreground">{entry.maxPossibleScore ?? entry.tps}</strong></span>
             {entry.expectedScore != null && (
               <span>Expected: <strong className="text-foreground">{entry.expectedScore.toFixed(1)}</strong></span>
+            )}
+            {entry.expectedRank != null && (
+              <span>Expected Rank: <strong className="text-foreground">#{entry.expectedRank}</strong></span>
             )}
             {entry.percentile !== undefined && (
               <span>Percentile: <strong className="text-foreground">Top {entry.percentile}%</strong></span>
@@ -700,7 +711,7 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
       setSortDir((d) => (d === "asc" ? "desc" : "asc"))
     } else {
       setSortKey(key)
-      setSortDir(key === "rank" || key === "teamsRemaining" ? "asc" : "desc")
+      setSortDir(key === "rank" || key === "teamsRemaining" || key === "expectedRank" ? "asc" : "desc")
     }
   }
 
@@ -836,14 +847,15 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
         ))}
       </div>
 
-      {/* Column headers — Spec: Rank | Percentile | Player | Teams Left | Score | Expected | Max Score | Max Rank */}
-      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_4.5rem_4rem] gap-2 px-4 py-2">
+      {/* Column headers — Spec: Rank | Percentile | Player | Teams Left | Score | Exp | ExpR | Max Score | Max Rank */}
+      <div className="hidden sm:grid grid-cols-[2.5rem_3.5rem_1fr_3rem_4rem_4rem_3rem_4.5rem_4rem] gap-2 px-4 py-2">
         <SortBtn col="rank" label="#" />
         <SortBtn col="percentile" label="%" />
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Player</span>
         <div className="text-right"><SortBtn col="teamsRemaining" label="Left" /></div>
         <div className="text-right"><SortBtn col="currentScore" label="Score" /></div>
         <div className="text-right"><SortBtn col="expectedScore" label="Exp" /></div>
+        <div className="text-center"><SortBtn col="expectedRank" label="E#" /></div>
         <div className="text-right"><SortBtn col="maxPossibleScore" label="Max" /></div>
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">Max↑</span>
       </div>

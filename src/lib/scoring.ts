@@ -277,6 +277,19 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
 
   const rankResults = computeCollisionAwareRanks(collisionEntries, teamInfoMap)
 
+  // ── Compute expected rank (ranking by expectedScore) ──────────────────────
+  const expectedRankMap = new Map<string, number>()
+  const sortedByExpected = [...ranked].sort((a, b) =>
+    (b.expectedScore ?? 0) - (a.expectedScore ?? 0)
+  )
+  let expRank = 1
+  for (let i = 0; i < sortedByExpected.length; i++) {
+    if (i > 0 && (sortedByExpected[i].expectedScore ?? 0) < (sortedByExpected[i - 1].expectedScore ?? 0)) {
+      expRank = i + 1
+    }
+    expectedRankMap.set(sortedByExpected[i].entryId, expRank)
+  }
+
   return ranked.map((s, i) => {
     const ranks = rankResults.get(s.entryId)
     const entry = entries.find((e) => e.id === s.entryId)
@@ -284,6 +297,7 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
       ...s,
       maxRank: ranks?.maxRank ?? null,
       floorRank: ranks?.floorRank ?? total,
+      expectedRank: expectedRankMap.get(s.entryId) ?? null,
       percentile: computePercentile(s.rank, total),
       tierName: getTierName(s.rank),
       charity: i < 4 ? (entry?.charityPreference ?? null) : null,
