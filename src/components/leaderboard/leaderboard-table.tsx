@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RefreshCw, Heart, ChevronDown, ChevronUp, TrendingUp, Sparkles } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
 import { getSeedColor, REGION_COLORS, REGION_ABBREV, STATUS_COLORS } from "@/lib/colors"
 import { getPrimaryArchetypeEmoji, getArchetypeByKey, ARCHETYPE_LEGEND } from "@/lib/archetypes"
@@ -43,53 +42,34 @@ const PILL_STATUS_CLASSES = {
   red: "bg-red-500/20 border-red-500/40 text-red-400 line-through",
 }
 
-// ── Spec-compliant team pill ─────────────────────────────────────────────────
+// ── Team pill — uses the full TeamCallout on hover ───────────────────────────
 
-function TeamPill({ pick }: { pick: ResolvedPickSummary }) {
+function TeamPill({ pick, isPreTournament = false }: { pick: ResolvedPickSummary; isPreTournament?: boolean }) {
   const status = getTeamPillStatus(pick)
-  const pts = pick.seed * pick.wins
-  const regionLabel = pick.region ? `${pick.region} Region` : ""
+
+  const teamLike: TeamLikeForCallout = {
+    id: pick.teamId,
+    name: pick.name,
+    shortName: pick.shortName,
+    seed: pick.seed,
+    region: pick.region ?? "",
+    wins: pick.wins,
+    eliminated: pick.eliminated,
+    logoUrl: pick.logoUrl,
+    espnId: pick.espnId,
+    conference: pick.conference,
+  }
+  const calloutData = buildTeamCalloutData(teamLike, isPreTournament)
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${PILL_STATUS_CLASSES[status]}`}
-        >
-          <span className="font-bold">#{pick.seed}</span>
-          <span className="truncate max-w-[4rem]">{pick.shortName}</span>
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-52 p-3" side="top" align="center">
-        <div className="space-y-2">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-bold">#{pick.seed} {pick.name}</span>
-          </div>
-          {regionLabel && (
-            <span className="text-[10px] text-muted-foreground">{regionLabel}</span>
-          )}
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs pt-1 border-t border-border/50">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Wins:</span>
-              <span className="font-medium">{pick.wins}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Pts:</span>
-              <span className="font-medium">{pts}</span>
-            </div>
-            <div className="flex justify-between col-span-2">
-              <span className="text-muted-foreground">Status:</span>
-              <span className={`font-medium ${pick.eliminated ? "text-red-400" : "text-green-400"}`}>
-                {pick.eliminated ? "Eliminated" : "Alive"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+    <TeamCallout team={calloutData}>
+      <button
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${PILL_STATUS_CLASSES[status]}`}
+      >
+        <span className="font-bold">#{pick.seed}</span>
+        <span className="truncate max-w-[4rem]">{pick.shortName}</span>
+      </button>
+    </TeamCallout>
   )
 }
 
@@ -639,7 +619,7 @@ function LeaderboardRow({
                 return bPotential - aPotential
               })
               .map((pick) => (
-                <TeamPill key={pick.teamId} pick={pick} />
+                <TeamPill key={pick.teamId} pick={pick} isPreTournament={isPreTournament} />
               ))}
           </div>
           <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
@@ -784,38 +764,18 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
 
       {/* Dimension tabs — always visible per spec */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
-        {(
-          [
-            { key: "global" as DimensionTab, label: "Global", available: true },
-            { key: "country" as DimensionTab, label: userProfile?.country ?? "Country", available: !!userProfile?.country },
-            { key: "state" as DimensionTab, label: userProfile?.state ?? "State", available: !!userProfile?.state },
-            { key: "gender" as DimensionTab, label: userProfile?.gender ? (GENDER_LABELS[userProfile.gender] ?? "Gender") : "Gender", available: !!userProfile?.gender && userProfile.gender !== "NO_RESPONSE" },
-            { key: "fanbase" as DimensionTab, label: userProfile?.favoriteTeam ?? "Fanbase", available: !!userProfile?.favoriteTeam },
-            { key: "conference" as DimensionTab, label: userProfile?.conference ?? "Conference", available: !!userProfile?.conference },
-          ]
-        ).map(({ key, label, available }) => (
-          <button
-            key={key}
-            onClick={() => available && setDimension(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
-              dimension === key
-                ? "bg-primary/15 text-primary"
-                : available
-                  ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                  : "text-muted-foreground/30 cursor-not-allowed"
-            }`}
-            disabled={!available}
-            title={!available ? `Add your ${key} in profile settings to filter` : undefined}
-          >
-            {label}
-            {dimension === key && key !== "global" && (
-              <span className="ml-1.5 text-[10px] opacity-60">
-                ({filtered.length})
-              </span>
-            )}
-          </button>
-        ))}
-        {/* League tabs */}
+        {/* Global tab */}
+        <button
+          onClick={() => setDimension("global")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+            dimension === "global"
+              ? "bg-primary/15 text-primary"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+          }`}
+        >
+          Global
+        </button>
+        {/* League tabs (second position) */}
         {userLeagues && userLeagues.length > 0 && (
           <>
             <div className="w-px h-5 bg-border mx-1 shrink-0" />
@@ -840,8 +800,40 @@ export function LeaderboardTable({ initialData, currentUserId, demoMode, optimal
                 )}
               </button>
             ))}
+            <div className="w-px h-5 bg-border mx-1 shrink-0" />
           </>
         )}
+        {/* Dimension tabs: Country, State, Fanbase, Conference, Gender */}
+        {(
+          [
+            { key: "country" as DimensionTab, label: userProfile?.country ?? "Country", available: !!userProfile?.country },
+            { key: "state" as DimensionTab, label: userProfile?.state ?? "State", available: !!userProfile?.state },
+            { key: "fanbase" as DimensionTab, label: userProfile?.favoriteTeam ?? "Fanbase", available: !!userProfile?.favoriteTeam },
+            { key: "conference" as DimensionTab, label: userProfile?.conference ?? "Conference", available: !!userProfile?.conference },
+            { key: "gender" as DimensionTab, label: userProfile?.gender ? (GENDER_LABELS[userProfile.gender] ?? "Gender") : "Gender", available: !!userProfile?.gender && userProfile.gender !== "NO_RESPONSE" },
+          ]
+        ).map(({ key, label, available }) => (
+          <button
+            key={key}
+            onClick={() => available && setDimension(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              dimension === key
+                ? "bg-primary/15 text-primary"
+                : available
+                  ? "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  : "text-muted-foreground/30 cursor-not-allowed"
+            }`}
+            disabled={!available}
+            title={!available ? `Add your ${key} in profile settings to filter` : undefined}
+          >
+            {label}
+            {dimension === key && key !== "global" && (
+              <span className="ml-1.5 text-[10px] opacity-60">
+                ({filtered.length})
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Column headers — Spec: Rank | Percentile | Player | Teams Left | Score | Expected | Max Score | Max Rank */}

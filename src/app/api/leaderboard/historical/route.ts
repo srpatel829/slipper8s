@@ -3,7 +3,8 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { computePercentile, computeOptimal8 } from "@/lib/scoring"
-import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { computeMaxPossibleScore } from "@/lib/max-possible-score"
 
 /**
  * GET /api/leaderboard/historical?gameId=xxx
@@ -79,7 +80,7 @@ export async function GET(req: NextRequest) {
   // Get score snapshots at this game for all entries
   const snapshots = await prisma.scoreSnapshot.findMany({
     where: { gameId },
-    select: { entryId: true, score: true, rank: true, percentile: true },
+    select: { entryId: true, score: true, rank: true, percentile: true, maxRank: true, floorRank: true },
   })
 
   const snapshotMap = new Map(snapshots.map(s => [s.entryId, s]))
@@ -153,12 +154,15 @@ export async function GET(req: NextRequest) {
         })
       }
     }
-    const pprResult = picks.length > 0
-      ? computeBracketAwarePPR(picks.filter(Boolean).map(p => p!.teamId), teamInfoMap)
-      : { totalPPR: 0, perTeam: new Map<string, number>() }
+    // Use computeMaxPossibleScore (unified algorithm) instead of PPR
+    const pickTeamIds = picks.filter(Boolean).map(p => p!.teamId)
+    const maxResult = pickTeamIds.length > 0
+      ? computeMaxPossibleScore(pickTeamIds, teamInfoMap)
+      : { maxPossibleScore: 0, breakdown: [] }
 
-    const ppr = pprResult.totalPPR
-    const tps = score + ppr
+    const maxPossibleScore = maxResult.maxPossibleScore
+    const ppr = maxPossibleScore - score
+    const tps = maxPossibleScore
     const displayName = entry.user.name ?? entry.user.email
 
     return {
@@ -166,6 +170,8 @@ export async function GET(req: NextRequest) {
       userId: entry.userId,
       rank: snap?.rank ?? 1,
       percentile: snap?.percentile ?? 0,
+      maxRank: snap?.maxRank ?? null,
+      floorRank: snap?.floorRank ?? null,
       name: entry.entryNumber > 1
         ? (entry.nickname
             ? `${entry.nickname} (${displayName} ${entry.entryNumber})`
@@ -180,7 +186,7 @@ export async function GET(req: NextRequest) {
       ppr,
       tps,
       teamsRemaining,
-      maxPossibleScore: score + ppr,
+      maxPossibleScore,
       expectedScore: entry.expectedScore,
       charity: entry.charityPreference,
       country: entry.user.country,
@@ -202,6 +208,38 @@ export async function GET(req: NextRequest) {
     }
     leaderboard[i].rank = currentRank
     leaderboard[i].percentile = computePercentile(currentRank, leaderboard.length)
+  }
+
+  // Compute rank change vs the previous game
+  try {
+    // Find the game that completed just before this one
+    const prevGame = await prisma.tournamentGame.findFirst({
+      where: {
+        isComplete: true,
+        round: { gt: 0 },
+        startTime: { lt: targetGame.startTime },
+      },
+      orderBy: { startTime: "desc" },
+      select: { id: true },
+    })
+
+    if (prevGame) {
+      const prevSnapshots = await prisma.scoreSnapshot.findMany({
+        where: { gameId: prevGame.id },
+        select: { entryId: true, rank: true },
+      })
+      if (prevSnapshots.length > 0) {
+        const prevRankMap = new Map(prevSnapshots.map(s => [s.entryId, s.rank]))
+        for (const entry of leaderboard) {
+          const prevRank = prevRankMap.get(entry.entryId)
+          if (prevRank != null) {
+            (entry as any).rankChange = prevRank - entry.rank
+          }
+        }
+      }
+    }
+  } catch {
+    // Non-critical
   }
 
   return NextResponse.json(leaderboard, {
@@ -238,16 +276,20 @@ function buildPreTournamentLeaderboard(entries: any[]) {
         teamInfoMap.set(p.teamId, { seed: p.seed, region: p.region, wins: 0, eliminated: false })
       }
     }
-    const pprResult = picks.length > 0
-      ? computeBracketAwarePPR(picks.filter(Boolean).map((p: any) => p.teamId), teamInfoMap)
-      : { totalPPR: 0, perTeam: new Map<string, number>() }
+    // Use computeMaxPossibleScore (unified algorithm) for pre-tournament
+    const pickTeamIds = picks.filter(Boolean).map((p: any) => p.teamId)
+    const maxResult = pickTeamIds.length > 0
+      ? computeMaxPossibleScore(pickTeamIds, teamInfoMap)
+      : { maxPossibleScore: 0, breakdown: [] }
 
-    const ppr = pprResult.totalPPR
+    const maxPossibleScore = maxResult.maxPossibleScore
     return {
       entryId: entry.id,
       userId: entry.userId,
       rank: 1,
       percentile: 0,
+      maxRank: null,
+      floorRank: null,
       name: entry.entryNumber > 1
         ? (entry.nickname
             ? `${entry.nickname} (${displayName} ${entry.entryNumber})`
@@ -259,10 +301,10 @@ function buildPreTournamentLeaderboard(entries: any[]) {
       entryNumber: entry.entryNumber,
       nickname: entry.nickname,
       currentScore: 0,
-      ppr,
-      tps: ppr,
+      ppr: maxPossibleScore,
+      tps: maxPossibleScore,
       teamsRemaining: picks.length,
-      maxPossibleScore: ppr,
+      maxPossibleScore,
       expectedScore: entry.expectedScore,
       charity: entry.charityPreference,
       country: entry.user.country,

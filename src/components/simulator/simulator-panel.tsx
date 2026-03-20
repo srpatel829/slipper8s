@@ -952,12 +952,12 @@ export function SimulatorPanel({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="global">Global</SelectItem>
+                  {(userLeagues ?? []).length > 0 && <SelectItem value="league">League</SelectItem>}
                   <SelectItem value="country">Country</SelectItem>
                   <SelectItem value="state">State</SelectItem>
-                  <SelectItem value="gender">Gender</SelectItem>
                   <SelectItem value="fanBase">Fan Base</SelectItem>
                   <SelectItem value="conference">Conference</SelectItem>
-                  {(userLeagues ?? []).length > 0 && <SelectItem value="league">League</SelectItem>}
+                  <SelectItem value="gender">Gender</SelectItem>
                 </SelectContent>
               </Select>
               {lbFilter === "league" && (userLeagues ?? []).length > 0 && (

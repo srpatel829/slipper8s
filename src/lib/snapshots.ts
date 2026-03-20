@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
-import { computePercentile } from "@/lib/scoring"
+import { computePercentile, resolvePickTeam } from "@/lib/scoring"
+import { computeCollisionAwareRanks, computeMaxPossibleScore } from "@/lib/max-possible-score"
+import type { TeamBracketInfo } from "@/lib/bracket-ppr"
 
 /**
  * Score Snapshot System
@@ -28,7 +30,7 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
   const seasonId = settings?.currentSeasonId
   if (!seasonId) return { saved: 0 }
 
-  // Get all entries with their current scores
+  // Get all entries with their current scores AND picks for collision-aware ranking
   const entries = await prisma.entry.findMany({
     where: {
       seasonId,
@@ -38,6 +40,13 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
     select: {
       id: true,
       score: true,
+      maxPossibleScore: true,
+      entryPicks: {
+        include: {
+          team: true,
+          playInSlot: { include: { team1: true, team2: true, winner: true } },
+        },
+      },
     },
     orderBy: { score: "desc" },
   })
@@ -47,27 +56,76 @@ export async function saveScoreSnapshots(gameId: string): Promise<{ saved: numbe
   // Rank entries by score (descending)
   // Handle ties: entries with the same score share the same rank
   const total = entries.length
+
+  // Build ranked list with current ranks
+  const ranked: Array<{ entry: typeof entries[0]; rank: number }> = []
+  let currentRank = 1
+  for (let i = 0; i < entries.length; i++) {
+    if (i > 0 && entries[i].score < entries[i - 1].score) {
+      currentRank = i + 1
+    }
+    ranked.push({ entry: entries[i], rank: currentRank })
+  }
+
+  // ── Build teamInfoMap and entry pick data for collision-aware ranking ──
+  const teamInfoMap = new Map<string, TeamBracketInfo>()
+  const entryPickMap = new Map<string, string[]>()
+  const teamsRemainingMap = new Map<string, number>()
+
+  for (const { entry } of ranked) {
+    const pickTeamIds: string[] = []
+    let teamsRemaining = 0
+    for (const pick of entry.entryPicks) {
+      const team = resolvePickTeam(pick)
+      if (!team) continue
+      pickTeamIds.push(team.id)
+      if (!team.eliminated) teamsRemaining++
+      if (!teamInfoMap.has(team.id)) {
+        teamInfoMap.set(team.id, {
+          seed: team.seed,
+          region: team.region,
+          wins: team.wins,
+          eliminated: team.eliminated,
+        })
+      }
+    }
+    entryPickMap.set(entry.id, pickTeamIds)
+    teamsRemainingMap.set(entry.id, teamsRemaining)
+  }
+
+  // Compute collision-aware maxRank and floorRank
+  const collisionEntries = ranked.map(r => ({
+    entryId: r.entry.id,
+    pickTeamIds: entryPickMap.get(r.entry.id) ?? [],
+    currentScore: r.entry.score,
+    maxPossibleScore: r.entry.maxPossibleScore,
+    teamsRemaining: teamsRemainingMap.get(r.entry.id) ?? 0,
+    currentRank: r.rank,
+  }))
+
+  const rankResults = computeCollisionAwareRanks(collisionEntries, teamInfoMap)
+
+  // Build snapshots with maxRank and floorRank
   const snapshots: Array<{
     entryId: string
     gameId: string
     score: number
     rank: number
     percentile: number
+    maxRank: number | null
+    floorRank: number | null
   }> = []
 
-  let currentRank = 1
-  for (let i = 0; i < entries.length; i++) {
-    // If not the first entry, check if score differs from previous
-    if (i > 0 && entries[i].score < entries[i - 1].score) {
-      currentRank = i + 1 // Standard competition ranking (1, 1, 3, 4...)
-    }
-
+  for (const { entry, rank } of ranked) {
+    const ranks = rankResults.get(entry.id)
     snapshots.push({
-      entryId: entries[i].id,
+      entryId: entry.id,
       gameId,
-      score: entries[i].score,
-      rank: currentRank,
-      percentile: computePercentile(currentRank, total),
+      score: entry.score,
+      rank,
+      percentile: computePercentile(rank, total),
+      maxRank: ranks?.maxRank ?? null,
+      floorRank: ranks?.floorRank ?? null,
     })
   }
 

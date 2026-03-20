@@ -1,6 +1,7 @@
 import type { Team, PlayInSlot } from "@/generated/prisma"
 import type { LeaderboardEntry, ResolvedPickSummary } from "@/types"
-import { computeBracketAwarePPR, type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { type TeamBracketInfo } from "@/lib/bracket-ppr"
+import { computeCollisionAwareRanks, computeMaxPossibleScore } from "@/lib/max-possible-score"
 import { classifyArchetypes } from "@/lib/archetypes"
 
 // ─── Entry-based types (current system) ───────────────────────────────────────
@@ -230,13 +231,8 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
 
   const total = scores.length
 
-  // Pre-compute arrays for max/floor rank calculation
-  const allCurrentScores = scores.map(s => s.currentScore)
-  const allMaxPossibleScores = scores.map(s => s.maxPossibleScore ?? 0)
-
   // Compute tied ranks: entries with the same currentScore share the same rank
-  return scores.map((s, i) => {
-    // Find the first entry with the same score to determine tied rank
+  const ranked = scores.map((s, i) => {
     let rank = i + 1
     for (let j = 0; j < i; j++) {
       if (scores[j].currentScore === s.currentScore) {
@@ -244,25 +240,52 @@ export function computeLeaderboardFromEntries(entries: EntryWithRelations[]): Le
         break
       }
     }
+    return { ...s, rank }
+  })
 
-    // maxRank: best possible finish = 1 + count of entries whose current score
-    //   already exceeds this entry's max possible score (they can't be caught)
-    const maxRank = s.maxPossibleScore != null
-      ? 1 + allCurrentScores.filter(cs => cs > s.maxPossibleScore!).length
-      : null
+  // ── Build teamInfoMap for collision-aware ranking ───────────────────────────
+  const teamInfoMap = new Map<string, TeamBracketInfo>()
+  const entryPickMap = new Map<string, string[]>() // entryId → pickTeamIds
 
-    // floorRank: worst possible finish = total - count of entries whose max possible
-    //   score is below this entry's current score (they can't catch up)
-    const floorRank = total - allMaxPossibleScores.filter(m => m < s.currentScore).length
+  for (const entry of entries) {
+    const pickTeamIds: string[] = []
+    for (const pick of entry.entryPicks) {
+      const team = resolvePickTeam(pick)
+      if (!team) continue
+      pickTeamIds.push(team.id)
+      if (!teamInfoMap.has(team.id)) {
+        teamInfoMap.set(team.id, {
+          seed: team.seed,
+          region: team.region,
+          wins: team.wins,
+          eliminated: team.eliminated,
+        })
+      }
+    }
+    entryPickMap.set(entry.id, pickTeamIds)
+  }
 
+  // ── Compute collision-aware maxRank and floorRank ────────────────────────────
+  const collisionEntries = ranked.map(r => ({
+    entryId: r.entryId,
+    pickTeamIds: entryPickMap.get(r.entryId) ?? [],
+    currentScore: r.currentScore,
+    maxPossibleScore: r.maxPossibleScore ?? 0,
+    teamsRemaining: r.teamsRemaining,
+    currentRank: r.rank,
+  }))
+
+  const rankResults = computeCollisionAwareRanks(collisionEntries, teamInfoMap)
+
+  return ranked.map((s, i) => {
+    const ranks = rankResults.get(s.entryId)
     const entry = entries.find((e) => e.id === s.entryId)
     return {
       ...s,
-      rank,
-      maxRank,
-      floorRank,
-      percentile: computePercentile(rank, total),
-      tierName: getTierName(rank),
+      maxRank: ranks?.maxRank ?? null,
+      floorRank: ranks?.floorRank ?? total,
+      percentile: computePercentile(s.rank, total),
+      tierName: getTierName(s.rank),
       charity: i < 4 ? (entry?.charityPreference ?? null) : null,
     }
   })
@@ -378,7 +401,8 @@ export function computeOptimal8(
 
   const selectedIds = scored.slice(0, 8).map(t => t.id)
 
-  const { totalPPR } = computeBracketAwarePPR(selectedIds, teamInfoMap)
+  // Use computeMaxPossibleScore for collision-aware max score (unified algorithm)
+  const maxResult = computeMaxPossibleScore(selectedIds, teamInfoMap)
 
   let score = 0
   for (const id of selectedIds) {
@@ -389,8 +413,8 @@ export function computeOptimal8(
   return {
     teamIds: selectedIds,
     score,
-    ppr: totalPPR,
-    tps: score + totalPPR,
+    ppr: maxResult.maxPossibleScore - score, // remaining potential = max - current
+    tps: maxResult.maxPossibleScore,
   }
 }
 

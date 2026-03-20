@@ -105,6 +105,40 @@ export async function GET(req: NextRequest) {
 
   let leaderboard = computeLeaderboardFromEntries(entries)
 
+  // ── 2b. Compute rank change from last game ─────────────────────────────────
+  // Find the 2 most recently completed games. Compare each entry's rank at the
+  // latest game to their rank at the previous game to get rankChange.
+  try {
+    const recentGames = await prisma.tournamentGame.findMany({
+      where: { isComplete: true, round: { gt: 0 } },
+      orderBy: { startTime: "desc" },
+      take: 2,
+      select: { id: true },
+    })
+
+    if (recentGames.length >= 2) {
+      // Get snapshots from the game BEFORE the latest one
+      const previousGameId = recentGames[1].id
+      const prevSnapshots = await prisma.scoreSnapshot.findMany({
+        where: { gameId: previousGameId },
+        select: { entryId: true, rank: true },
+      })
+
+      if (prevSnapshots.length > 0) {
+        const prevRankMap = new Map(prevSnapshots.map(s => [s.entryId, s.rank]))
+        leaderboard = leaderboard.map(entry => {
+          const prevRank = prevRankMap.get(entry.entryId)
+          if (prevRank != null) {
+            return { ...entry, rankChange: prevRank - entry.rank }
+          }
+          return entry
+        })
+      }
+    }
+  } catch {
+    // Non-critical — skip rankChange if snapshots unavailable
+  }
+
   // ── 3. Apply dimension filter ──────────────────────────────────────────────
   if (dimension !== "global" && dimensionValue !== "all") {
     switch (dimension) {

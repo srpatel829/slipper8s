@@ -48,11 +48,18 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     searchable: false,
   },
   {
+    type: "privateLeague",
+    label: "Private Leagues",
+    shortLabel: "Leagues",
+    getValue: (e) => e.leagueIds?.[0] ?? null,
+    searchable: false,
+  },
+  {
     type: "country",
     label: "By Country",
     shortLabel: "Country",
     getValue: (e) => e.country ?? null,
-    searchable: false, // only 4 countries in 2025 data
+    searchable: false,
   },
   {
     type: "state",
@@ -60,13 +67,6 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     shortLabel: "State",
     getValue: (e) => e.state ?? null,
     searchable: true,
-  },
-  {
-    type: "gender",
-    label: "By Gender",
-    shortLabel: "Gender",
-    getValue: (e) => e.gender ?? null,
-    searchable: false,
   },
   {
     type: "fanBase",
@@ -83,10 +83,10 @@ export const DIMENSION_CONFIGS: DimensionConfig[] = [
     searchable: true,
   },
   {
-    type: "privateLeague",
-    label: "Private Leagues",
-    shortLabel: "Leagues",
-    getValue: (e) => e.leagueIds?.[0] ?? null,
+    type: "gender",
+    label: "By Gender",
+    shortLabel: "Gender",
+    getValue: (e) => e.gender ?? null,
     searchable: false,
   },
 ]
@@ -199,22 +199,32 @@ export function filterAndRerank(
   }
 
   // Recalculate maxRank and floorRank within the filtered group
+  // Uses maxPossibleScore (collision-aware) instead of TPS (naive PPR)
   for (let i = 0; i < reranked.length; i++) {
     const entry = reranked[i]
+    const entryMaxScore = entry.maxPossibleScore ?? entry.tps
 
-    // maxRank: best case — this entry reaches its TPS, all others stay at currentScore
-    let betterInBest = 0
-    for (let j = 0; j < reranked.length; j++) {
-      if (j === i) continue
-      if (reranked[j].currentScore > entry.tps) betterInBest++
+    // Eliminated optimization: if all teams eliminated, maxRank = current rank in group
+    if (entry.teamsRemaining === 0) {
+      reranked[i] = { ...reranked[i], maxRank: entry.rank }
+    } else {
+      // maxRank: best case — count entries whose currentScore already exceeds
+      // this entry's maxPossibleScore (strictly greater, they can't be caught)
+      let betterInBest = 0
+      for (let j = 0; j < reranked.length; j++) {
+        if (j === i) continue
+        if (reranked[j].currentScore > entryMaxScore) betterInBest++
+      }
+      reranked[i] = { ...reranked[i], maxRank: betterInBest + 1 }
     }
-    reranked[i] = { ...reranked[i], maxRank: betterInBest + 1 }
 
-    // floorRank: worst case — this entry stays at currentScore, all others reach their TPS
+    // floorRank: worst case — count entries whose maxPossibleScore exceeds
+    // this entry's currentScore (strictly greater, they could catch up)
     let betterInWorst = 0
     for (let j = 0; j < reranked.length; j++) {
       if (j === i) continue
-      if (reranked[j].tps > entry.currentScore) betterInWorst++
+      const otherMax = reranked[j].maxPossibleScore ?? reranked[j].tps
+      if (otherMax > entry.currentScore) betterInWorst++
     }
     reranked[i] = { ...reranked[i], floorRank: betterInWorst + 1 }
   }
