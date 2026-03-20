@@ -905,6 +905,21 @@ export default function LeagueDetailPage() {
               <span>{league.memberCount} member{league.memberCount !== 1 ? "s" : ""}</span>
               <span className="text-border">·</span>
               <span>{league.entryCount} / {league.maxEntries ?? "∞"} entries</span>
+              {league.trackPayments && (() => {
+                const paidCount = rankedEntries.filter(e => e.paid).length
+                const unpaidCount = rankedEntries.length - paidCount
+                return (
+                  <>
+                    <span className="text-border">·</span>
+                    <span>
+                      <span className="text-green-500 font-medium">{paidCount}</span> paid
+                      {unpaidCount > 0 && (
+                        <>{" / "}<span className="text-amber-500 font-medium">{unpaidCount}</span> unpaid</>
+                      )}
+                    </span>
+                  </>
+                )
+              })()}
             </div>
           </div>
         </div>
