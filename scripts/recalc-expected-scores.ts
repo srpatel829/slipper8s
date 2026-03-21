@@ -5,28 +5,36 @@
  * Usage: npx tsx scripts/recalc-expected-scores.ts
  *
  * This script:
- * 1. Fetches all teams (current wins/eliminated state)
- * 2. Fetches all entries with their picks
- * 3. Resolves play-in picks to their winner
- * 4. Calculates expectedScore using the latest SB version
- * 5. Batch-updates all Entry records
+ * 1. Fetches all teams (current wins/eliminated state) keyed by espnId
+ * 2. Fetches all entries with their picks (resolving play-in slots)
+ * 3. Calculates expectedScore using the latest SB version
+ * 4. Batch-updates all Entry records where score changed
  */
 
+import dotenv from "dotenv"
+dotenv.config({ path: ".env" })
+
+import { PrismaNeon } from "@prisma/adapter-neon"
 import { PrismaClient } from "@/generated/prisma"
 import { calculateEntryExpectedScore } from "../src/lib/silver-bulletin-2026"
 
-const prisma = new PrismaClient()
+const adapter = new PrismaNeon({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter } as never)
 
 async function main() {
   console.log("Recalculating expected scores for all entries...\n")
 
-  // 1. Fetch all teams for current state
+  // 1. Fetch all teams — build espnId-keyed state map (SB uses espnIds)
   const teams = await prisma.team.findMany({
-    select: { id: true, seed: true, wins: true, eliminated: true, isPlayIn: true },
+    select: { id: true, espnId: true, wins: true, eliminated: true, isPlayIn: true },
   })
+  // DB id → espnId lookup
+  const dbIdToEspnId = new Map<string, string>()
+  // espnId-keyed team states for SB calculation
   const teamStates = new Map<string, { wins: number; eliminated: boolean }>()
   for (const t of teams) {
-    teamStates.set(t.id, { wins: t.wins, eliminated: t.eliminated })
+    dbIdToEspnId.set(t.id, t.espnId)
+    teamStates.set(t.espnId, { wins: t.wins, eliminated: t.eliminated })
   }
   console.log(`Loaded ${teams.length} teams`)
 
@@ -39,9 +47,13 @@ async function main() {
       entryPicks: {
         select: {
           teamId: true,
-          team: { select: { id: true, isPlayIn: true } },
+          team: { select: { id: true, espnId: true, isPlayIn: true } },
           playInSlot: {
-            select: { winner: { select: { id: true } } },
+            select: {
+              winner: { select: { id: true, espnId: true } },
+              team1: { select: { id: true, espnId: true } },
+              team2: { select: { id: true, espnId: true } },
+            },
           },
         },
       },
@@ -56,18 +68,23 @@ async function main() {
 
   for (const entry of entries) {
     try {
-      // Resolve picks (handle play-in slots)
-      const teamIds: string[] = []
+      // Resolve picks to espnIds (matching how the picks API does it)
+      const sbTeamIds: string[] = []
       for (const pick of entry.entryPicks) {
-        if (pick.team?.isPlayIn && pick.playInSlot?.winner) {
-          teamIds.push(pick.playInSlot.winner.id)
-        } else if (pick.teamId && !pick.team?.isPlayIn) {
-          teamIds.push(pick.teamId)
+        if (!pick.teamId && pick.playInSlot?.winner) {
+          // Pick via playInSlotId (teamId is null) — use winner's espnId
+          sbTeamIds.push(pick.playInSlot.winner.espnId)
+        } else if (pick.team?.isPlayIn && pick.playInSlot?.winner) {
+          // Play-in team pick with resolved winner
+          sbTeamIds.push(pick.playInSlot.winner.espnId)
+        } else if (pick.team && !pick.team.isPlayIn) {
+          // Regular team pick
+          sbTeamIds.push(pick.team.espnId)
         }
       }
 
       // Calculate using latest SB version (no sbData param = uses default latest)
-      const newExpected = calculateEntryExpectedScore(teamIds, teamStates, false)
+      const newExpected = calculateEntryExpectedScore(sbTeamIds, teamStates, false)
 
       if (newExpected !== null && Math.abs(newExpected - entry.expectedScore) > 0.01) {
         await prisma.entry.update({
@@ -75,7 +92,7 @@ async function main() {
           data: { expectedScore: newExpected },
         })
         updated++
-        if (updated <= 5) {
+        if (updated <= 10) {
           console.log(`  Entry ${entry.id}: ${entry.expectedScore.toFixed(1)} → ${newExpected.toFixed(1)}`)
         }
       } else {
