@@ -557,20 +557,19 @@ export async function GET(req: NextRequest) {
       const loserId = game.team1Id === game.winnerId ? game.team2Id : game.team1Id
       if (loserId) rollingEliminated.add(loserId)
 
-      // Build teamInfoMap and aliveTeams at this point
+      // Build teamInfoMap and all teams at this point (including eliminated —
+      // their scored points still count for Optimal 8 selection)
       const stepTeamInfo = new Map<string, TeamBracketInfo>()
-      const stepAliveTeams: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean; isPlayIn: boolean; sCurveRank?: number | null }> = []
+      const stepAllTeams: Array<{ id: string; seed: number; region: string; wins: number; eliminated: boolean; isPlayIn: boolean; sCurveRank?: number | null }> = []
 
       for (const t of allTeams) {
         const wins = rollingWins.get(t.id) ?? 0
         const eliminated = rollingEliminated.has(t.id)
         stepTeamInfo.set(t.id, { seed: t.seed, region: t.region, wins, eliminated })
-        if (!eliminated) {
-          stepAliveTeams.push({ id: t.id, seed: t.seed, region: t.region, wins, eliminated, isPlayIn: false, sCurveRank: t.sCurveRank ?? undefined })
-        }
+        stepAllTeams.push({ id: t.id, seed: t.seed, region: t.region, wins, eliminated, isPlayIn: false, sCurveRank: t.sCurveRank ?? undefined })
       }
 
-      const stepOpt8 = computeOptimal8(stepAliveTeams, stepTeamInfo)
+      const stepOpt8 = computeOptimal8(stepAllTeams, stepTeamInfo)
       optimal8Line.push({ gameIndex: gi, score: stepOpt8.score })
     }
   }

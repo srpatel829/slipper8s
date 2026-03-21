@@ -410,17 +410,17 @@ export interface Optimal8Result {
 
 /**
  * Computes the 8 teams with the highest current score (seed × wins) at this
- * moment in the tournament.
+ * moment in the tournament. Includes eliminated teams — their scored points
+ * still count, they just have no future potential (ppr=0).
  */
 export function computeOptimal8(
   aliveTeams: Optimal8Team[],
   teamInfoMap: Map<string, TeamBracketInfo>
 ): Optimal8Result {
   const scored = aliveTeams
-    .filter(t => !t.eliminated)
     .map(t => {
       const info = teamInfoMap.get(t.id)
-      const eliminated = info ? info.eliminated : false
+      const eliminated = info ? info.eliminated : t.eliminated
       const wins = info ? info.wins : t.wins
       const seed = info ? info.seed : t.seed
       const score = seed * wins
@@ -428,8 +428,9 @@ export function computeOptimal8(
       return { ...t, seed, wins, eliminated, score, ppr }
     })
 
-  // Sort by score desc, then PPR desc (highest remaining potential first — favours
-  // high seeds pre-tournament), then S-Curve rank asc as final tiebreaker
+  // Sort by score desc (primary — actual points matter most), then PPR desc
+  // (among ties, prefer teams with more remaining potential), then S-Curve rank
+  // asc as final tiebreaker
   scored.sort((a, b) => b.score - a.score || b.ppr - a.ppr || (a.sCurveRank ?? 999) - (b.sCurveRank ?? 999))
 
   const selectedIds = scored.slice(0, 8).map(t => t.id)
