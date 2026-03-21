@@ -105,15 +105,28 @@ export async function GET(req: NextRequest) {
 
     // If no games today and no games in progress, skip
     // (But still sync if we have zero games in DB — initial bracket load)
+    // IMPORTANT: Also sync if the tournament isn't over yet (< 67 total games:
+    // 4 play-in + 63 bracket = 67). Otherwise the cron will never discover
+    // the next round's games from ESPN once the current round finishes.
     const totalGames = await prisma.tournamentGame.count()
+    const completeGames = await prisma.tournamentGame.count({ where: { isComplete: true } })
+    const tournamentNotOver = totalGames < 67
+    const allCurrentGamesComplete = totalGames > 0 && completeGames === totalGames
+
     if (totalGames > 0 && inProgressGames === 0 && todayGames === 0) {
-      return NextResponse.json({
-        skipped: true,
-        reason: "No games today and none in progress",
-        season: season.year,
-        totalGames,
-        duration: Date.now() - startTime,
-      })
+      // If all existing games are done but tournament isn't over,
+      // we MUST sync to discover next-round games from ESPN
+      if (allCurrentGamesComplete && tournamentNotOver) {
+        // Fall through to sync — next round games need to be discovered
+      } else {
+        return NextResponse.json({
+          skipped: true,
+          reason: "No games today and none in progress",
+          season: season.year,
+          totalGames,
+          duration: Date.now() - startTime,
+        })
+      }
     }
   } catch (err) {
     // If we can't determine schedule, sync anyway (fail-open for game days)
