@@ -278,9 +278,90 @@ const SB_VERSION_2: SBVersion = {
   ],
 }
 
+// ─── Version 3: Post R32 (20260323_01h) ──────────────────────────────────────
+
+const SB_VERSION_3: SBVersion = {
+  checkpoint: 3,
+  timestamp: "20260323_01h",
+  teams: [
+  // -- East --
+  { teamId: "150",     sbName: "Duke",                        seed: 1,   region: "East",      playIn: false, cumulative: [1, 1, 1, 0.70409, 0.50701, 0.3161, 0.17291] },
+  { teamId: "41",      sbName: "UConn",                       seed: 2,   region: "East",      playIn: false, cumulative: [1, 1, 1, 0.51803, 0.17308, 0.074, 0.02553] },
+  { teamId: "127",     sbName: "Michigan St.",                seed: 3,   region: "East",      playIn: false, cumulative: [1, 1, 1, 0.48197, 0.15494, 0.06592, 0.02291] },
+  { teamId: "2305",    sbName: "Kansas",                      seed: 4,   region: "East",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2599",    sbName: "St. John's",                  seed: 5,   region: "East",      playIn: false, cumulative: [1, 1, 1, 0.29591, 0.16497, 0.07413, 0.02787] },
+  { teamId: "97",      sbName: "Louisville",                  seed: 6,   region: "East",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "26",      sbName: "UCLA",                        seed: 7,   region: "East",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "194",     sbName: "Ohio St.",                    seed: 8,   region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2628",    sbName: "TCU",                         seed: 9,   region: "East",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2116",    sbName: "UCF",                         seed: 10,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "58",      sbName: "South Florida",               seed: 11,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2460",    sbName: "Northern Iowa",               seed: 12,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2856",    sbName: "California Baptist",          seed: 13,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2449",    sbName: "North Dakota St.",            seed: 14,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "231",     sbName: "Furman",                      seed: 15,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2561",    sbName: "Siena",                       seed: 16,  region: "East",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  // -- South --
+  { teamId: "57",      sbName: "Florida",                     seed: 1,   region: "South",     playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "248",     sbName: "Houston",                     seed: 2,   region: "South",     playIn: false, cumulative: [1, 1, 1, 0.61709, 0.48518, 0.25196, 0.1188] },
+  { teamId: "356",     sbName: "Illinois",                    seed: 3,   region: "South",     playIn: false, cumulative: [1, 1, 1, 0.38291, 0.27379, 0.14142, 0.06631] },
+  { teamId: "158",     sbName: "Nebraska",                    seed: 4,   region: "South",     playIn: false, cumulative: [1, 1, 1, 0.59289, 0.158, 0.05301, 0.0154] },
+  { teamId: "238",     sbName: "Vanderbilt",                  seed: 5,   region: "South",     playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "153",     sbName: "North Carolina",              seed: 6,   region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2608",    sbName: "Saint Mary's (CA)",           seed: 7,   region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "228",     sbName: "Clemson",                     seed: 8,   region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2294",    sbName: "Iowa",                        seed: 9,   region: "South",     playIn: false, cumulative: [1, 1, 1, 0.40711, 0.08303, 0.02346, 0.00588] },
+  { teamId: "245",     sbName: "Texas A&M",                   seed: 10,  region: "South",     playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2670",    sbName: "VCU",                         seed: 11,  region: "South",     playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2377",    sbName: "McNeese",                     seed: 12,  region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2653",    sbName: "Troy",                        seed: 13,  region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "219",     sbName: "Penn",                        seed: 14,  region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "70",      sbName: "Idaho",                       seed: 15,  region: "South",     playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2504",    sbName: "Prairie View A&M",            seed: 16,  region: "South",     playIn: true , cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2329",    sbName: "Lehigh",                      seed: 16,  region: "South",     playIn: true , cumulative: [0, 0, 0, 0, 0, 0, 0] },
+  // -- West --
+  { teamId: "12",      sbName: "Arizona",                     seed: 1,   region: "West",      playIn: false, cumulative: [1, 1, 1, 0.79692, 0.56748, 0.27445, 0.15032] },
+  { teamId: "2509",    sbName: "Purdue",                      seed: 2,   region: "West",      playIn: false, cumulative: [1, 1, 1, 0.771, 0.30102, 0.12411, 0.05987] },
+  { teamId: "2250",    sbName: "Gonzaga",                     seed: 3,   region: "West",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "8",       sbName: "Arkansas",                    seed: 4,   region: "West",      playIn: false, cumulative: [1, 1, 1, 0.20308, 0.09103, 0.02425, 0.00813] },
+  { teamId: "275",     sbName: "Wisconsin",                   seed: 5,   region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "252",     sbName: "BYU",                         seed: 6,   region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2390",    sbName: "U Miami (FL)",                seed: 7,   region: "West",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "222",     sbName: "Villanova",                   seed: 8,   region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "328",     sbName: "Utah St.",                    seed: 9,   region: "West",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "142",     sbName: "Missouri",                    seed: 10,  region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "251",     sbName: "Texas",                       seed: 11,  region: "West",      playIn: true , cumulative: [1, 1, 1, 0.229, 0.04047, 0.00682, 0.00144] },
+  { teamId: "152",     sbName: "NC State",                    seed: 11,  region: "West",      playIn: true , cumulative: [0, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2272",    sbName: "High Point",                  seed: 12,  region: "West",      playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "62",      sbName: "Hawaii",                      seed: 13,  region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "338",     sbName: "Kennesaw St.",                seed: 14,  region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2511",    sbName: "Queens",                      seed: 15,  region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "112358",  sbName: "LIU",                         seed: 16,  region: "West",      playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  // -- Midwest --
+  { teamId: "130",     sbName: "Michigan",                    seed: 1,   region: "Midwest",   playIn: false, cumulative: [1, 1, 1, 0.82408, 0.52621, 0.331, 0.20286] },
+  { teamId: "66",      sbName: "Iowa St.",                    seed: 2,   region: "Midwest",   playIn: false, cumulative: [1, 1, 1, 0.6849, 0.31877, 0.17935, 0.09784] },
+  { teamId: "258",     sbName: "Virginia",                    seed: 3,   region: "Midwest",   playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "333",     sbName: "Alabama",                     seed: 4,   region: "Midwest",   playIn: false, cumulative: [1, 1, 1, 0.17592, 0.07099, 0.02884, 0.01178] },
+  { teamId: "2641",    sbName: "Texas Tech",                  seed: 5,   region: "Midwest",   playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2633",    sbName: "Tennessee",                   seed: 6,   region: "Midwest",   playIn: false, cumulative: [1, 1, 1, 0.3151, 0.08403, 0.03118, 0.01215] },
+  { teamId: "96",      sbName: "Kentucky",                    seed: 7,   region: "Midwest",   playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "61",      sbName: "Georgia",                     seed: 8,   region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "139",     sbName: "Saint Louis",                 seed: 9,   region: "Midwest",   playIn: false, cumulative: [1, 1, 0, 0, 0, 0, 0] },
+  { teamId: "2541",    sbName: "Santa Clara",                 seed: 10,  region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "193",     sbName: "Miami University (OH)",       seed: 11,  region: "Midwest",   playIn: true , cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2567",    sbName: "SMU",                         seed: 11,  region: "Midwest",   playIn: true , cumulative: [0, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2006",    sbName: "Akron",                       seed: 12,  region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2275",    sbName: "Hofstra",                     seed: 13,  region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2750",    sbName: "Wright St.",                  seed: 14,  region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2634",    sbName: "Tennessee St.",               seed: 15,  region: "Midwest",   playIn: false, cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  { teamId: "2692",    sbName: "UMBC",                        seed: 16,  region: "Midwest",   playIn: true , cumulative: [0, 0, 0, 0, 0, 0, 0] },
+  { teamId: "47",      sbName: "Howard",                      seed: 16,  region: "Midwest",   playIn: true , cumulative: [1, 0, 0, 0, 0, 0, 0] },
+  ],
+}
+
 // ─── Versions array (ordered by checkpoint) ───────────────────────────────────
 
-export const SB_VERSIONS: SBVersion[] = [SB_VERSION_0, SB_VERSION_1, SB_VERSION_2]
+export const SB_VERSIONS: SBVersion[] = [SB_VERSION_0, SB_VERSION_1, SB_VERSION_2, SB_VERSION_3]
 
 // ─── Helper to get SB data for a given checkpoint ─────────────────────────────
 
