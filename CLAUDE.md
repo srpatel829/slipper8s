@@ -983,3 +983,125 @@ Sumeet's personal voice — do not reword. Exact copy in spec Section 11.1.
 ---
 
 *Slipper8s — Where sleeper picks become glass slippers | slipper8s.com*
+
+---
+
+## Flipper8s — Companion Game
+
+### What It Is
+Flipper8s is the inverse companion to Slipper8s. Same tournament, same platform, opposite strategy. Players pick 8 teams they believe will be eliminated EARLIER than expected. Highest score wins.
+
+Where Slipper8s rewards picking Cinderella teams that go further than expected, Flipper8s rewards picking chalk teams that get knocked off earlier than anyone expected. Same tournament, opposite strategy, same amount of fun.
+
+The name Flipper8s reflects flipping Slipper8s on its head — the game mechanic is the mirror image of the original.
+
+### Scoring Formula
+
+Score = (1 − P(lose in round they actually lost)) × (expected_wins × 10) × (0.5 ^ actual_wins)
+
+Where:
+- P(lose in round) = Silver Bulletin marginal probability of losing in that specific round
+- expected_wins = how many wins that seed is expected to achieve (see table below)
+- actual_wins = how many games the team actually won before being eliminated
+- (0.5 ^ actual_wins) = halving multiplier — score halves for every round a team survives
+
+Rules:
+- Score ONLY if actual_wins < expected_wins
+- If team meets or exceeds expectations → score = 0
+- Alive teams always score 0 until they are eliminated
+- Scores are final the moment a team is eliminated — never change retroactively
+
+### Why the Halving Multiplier
+
+Without it, a 1 seed losing in the Elite 8 (one round early) would score more than an 8 seed losing in round 1 — because the (17-seed) style multiplier always favors higher seeds. The halving component ensures an 8 seed losing R1 scores more than a 1 seed losing in the Elite 8, which feels correct. Equal amounts of underperformance score equally regardless of seed.
+
+### Expected Wins by Seed
+
+- #1 seed: 4 (expected to reach Final Four)
+- #2 seed: 3 (expected to reach Elite 8)
+- #3 seed: 2 (expected to reach Sweet 16)
+- #4 seed: 2 (expected to reach Sweet 16)
+- #5 through #16 seed: 1 (expected to win at least one game)
+
+### Score Examples (approximate, 2026 tournament)
+
+- #1 seed loses R1: ~40 pts (almost never happens, massive reward)
+- #1 seed loses R2: ~17 pts (rare, big reward)
+- #1 seed loses S16: ~8 pts
+- #1 seed loses E8: ~4 pts (one round early, modest)
+- #1 seed reaches F4+: 0 pts (met expectations)
+- #2 seed loses R1: ~29 pts
+- #3 seed loses R1: ~19 pts
+- #5 seed loses R1: ~8 pts
+- #8 seed loses R1: ~4-6 pts
+- #16 seed loses R1: ~0.1 pts (expected, nearly worthless)
+
+### Eligible Teams
+
+All 64 teams. No restrictions. The formula naturally discourages poor picks:
+- A 16 seed losing R1 scores ~0.1 pts (expected outcome, nearly zero reward)
+- A 5 seed losing R1 scores ~8 pts (unexpected, meaningful reward)
+- No rules needed to exclude low seeds — the math does it
+
+### Why All Seeds Are Eligible
+
+9 seeds are sometimes actually favored over 8 seeds (e.g. Iowa and Utah State in 2026 were both favored to beat their 8 seed opponents per Silver Bulletin). 10 and 11 seeds also produce competitive matchups. Excluding any seeds by rule would be arbitrary when the scoring formula already handles differentiation correctly. Let players do the math.
+
+### Chalk Year Handling
+
+Chalk years do NOT break the game. Even in historically chalk years (e.g. 2025 when all four 1 seeds reached the Final Four), there are still meaningful upsets among 2-8 seeds. A chalk year simply means 1 seed picks score zero — the game is still decided by mid-seed upsets. This was a confirmed design decision.
+
+### Risk/Reward by Seed
+
+- Seeds 1-2: High risk, high reward. Massive upside if early exit, but usually go deep = 0. High expected value due to multiple scoring rounds.
+- Seeds 3-4: Medium-high risk. Can score in R1 or R2.
+- Seeds 5-8: Medium risk. Binary — lose R1 (score) or win R1 (0). Solid steady points.
+- Seeds 9-11: Lower risk. Competitive matchups, sometimes 9/10 seeds are favored. Worth picking if matchup is right.
+- Seeds 12-16: Low score potential. Formula makes them unattractive — picking them wastes a slot.
+
+### Probability Source
+
+Silver Bulletin (natesilver.net) — same source as Slipper8s expected scores.
+
+Probability lock rules:
+- Pre-tournament Silver Bulletin probabilities locked at bracket announcement
+- Updated ONCE after all play-in games complete — this becomes the permanent locked baseline
+- Players can submit picks before play-in games resolve but scores for play-in teams use post-play-in probabilities
+- No further updates during main tournament — a team's score when eliminated is final and permanent
+
+### Why Fixed Probabilities (Not Dynamic)
+
+Rewards quality of pre-tournament prediction, not luck of which matchups emerged. A player who correctly identified a vulnerable 1 seed deserves the same score regardless of whether that team drew an easy or hard R2 opponent. Fixed probabilities keep the game fair and scores trustworthy.
+
+### Platform Integration
+
+- Lives inside Slipper8s platform — same login, same account
+- Players opt in to play Flipper8s — most expected to play Slipper8s only
+- Players can play both games simultaneously — scored independently, no relationship between Slipper8s score and Flipper8s score
+- Flipper8s has its own separate global leaderboard
+- Private leagues available for Flipper8s with same mechanics as Slipper8s leagues
+- Charity/prize component available at league manager's discretion
+
+### Archetypes
+
+Same or inverse of Slipper8s archetypes. A "Chalk Chaser" in Slipper8s (picks favorites expected to go deep) becomes an "Upset Hunter" in Flipper8s. Full archetype system to be defined during build phase, mirroring Slipper8s archetype design.
+
+### Combinations
+
+C(64,8) = 4,426,165,368 — over 4.4 billion unique entries. Full strategic depth across all 64 teams.
+
+### How to Play (Player-Facing Copy)
+
+"Pick 8 teams you think will get knocked out earlier than expected. The bigger the upset, the more points you score.
+
+Every team enters with an expectation based on their seed — 1 seeds are expected to reach the Final Four, 2 seeds the Elite 8, 3 and 4 seeds the Sweet 16, and every other seed is expected to win at least one game. If your pick exits with fewer wins than expected, you score points. If they meet or exceed expectations, you score zero.
+
+The formula rewards you more when the loss was unlikely (a 1 seed rarely loses in round 1) and when they were expected to go deep (higher seeds have more to lose). Every round a team survives, your potential score for that pick halves — so early exits score the most.
+
+Why not just pick 15 and 16 seeds? You can — but they almost always lose, so their loss was completely expected and scores almost nothing. A 16 seed losing round 1 scores about 0.1 pts. A 5 seed losing round 1 scores about 8 pts. The math handles it — no teams are banned.
+
+Slipper8s rewards the Cinderella. Flipper8s rewards calling out the pretenders."
+
+### Build Priority
+
+Flipper8s is NOT a 2026 launch requirement. Design is complete and documented here for future build. Do not build until Slipper8s core is fully stable, validated against 2025 data, and live through at least one tournament. Build Flipper8s as a 2027 feature.
