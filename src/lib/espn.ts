@@ -161,9 +161,30 @@ export async function syncTournamentData(): Promise<SyncResult> {
       ])
       result.teamsUpdated += 2
 
-      // Determine winner
-      const winnerTeam = isCompleted ? (c1.winner ? team1 : team2) : null
-      const loserTeam = isCompleted ? (c1.winner ? team2 : team1) : null
+      // Determine winner — validate BOTH competitor flags to avoid misattribution.
+      // ESPN can mark a game completed before setting the winner flag on competitors.
+      // Previously we defaulted to team2 when c1.winner was falsy, which caused the
+      // wrong team to get credited with a win (and the real winner to get eliminated).
+      // Now we also check c2.winner explicitly and fall back to score comparison.
+      let winnerTeam: typeof team1 | null = null
+      let loserTeam: typeof team1 | null = null
+      if (isCompleted) {
+        if (c1.winner === true) {
+          winnerTeam = team1
+          loserTeam = team2
+        } else if (c2.winner === true) {
+          winnerTeam = team2
+          loserTeam = team1
+        } else if (score1 !== score2) {
+          // Fallback: use scores when winner flags aren't set yet
+          winnerTeam = score1 > score2 ? team1 : team2
+          loserTeam = score1 > score2 ? team2 : team1
+          console.warn(`[espn] Winner flag not set for completed game ${event.id} (${c1.team.displayName} vs ${c2.team.displayName}), using score fallback: ${score1}-${score2}`)
+        } else {
+          // Both winner flags false/undefined AND tied score — skip this game, wait for ESPN to settle
+          console.warn(`[espn] Completed game ${event.id} has no winner flag and tied score ${score1}-${score2}, skipping winner processing`)
+        }
+      }
 
       // Upsert tournament game
       const upsertedGame = await prisma.tournamentGame.upsert({
@@ -193,6 +214,50 @@ export async function syncTournamentData(): Promise<SyncResult> {
         },
       })
       result.gamesUpdated++
+
+      // ── Self-healing: fix team stats if winnerId was corrected on a re-sync ───
+      // Detects when a previous sync credited the wrong team (e.g., ESPN returned
+      // completed=true before setting the winner flag) and corrects wins/eliminated.
+      if (isCompleted && winnerTeam && loserTeam && wasAlreadyComplete) {
+        const [currentWinner, currentLoser] = await Promise.all([
+          prisma.team.findUnique({ where: { id: winnerTeam.id }, select: { eliminated: true, wins: true } }),
+          prisma.team.findUnique({ where: { id: loserTeam.id }, select: { eliminated: true, wins: true } }),
+        ])
+        if (currentWinner && currentLoser) {
+          const winnerWronglyEliminated = currentWinner.eliminated === true
+          const loserWronglyAlive = currentLoser.eliminated === false
+          if (winnerWronglyEliminated || loserWronglyAlive) {
+            console.warn(`[espn] SELF-HEALING: Game ${event.id} (round ${round}) winner/loser stats are inverted. Fixing: ${winnerTeam.name} should be alive, ${loserTeam.name} should be eliminated.`)
+            // Fix winner: un-eliminate and give back the win that was stolen
+            if (round > 0 && winnerWronglyEliminated) {
+              await prisma.team.update({
+                where: { id: winnerTeam.id },
+                data: { eliminated: false, wins: { increment: 1 } },
+              })
+            } else if (winnerWronglyEliminated) {
+              await prisma.team.update({
+                where: { id: winnerTeam.id },
+                data: { eliminated: false },
+              })
+            }
+            // Fix loser: eliminate and remove the incorrectly awarded win
+            if (round > 0 && loserWronglyAlive) {
+              await prisma.team.update({
+                where: { id: loserTeam.id },
+                data: { eliminated: true, wins: { decrement: 1 } },
+              })
+            } else if (loserWronglyAlive) {
+              await prisma.team.update({
+                where: { id: loserTeam.id },
+                data: { eliminated: true },
+              })
+            }
+            // Trigger re-scoring since team stats changed
+            newlyCompletedGameIds.push(upsertedGame.id)
+            newlyCompletedRounds.push(round)
+          }
+        }
+      }
 
       // Update wins / eliminated ONLY when game JUST completed (not already processed)
       // This prevents double-counting wins on repeated syncs
