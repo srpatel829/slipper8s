@@ -205,6 +205,8 @@ export async function syncTournamentData(): Promise<SyncResult> {
         update: {
           round,
           region: region ?? undefined,
+          team1Id: team1.id,
+          team2Id: team2.id,
           winnerId: winnerTeam?.id ?? null,
           team1Score: score1,
           team2Score: score2,
